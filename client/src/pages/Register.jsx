@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
+import Logo from '../components/Logo.jsx';
 
 export default function Register() {
   const { register } = useAuth();
@@ -25,8 +26,9 @@ export default function Register() {
   return (
     <div className="auth-wrap">
       <form className="auth-card" onSubmit={submit}>
+        <Logo />
         <h1>Créer un compte</h1>
-        <p className="subtitle">Rejoins Concord en quelques secondes.</p>
+        <p className="subtitle">Rejoins Pulsar en quelques secondes.</p>
 
         {error && <div className="error-msg">{error}</div>}
 

@@ -27,7 +27,7 @@ function createWindow() {
     minHeight: 560,
     backgroundColor: '#14161c',
     autoHideMenuBar: true,
-    title: 'Concord',
+    title: 'Pulsar',
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,

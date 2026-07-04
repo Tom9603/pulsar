@@ -368,7 +368,7 @@ export default function AppLayout() {
       ) : (
         <div className="main-content">
           <div className="msg-welcome" style={{ margin: 'auto', textAlign: 'center' }}>
-            <h2>Bienvenue sur Concord 👋</h2>
+            <h2>Bienvenue sur Pulsar ✦</h2>
             <p>Crée ton premier serveur ou rejoins-en un pour commencer.</p>
             <div style={{ marginTop: 20 }}>
               <button className="btn" style={{ width: 'auto', padding: '10px 24px', display: 'inline-block' }} onClick={() => setModal('create')}>

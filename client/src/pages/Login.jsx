@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 import { IS_DESKTOP, getServerUrl, setServerUrl } from '../config.js';
+import Logo from '../components/Logo.jsx';
 
 export default function Login() {
   const { login } = useAuth();
@@ -27,6 +28,7 @@ export default function Login() {
   return (
     <div className="auth-wrap">
       <form className="auth-card" onSubmit={submit}>
+        <Logo />
         <h1>Content de te revoir&nbsp;!</h1>
         <p className="subtitle">Connecte-toi pour rejoindre tes serveurs.</p>
 

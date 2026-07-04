@@ -1,7 +1,12 @@
 import express from 'express';
 import cors from 'cors';
 import http from 'node:http';
+import path from 'node:path';
+import fs from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { Server } from 'socket.io';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 import './db.js';
 import authRoutes from './routes/auth.js';
@@ -50,6 +55,13 @@ app.use(
   express.static(uploadsDir),
 );
 
+// Sert l'app web compilée (si présente) → un seul lien à partager via un tunnel.
+const clientDist = path.join(__dirname, '..', '..', 'client', 'dist');
+if (fs.existsSync(path.join(clientDist, 'index.html'))) {
+  app.use(express.static(clientDist));
+  console.log('✦ App web servie depuis client/dist');
+}
+
 const server = http.createServer(app);
 const io = new Server(server, { cors: { origin: '*' } });
 setIO(io);
@@ -57,5 +69,5 @@ setupSocket(io);
 
 const PORT = process.env.PORT || 3001;
 server.listen(PORT, () => {
-  console.log(`⚡ Serveur Concord démarré sur http://localhost:${PORT}`);
+  console.log(`✦ Serveur Pulsar démarré sur http://localhost:${PORT}`);
 });

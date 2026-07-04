@@ -11,8 +11,10 @@ const KEY = 'concord.serverUrl';
 export const IS_DESKTOP = typeof window !== 'undefined' && !!window.electron?.isDesktop;
 
 export function getServerUrl() {
-  if (DEV) return ''; // proxy Vite -> URLs relatives
-  return localStorage.getItem(KEY) || 'http://localhost:3001';
+  // App desktop (Electron) : serveur configurable (défaut localhost).
+  if (IS_DESKTOP) return localStorage.getItem(KEY) || 'http://localhost:3001';
+  // App web : même origine (dev via proxy Vite ; prod servie par le backend/tunnel).
+  return '';
 }
 
 export function setServerUrl(url) {
