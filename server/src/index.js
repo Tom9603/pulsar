@@ -12,6 +12,7 @@ import dmRoutes from './routes/dms.js';
 import uploadRoutes, { uploadsDir } from './routes/uploads.js';
 import iceRoutes from './routes/ice.js';
 import gifRoutes from './routes/gifs.js';
+import friendRoutes from './routes/friends.js';
 import { setupSocket } from './socket.js';
 import { setIO } from './realtime.js';
 
@@ -28,7 +29,20 @@ app.use('/api/dms', dmRoutes);
 app.use('/api/uploads', uploadRoutes);
 app.use('/api/ice', iceRoutes);
 app.use('/api/gifs', gifRoutes);
-app.use('/uploads', express.static(uploadsDir)); // images servies publiquement
+app.use('/api/friends', friendRoutes);
+
+// Fichiers uploadés : nosniff + téléchargement forcé pour tout ce qui n'est pas média (anti-XSS).
+app.use(
+  '/uploads',
+  (req, res, next) => {
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    if (!/\.(png|jpe?g|gif|webp|webm|ogg|mp3|m4a|mp4|wav)$/i.test(req.path)) {
+      res.setHeader('Content-Disposition', 'attachment');
+    }
+    next();
+  },
+  express.static(uploadsDir),
+);
 
 const server = http.createServer(app);
 const io = new Server(server, { cors: { origin: '*' } });

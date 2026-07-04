@@ -1,8 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
-import { api, mediaUrl, isAudio } from '../api.js';
+import { api } from '../api.js';
 import { getSocket } from '../socket.js';
+import { renderRich } from '../richtext.jsx';
 import Avatar from './Avatar.jsx';
 import Composer from './Composer.jsx';
+import Attachment from './Attachment.jsx';
+import EmojiPicker from './EmojiPicker.jsx';
 
 const QUICK_EMOJIS = ['👍', '❤️', '😂', '😮', '😢', '🎉'];
 
@@ -12,29 +15,9 @@ function formatTime(ts) {
 }
 
 function shouldGroup(prev, cur) {
-  if (!prev || prev.user_id !== cur.user_id || cur.attachment_url) return false;
+  if (!prev || prev.user_id !== cur.user_id || cur.attachment_url || cur.reply_to) return false;
   const gap = new Date(cur.created_at.replace(' ', 'T')) - new Date(prev.created_at.replace(' ', 'T'));
   return gap < 5 * 60 * 1000;
-}
-
-/** Surligne les mentions @pseudo dans le texte. */
-function renderContent(text, currentUser) {
-  if (!text) return null;
-  const parts = [];
-  const regex = /(@[\w.-]+)/g;
-  let last = 0;
-  let match;
-  let key = 0;
-  while ((match = regex.exec(text)) !== null) {
-    if (match.index > last) parts.push(text.slice(last, match.index));
-    const tag = match[1];
-    const low = tag.toLowerCase();
-    const isMe = low === '@' + currentUser.username.toLowerCase() || low === '@' + currentUser.display_name.toLowerCase();
-    parts.push(<span key={key++} className={`mention ${isMe ? 'mention-me' : ''}`}>{tag}</span>);
-    last = match.index + tag.length;
-  }
-  if (last < text.length) parts.push(text.slice(last));
-  return parts;
 }
 
 export default function ChatView({ channel, currentUser, canManage }) {
@@ -43,6 +26,10 @@ export default function ChatView({ channel, currentUser, canManage }) {
   const [editingId, setEditingId] = useState(null);
   const [editText, setEditText] = useState('');
   const [pickerFor, setPickerFor] = useState(null);
+  const [pickerFull, setPickerFull] = useState(false);
+  const [replyingTo, setReplyingTo] = useState(null);
+  const [showPins, setShowPins] = useState(false);
+  const [pins, setPins] = useState([]);
   const scrollRef = useRef(null);
   const typingTimers = useRef({});
   const lastTypingSent = useRef(0);
@@ -50,6 +37,8 @@ export default function ChatView({ channel, currentUser, canManage }) {
   useEffect(() => {
     let cancelled = false;
     setMessages([]);
+    setReplyingTo(null);
+    setShowPins(false);
     api(`/channels/${channel.id}/messages`).then(({ messages }) => {
       if (!cancelled) setMessages(messages);
     });
@@ -75,7 +64,8 @@ export default function ChatView({ channel, currentUser, canManage }) {
       if (channelId !== channel.id) return;
       setMessages((prev) => prev.map((m) => (m.id === messageId ? { ...m, reactions } : m)));
     };
-    const onTyping = ({ channelId, user }) => {
+    const onPins = ({ channelId }) => { if (channelId === channel.id && showPins) loadPins(); };
+    const onTypingEvt = ({ channelId, user }) => {
       if (channelId !== channel.id || user.id === currentUser.id) return;
       setTyping((prev) => ({ ...prev, [user.id]: user.display_name }));
       clearTimeout(typingTimers.current[user.id]);
@@ -88,20 +78,25 @@ export default function ChatView({ channel, currentUser, canManage }) {
     socket.on('message:updated', onUpdated);
     socket.on('message:deleted', onDeleted);
     socket.on('reaction:update', onReaction);
-    socket.on('typing', onTyping);
+    socket.on('pins:changed', onPins);
+    socket.on('typing', onTypingEvt);
     return () => {
       socket.off('message:new', onNew);
       socket.off('message:updated', onUpdated);
       socket.off('message:deleted', onDeleted);
       socket.off('reaction:update', onReaction);
-      socket.off('typing', onTyping);
+      socket.off('pins:changed', onPins);
+      socket.off('typing', onTypingEvt);
     };
-  }, [channel.id, currentUser.id]);
+  }, [channel.id, currentUser.id, showPins]);
 
   useEffect(() => {
     const el = scrollRef.current;
     if (el) el.scrollTop = el.scrollHeight;
   }, [messages, typing]);
+
+  function loadPins() { api(`/channels/${channel.id}/pins`).then(({ messages }) => setPins(messages)); }
+  function togglePins() { setShowPins((v) => { if (!v) loadPins(); return !v; }); }
 
   function onTyping() {
     const now = Date.now();
@@ -111,19 +106,41 @@ export default function ChatView({ channel, currentUser, canManage }) {
     }
   }
 
-  const react = (messageId, emoji) => { getSocket().emit('reaction:toggle', { messageId, emoji }); setPickerFor(null); };
+  const react = (messageId, emoji) => { getSocket().emit('reaction:toggle', { messageId, emoji }); setPickerFor(null); setPickerFull(false); };
   const del = (m) => { if (confirm('Supprimer ce message ?')) getSocket().emit('message:delete', { messageId: m.id }); };
+  const pin = (m) => getSocket().emit('message:pin', { messageId: m.id, pinned: !m.pinned });
   const startEdit = (m) => { setEditingId(m.id); setEditText(m.content); };
   function submitEdit(m) {
     const t = editText.trim();
     if (t && t !== m.content) getSocket().emit('message:edit', { messageId: m.id, content: t });
     setEditingId(null);
   }
+  function openPicker(id) { setPickerFor(id); setPickerFull(false); }
 
+  const send = (extra) => getSocket().emit('message:send', { channelId: channel.id, replyTo: replyingTo?.id, ...extra });
   const typingNames = Object.values(typing);
 
   return (
     <div className="chat-area">
+      <button className="chat-pins-btn" title="Messages épinglés" onClick={togglePins}>📌</button>
+
+      {showPins && (
+        <div className="pins-panel">
+          <div className="pins-head">Messages épinglés <button onClick={() => setShowPins(false)}>✕</button></div>
+          {pins.length === 0 && <div className="pins-empty">Aucun message épinglé.</div>}
+          {pins.map((m) => (
+            <div className="pin-item" key={m.id}>
+              <Avatar user={m} size={28} />
+              <div>
+                <div className="pin-author">{m.display_name}</div>
+                <div className="pin-text">{renderRich(m.content, currentUser) || (m.attachment_url ? '📎 pièce jointe' : '')}</div>
+              </div>
+              {canManage && <button className="pin-remove" title="Détacher" onClick={() => pin(m)}>✕</button>}
+            </div>
+          ))}
+        </div>
+      )}
+
       <div className="messages" ref={scrollRef}>
         <div className="spacer-top" />
         <div className="msg-welcome">
@@ -136,17 +153,24 @@ export default function ChatView({ channel, currentUser, canManage }) {
           const isOwn = m.user_id === currentUser.id;
           const editing = editingId === m.id;
           return (
-            <div className={`message ${grouped ? 'grouped' : ''}`} key={m.id}>
+            <div className={`message ${grouped ? 'grouped' : ''} ${m.pinned ? 'pinned' : ''}`} key={m.id}>
               {grouped ? (
                 <div className="gutter gutter-time">{formatTime(m.created_at)}</div>
               ) : (
                 <Avatar user={m} size={40} />
               )}
               <div className="msg-body">
+                {m.reply_to && (
+                  <div className="reply-preview">
+                    ↪ <strong>{m.reply_to.display_name}</strong>{' '}
+                    <span>{m.reply_to.content ? m.reply_to.content.slice(0, 60) : '📎 pièce jointe'}</span>
+                  </div>
+                )}
                 {!grouped && (
                   <div className="msg-head">
                     <span className="msg-author">{m.display_name}</span>
                     <span className="msg-time">{formatTime(m.created_at)}</span>
+                    {m.pinned ? <span className="msg-pin-tag" title="Épinglé">📌</span> : null}
                   </div>
                 )}
 
@@ -166,20 +190,11 @@ export default function ChatView({ channel, currentUser, canManage }) {
                   <>
                     {m.content && (
                       <div className="msg-text">
-                        {renderContent(m.content, currentUser)}
+                        {renderRich(m.content, currentUser)}
                         {m.edited ? <span className="msg-edited"> (modifié)</span> : null}
                       </div>
                     )}
-                    {m.attachment_url && (isAudio(m.attachment_url) ? (
-                      <audio className="msg-audio" controls src={mediaUrl(m.attachment_url)} />
-                    ) : (
-                      <img
-                        className="msg-image"
-                        src={mediaUrl(m.attachment_url)}
-                        alt="pièce jointe"
-                        onClick={() => window.open(mediaUrl(m.attachment_url), '_blank')}
-                      />
-                    ))}
+                    {m.attachment_url && <Attachment url={m.attachment_url} name={m.attachment_name} />}
                   </>
                 )}
 
@@ -200,15 +215,21 @@ export default function ChatView({ channel, currentUser, canManage }) {
 
               {!editing && (
                 <div className="msg-actions">
-                  <button title="Réagir" onClick={() => setPickerFor(pickerFor === m.id ? null : m.id)}>😊</button>
+                  <button title="Réagir" onClick={() => (pickerFor === m.id ? setPickerFor(null) : openPicker(m.id))}>😊</button>
+                  <button title="Répondre" onClick={() => setReplyingTo(m)}>↩️</button>
+                  {canManage && <button title={m.pinned ? 'Détacher' : 'Épingler'} onClick={() => pin(m)}>📌</button>}
                   {isOwn && <button title="Modifier" onClick={() => startEdit(m)}>✏️</button>}
                   {(isOwn || canManage) && <button title="Supprimer" onClick={() => del(m)}>🗑️</button>}
-                  {pickerFor === m.id && (
+                  {pickerFor === m.id && !pickerFull && (
                     <div className="emoji-picker">
                       {QUICK_EMOJIS.map((e) => (
                         <button key={e} onClick={() => react(m.id, e)}>{e}</button>
                       ))}
+                      <button className="emoji-more" title="Plus" onClick={() => setPickerFull(true)}>➕</button>
                     </div>
+                  )}
+                  {pickerFor === m.id && pickerFull && (
+                    <div className="emoji-pop"><EmojiPicker onPick={(e) => react(m.id, e)} onClose={() => setPickerFor(null)} /></div>
                   )}
                 </div>
               )}
@@ -226,8 +247,10 @@ export default function ChatView({ channel, currentUser, canManage }) {
 
       <Composer
         placeholder={`Envoyer un message dans #${channel.name}`}
-        onSendText={(t) => getSocket().emit('message:send', { channelId: channel.id, content: t })}
-        onSendAttachment={(url, text) => getSocket().emit('message:send', { channelId: channel.id, content: text || '', attachmentUrl: url })}
+        replyingTo={replyingTo}
+        onClearReply={() => setReplyingTo(null)}
+        onSendText={(t) => send({ content: t })}
+        onSendAttachment={(url, text, name) => send({ content: text || '', attachmentUrl: url, attachmentName: name })}
         onTyping={onTyping}
       />
     </div>

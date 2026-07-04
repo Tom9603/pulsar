@@ -14,7 +14,12 @@ const STATUSES = [
 
 /** Personnalisation du profil : nom affiché, avatar (couleur ou image), statut, bio. */
 export default function SettingsModal({ onClose }) {
-  const { user, updateUser } = useAuth();
+  const { user, updateUser, logout } = useAuth();
+  const [tab, setTab] = useState('profile');
+  const [oldPw, setOldPw] = useState('');
+  const [newPw, setNewPw] = useState('');
+  const [delPw, setDelPw] = useState('');
+  const [accountMsg, setAccountMsg] = useState('');
   const [displayName, setDisplayName] = useState(user.display_name);
   const [avatarColor, setAvatarColor] = useState(user.avatar_color);
   const [avatarUrl, setAvatarUrl] = useState(user.avatar_url || '');
@@ -59,8 +64,52 @@ export default function SettingsModal({ onClose }) {
     }
   }
 
+  async function changePassword() {
+    setAccountMsg('');
+    try {
+      await api('/users/me/password', { method: 'PATCH', body: { old_password: oldPw, new_password: newPw } });
+      setAccountMsg('Mot de passe modifié ✅');
+      setOldPw(''); setNewPw('');
+    } catch (e) { setAccountMsg(e.message); }
+  }
+
+  async function deleteAccount() {
+    if (!confirm('Supprimer définitivement ton compte ? Cette action est irréversible.')) return;
+    try {
+      await api('/users/me', { method: 'DELETE', body: { password: delPw } });
+      logout();
+    } catch (e) { setAccountMsg(e.message); }
+  }
+
   return (
     <Modal onClose={onClose}>
+      <div className="tab-row">
+        <button className={tab === 'profile' ? 'active' : ''} onClick={() => setTab('profile')}>Profil</button>
+        <button className={tab === 'account' ? 'active' : ''} onClick={() => setTab('account')}>Compte</button>
+      </div>
+
+      {tab === 'account' ? (
+        <>
+          <h2>Mon compte</h2>
+          {accountMsg && <div className="error-msg">{accountMsg}</div>}
+          <div className="field">
+            <label>Changer le mot de passe</label>
+            <input type="password" placeholder="Mot de passe actuel" value={oldPw} onChange={(e) => setOldPw(e.target.value)} style={{ marginBottom: 8 }} />
+            <input type="password" placeholder="Nouveau mot de passe" value={newPw} onChange={(e) => setNewPw(e.target.value)} />
+            <button className="btn" style={{ width: 'auto', padding: '8px 16px', marginTop: 8 }} onClick={changePassword}>Mettre à jour</button>
+          </div>
+          <div className="field" style={{ marginTop: 24, borderTop: '1px solid var(--bg-active)', paddingTop: 16 }}>
+            <label style={{ color: 'var(--danger)' }}>Zone dangereuse</label>
+            <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 8 }}>Supprimer ton compte efface tout définitivement.</p>
+            <input type="password" placeholder="Confirme ton mot de passe" value={delPw} onChange={(e) => setDelPw(e.target.value)} />
+            <button className="btn btn-danger" style={{ width: 'auto', padding: '8px 16px', marginTop: 8 }} onClick={deleteAccount}>Supprimer mon compte</button>
+          </div>
+          <div className="modal-actions">
+            <button className="btn" onClick={onClose}>Fermer</button>
+          </div>
+        </>
+      ) : (
+      <>
       <h2>Personnaliser mon profil</h2>
       <p className="modal-sub">Ces informations sont visibles par les autres membres.</p>
 
@@ -126,6 +175,8 @@ export default function SettingsModal({ onClose }) {
         <button className="btn btn-ghost" onClick={onClose}>Annuler</button>
         <button className="btn" onClick={save} disabled={busy}>{busy ? 'Enregistrement…' : 'Enregistrer'}</button>
       </div>
+      </>
+      )}
     </Modal>
   );
 }

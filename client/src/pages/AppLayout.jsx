@@ -27,6 +27,9 @@ import SettingsModal from '../components/SettingsModal.jsx';
 import RolesModal from '../components/RolesModal.jsx';
 import MemberModal from '../components/MemberModal.jsx';
 import CallOverlay from '../components/CallOverlay.jsx';
+import FriendsPanel from '../components/FriendsPanel.jsx';
+import SearchModal from '../components/SearchModal.jsx';
+import ServerSettingsModal from '../components/ServerSettingsModal.jsx';
 
 export default function AppLayout() {
   const { user } = useAuth();
@@ -47,8 +50,10 @@ export default function AppLayout() {
   const [dmConversations, setDmConversations] = useState([]);
   const [activeDm, setActiveDm] = useState(null); // objet utilisateur
   const [hasUnreadDm, setHasUnreadDm] = useState(false);
+  const [showFriends, setShowFriends] = useState(false);
 
-  const [modal, setModal] = useState(null); // 'create' | 'settings' | 'roles'
+  const [modal, setModal] = useState(null); // 'create' | 'settings' | 'roles' | 'serverSettings'
+  const [searchOpen, setSearchOpen] = useState(false);
   const [memberTarget, setMemberTarget] = useState(null);
 
   const can = makeCan(detail?.is_owner, detail?.my_permissions);
@@ -98,6 +103,16 @@ export default function AppLayout() {
 
   useEffect(() => { refreshDetail(activeServerId); }, [activeServerId, refreshDetail]);
 
+  // Marque le salon actif comme lu (efface la pastille + les mentions).
+  useEffect(() => {
+    if (view !== 'server' || !activeChannelId) return;
+    const ch = detail?.channels.find((c) => c.id === activeChannelId);
+    if (!ch || ch.type !== 'text') return;
+    getSocket().emit('channel:read', { channelId: activeChannelId });
+    setDetail((d) => (d ? { ...d, channels: d.channels.map((c) => (c.id === activeChannelId ? { ...c, unread: false, mentions: 0 } : c)) } : d));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeChannelId, view, detail?.channels?.length]);
+
   // ---- Temps réel ----
   useEffect(() => {
     const socket = getSocket();
@@ -121,11 +136,19 @@ export default function AppLayout() {
       });
     };
     const onMessageNew = ({ channelId, message }) => {
-      if (message.user_id === user.id || !mentionsUser(message.content, user)) return;
+      if (message.user_id === user.id) return;
       const activeFocused = viewRef.current === 'server' && activeChannelRef.current === channelId && !document.hidden;
-      if (activeFocused) return;
-      playPing();
-      desktopNotify(`${message.display_name} t’a mentionné`, message.content);
+      const mentioned = mentionsUser(message.content, user);
+      // Non-lus / badges de mention en direct (sauf salon actif au premier plan)
+      if (!activeFocused) {
+        setDetail((d) => (d && d.channels.some((c) => c.id === channelId)
+          ? { ...d, channels: d.channels.map((c) => (c.id === channelId ? { ...c, unread: true, mentions: (c.mentions || 0) + (mentioned ? 1 : 0) } : c)) }
+          : d));
+      }
+      if (mentioned && !activeFocused) {
+        playPing();
+        desktopNotify(`${message.display_name} t’a mentionné`, message.content);
+      }
     };
     const onKicked = ({ serverId }) => {
       refreshServers().then((list) => {
@@ -187,11 +210,19 @@ export default function AppLayout() {
   }
   function openDm(target) {
     setActiveDm(target);
+    setShowFriends(false);
     setView('dm');
     setHasUnreadDm(false);
   }
+  function openFriends() {
+    setShowFriends(true);
+    setActiveDm(null);
+    setView('dm');
+  }
   function goHome() {
     setView('dm');
+    setShowFriends(true);
+    setActiveDm(null);
     setHasUnreadDm(false);
     refreshConversations();
   }
@@ -228,6 +259,8 @@ export default function AppLayout() {
             onlineIds={onlineIds}
             onSelect={openDm}
             onStartDm={startDm}
+            onOpenFriends={openFriends}
+            friendsActive={showFriends}
           />
         ) : (
           <ChannelSidebar
@@ -243,6 +276,7 @@ export default function AppLayout() {
             onDeleteServer={deleteServer}
             onLeaveServer={leaveServer}
             onManageRoles={() => setModal('roles')}
+            onServerSettings={() => setModal('serverSettings')}
           />
         )}
 
@@ -265,13 +299,15 @@ export default function AppLayout() {
 
       {/* Zone principale */}
       {view === 'dm' ? (
-        activeDm ? (
+        showFriends ? (
+          <FriendsPanel onlineIds={onlineIds} onOpenDm={openDm} />
+        ) : activeDm ? (
           <DmChat peer={activeDm} currentUser={user} onlineIds={onlineIds} onCall={call.startCall} />
         ) : (
           <div className="main-content">
             <div className="msg-welcome" style={{ margin: 'auto', textAlign: 'center' }}>
               <h2>Messages privés 💬</h2>
-              <p>Choisis une conversation à gauche, ou saisis un nom d’utilisateur pour en démarrer une.</p>
+              <p>Choisis une conversation à gauche, ou clique « Amis » pour en ajouter.</p>
             </div>
           </div>
         )
@@ -282,6 +318,7 @@ export default function AppLayout() {
             <span>{activeChannel.name}</span>
             {activeChannel.type === 'text' && <span className="topic">Salon textuel</span>}
             <span className="spacer" />
+            <button className="header-btn" title="Rechercher" onClick={() => setSearchOpen(true)}>🔍</button>
             <button className={`header-btn ${showMembers ? 'active' : ''}`} title="Afficher/masquer les membres" onClick={() => setShowMembers((v) => !v)}>👥</button>
           </div>
 
@@ -341,6 +378,22 @@ export default function AppLayout() {
       {modal === 'settings' && <SettingsModal onClose={() => setModal(null)} />}
       {modal === 'roles' && detail && (
         <RolesModal serverId={detail.server.id} roles={detail.roles} onClose={() => setModal(null)} onChanged={() => refreshDetail(activeServerId, true)} />
+      )}
+      {modal === 'serverSettings' && detail && (
+        <ServerSettingsModal
+          server={detail.server}
+          categories={detail.categories || []}
+          channels={detail.channels}
+          onClose={() => setModal(null)}
+          onChanged={() => refreshDetail(activeServerId, true)}
+        />
+      )}
+      {searchOpen && detail && (
+        <SearchModal
+          serverId={detail.server.id}
+          onClose={() => setSearchOpen(false)}
+          onJump={(channelId) => { setActiveChannelId(channelId); setView('server'); }}
+        />
       )}
       {memberTarget && detail && (
         <MemberModal

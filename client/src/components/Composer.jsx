@@ -1,6 +1,7 @@
-import { useState } from 'react';
-import { uploadImage } from '../api.js';
+import { useRef, useState } from 'react';
+import { uploadFile } from '../api.js';
 import GifPicker from './GifPicker.jsx';
+import EmojiPicker from './EmojiPicker.jsx';
 import VoiceRecorder from './VoiceRecorder.jsx';
 
 const readAsDataURL = (file) =>
@@ -13,21 +14,28 @@ const readAsDataURL = (file) =>
 
 /**
  * Zone de saisie partagée (salons + DM).
- * - onSendText(text)             : message texte
- * - onSendAttachment(url, text?) : image, GIF ou message vocal
- * - onTyping()                   : signale la frappe (optionnel)
+ * - onSendText(text)                   : message texte
+ * - onSendAttachment(url, text?, name?) : image, GIF, vocal ou fichier
+ * - onTyping()                          : signale la frappe
+ * - replyingTo / onClearReply           : réponse à un message
  */
-export default function Composer({ placeholder, onSendText, onSendAttachment, onTyping }) {
+export default function Composer({ placeholder, onSendText, onSendAttachment, onTyping, replyingTo, onClearReply }) {
   const [input, setInput] = useState('');
   const [uploading, setUploading] = useState(false);
-  const [showGif, setShowGif] = useState(false);
+  const [panel, setPanel] = useState(null); // 'gif' | 'emoji' | null
+  const inputRef = useRef(null);
+
+  function afterSend() {
+    setInput('');
+    onClearReply?.();
+  }
 
   function submit(e) {
     e.preventDefault();
     const t = input.trim();
     if (!t) return;
     onSendText(t);
-    setInput('');
+    afterSend();
   }
 
   function change(e) {
@@ -35,16 +43,16 @@ export default function Composer({ placeholder, onSendText, onSendAttachment, on
     onTyping?.();
   }
 
-  async function onPickImage(e) {
+  async function onPickFile(e) {
     const file = e.target.files?.[0];
     e.target.value = '';
     if (!file) return;
-    if (file.size > 5 * 1024 * 1024) { alert('Fichier trop lourd (5 Mo max).'); return; }
+    if (file.size > 8 * 1024 * 1024) { alert('Fichier trop lourd (8 Mo max).'); return; }
     setUploading(true);
     try {
-      const url = await uploadImage(await readAsDataURL(file));
-      onSendAttachment(url, input.trim());
-      setInput('');
+      const { url, name } = await uploadFile(await readAsDataURL(file), file.name);
+      onSendAttachment(url, input.trim(), name);
+      afterSend();
     } catch (err) {
       alert(err.message);
     } finally {
@@ -54,18 +62,31 @@ export default function Composer({ placeholder, onSendText, onSendAttachment, on
 
   return (
     <div className="composer">
-      {showGif && (
-        <GifPicker onSelect={(url) => { onSendAttachment(url, ''); setShowGif(false); }} onClose={() => setShowGif(false)} />
+      {panel === 'gif' && (
+        <GifPicker onSelect={(url) => { onSendAttachment(url, ''); afterSend(); setPanel(null); }} onClose={() => setPanel(null)} />
       )}
+      {panel === 'emoji' && (
+        <EmojiPicker onPick={(em) => { setInput((v) => v + em); inputRef.current?.focus(); }} onClose={() => setPanel(null)} />
+      )}
+
+      {replyingTo && (
+        <div className="reply-bar">
+          <span>Réponse à <strong>{replyingTo.display_name}</strong></span>
+          <button type="button" title="Annuler" onClick={onClearReply}>✕</button>
+        </div>
+      )}
+
       <form onSubmit={submit}>
         <div className="composer-inner">
-          <label className="composer-attach" title="Envoyer une image">
+          <label className="composer-attach" title="Joindre un fichier">
             📎
-            <input type="file" accept="image/*" hidden onChange={onPickImage} />
+            <input type="file" hidden onChange={onPickFile} />
           </label>
-          <button type="button" className={`composer-attach gif-btn ${showGif ? 'active' : ''}`} title="GIF" onClick={() => setShowGif((v) => !v)}>GIF</button>
-          <VoiceRecorder onSend={(url) => onSendAttachment(url, '')} disabled={uploading} />
+          <button type="button" className={`composer-attach gif-btn ${panel === 'gif' ? 'active' : ''}`} title="GIF" onClick={() => setPanel((p) => (p === 'gif' ? null : 'gif'))}>GIF</button>
+          <button type="button" className={`composer-attach ${panel === 'emoji' ? 'active' : ''}`} title="Emoji" onClick={() => setPanel((p) => (p === 'emoji' ? null : 'emoji'))}>😊</button>
+          <VoiceRecorder onSend={(url) => { onSendAttachment(url, ''); afterSend(); }} disabled={uploading} />
           <input
+            ref={inputRef}
             value={input}
             onChange={change}
             placeholder={uploading ? 'Envoi…' : placeholder}

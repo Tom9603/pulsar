@@ -33,6 +33,11 @@ export async function uploadImage(dataUrl) {
   return url;
 }
 
+/** Envoie un fichier quelconque (avec son nom), renvoie { url, name }. */
+export async function uploadFile(dataUrl, name) {
+  return api('/uploads', { method: 'POST', body: { dataUrl, name } });
+}
+
 /** Transforme un chemin serveur (/uploads/...) en URL complète affichable. */
 export function mediaUrl(path) {
   if (!path) return '';

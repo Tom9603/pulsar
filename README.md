@@ -23,15 +23,18 @@ Aucune dépendance native à compiler : SQLite et le chiffrement utilisent des m
 - **Comptes** : inscription / connexion, session persistante
 - **Serveurs** : création, code d’invitation, rejoindre, quitter, supprimer
 - **Salons** : textuels et vocaux, création / suppression
-- **Chat textuel** : messages temps réel, historique, indicateur « écrit… »,
-  **modifier / supprimer**, **réactions emoji**, **mentions @**, **images**,
-  **GIF** (recherche Tenor) et **messages vocaux** (enregistrement)
+- **Chat textuel** : temps réel, **Markdown** (gras/italique/code/liens), **répondre**,
+  **modifier / supprimer**, **réactions** (sélecteur d’emoji complet), **mentions @**,
+  **messages épinglés**, **images / GIF (Tenor) / messages vocaux / fichiers**
+- **Non-lus** : pastilles par salon + badges de mention, marquage auto en lecture
+- **Recherche** de messages dans un serveur
 - **Vocal** : **audio réel WebRTC** (mesh P2P), micro coupé/actif, détection de la parole,
-  connexion persistante entre salons (STUN + TURN configurable)
-- **Messages privés** (DM) en temps réel : texte, images, GIF, vocal, et **appel vocal 1-à-1**
-- **Rôles & permissions** par serveur (gérer salons/rôles, expulser…)
-- **Notifications** bureau + son (nouveaux DM, mentions)
-- **Présence** : membres en ligne / hors ligne en direct
+  connexion persistante (STUN + TURN configurable)
+- **Messages privés** : texte, images, GIF, vocal, fichiers, et **appel vocal 1-à-1**
+- **Amis** : demandes, acceptation, blocage
+- **Serveurs** : rôles & permissions, **catégories de salons**, renommage, icône image
+- **Notifications** bureau + son (DM, mentions)
+- **Compte** : changer le mot de passe, supprimer son compte
 - **Profil** : nom affiché, couleur ou image d’avatar, statut, bio
 - **App desktop** (Windows / macOS / Linux) avec mise à jour automatique
 

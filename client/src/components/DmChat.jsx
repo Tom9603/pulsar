@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
-import { api, mediaUrl, isAudio } from '../api.js';
+import { api } from '../api.js';
 import { getSocket } from '../socket.js';
+import { renderRich } from '../richtext.jsx';
 import Avatar from './Avatar.jsx';
 import Composer from './Composer.jsx';
+import Attachment from './Attachment.jsx';
 
 function formatTime(ts) {
   const d = new Date(ts.replace(' ', 'T') + 'Z');
@@ -99,17 +101,8 @@ export default function DmChat({ peer, currentUser, onlineIds, onCall }) {
                         <span className="msg-time">{formatTime(m.created_at)}</span>
                       </div>
                     )}
-                    {m.content && <div className="msg-text">{m.content}</div>}
-                    {m.attachment_url && (isAudio(m.attachment_url) ? (
-                      <audio className="msg-audio" controls src={mediaUrl(m.attachment_url)} />
-                    ) : (
-                      <img
-                        className="msg-image"
-                        src={mediaUrl(m.attachment_url)}
-                        alt="pièce jointe"
-                        onClick={() => window.open(mediaUrl(m.attachment_url), '_blank')}
-                      />
-                    ))}
+                    {m.content && <div className="msg-text">{renderRich(m.content, currentUser)}</div>}
+                    {m.attachment_url && <Attachment url={m.attachment_url} name={m.attachment_name} />}
                   </div>
                 </div>
               );
@@ -123,7 +116,7 @@ export default function DmChat({ peer, currentUser, onlineIds, onCall }) {
           <Composer
             placeholder={`Envoyer un message à ${peer.display_name}`}
             onSendText={(t) => getSocket().emit('dm:send', { toUserId: peer.id, content: t })}
-            onSendAttachment={(url, text) => getSocket().emit('dm:send', { toUserId: peer.id, content: text || '', attachmentUrl: url })}
+            onSendAttachment={(url, text, name) => getSocket().emit('dm:send', { toUserId: peer.id, content: text || '', attachmentUrl: url, attachmentName: name })}
             onTyping={onTypingSignal}
           />
         </div>

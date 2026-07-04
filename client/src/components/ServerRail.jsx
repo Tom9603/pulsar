@@ -1,3 +1,5 @@
+import { mediaUrl } from '../api.js';
+
 /** Barre verticale des serveurs (à gauche) + bouton Messages privés en haut. */
 export default function ServerRail({ servers, activeServerId, view, onSelect, onHome, onAdd, hasUnreadDm }) {
   return (
@@ -20,7 +22,7 @@ export default function ServerRail({ servers, activeServerId, view, onSelect, on
           title={s.name}
           onClick={() => onSelect(s.id)}
         >
-          {s.name.charAt(0).toUpperCase()}
+          {s.icon_url ? <img src={mediaUrl(s.icon_url)} alt="" /> : s.name.charAt(0).toUpperCase()}
         </div>
       ))}
 

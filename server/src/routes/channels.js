@@ -3,10 +3,23 @@ import db from '../db.js';
 import { authMiddleware } from '../auth.js';
 import { hasPermission } from '../permissions.js';
 import { getIO } from '../realtime.js';
-import { reactionsFor } from '../socket.js';
+import { reactionsFor, replyPreview } from '../socket.js';
 
 const router = Router();
 router.use(authMiddleware);
+
+const MESSAGE_COLS = `
+  m.id, m.content, m.created_at, m.user_id, m.edited, m.attachment_url, m.attachment_name,
+  m.reply_to_id, m.pinned, u.username, u.display_name, u.avatar_color, u.avatar_url
+`;
+
+function decorate(rows) {
+  for (const m of rows) {
+    m.reactions = reactionsFor(m.id);
+    m.reply_to = replyPreview(m.reply_to_id);
+  }
+  return rows;
+}
 
 /** Renvoie le salon (avec owner_id du serveur) si l'utilisateur y a accès, sinon null. */
 function accessibleChannel(channelId, userId) {
@@ -29,21 +42,21 @@ router.get('/:id/messages', (req, res) => {
   const before = parseInt(req.query.before, 10) || null;
 
   const rows = before
-    ? db.prepare(`
-        SELECT m.id, m.content, m.created_at, m.user_id, m.edited, m.attachment_url,
-               u.username, u.display_name, u.avatar_color, u.avatar_url
-        FROM messages m JOIN users u ON u.id = m.user_id
-        WHERE m.channel_id = ? AND m.id < ?
-        ORDER BY m.id DESC LIMIT ?`).all(channel.id, before, limit)
-    : db.prepare(`
-        SELECT m.id, m.content, m.created_at, m.user_id, m.edited, m.attachment_url,
-               u.username, u.display_name, u.avatar_color, u.avatar_url
-        FROM messages m JOIN users u ON u.id = m.user_id
-        WHERE m.channel_id = ?
-        ORDER BY m.id DESC LIMIT ?`).all(channel.id, limit);
+    ? db.prepare(`SELECT ${MESSAGE_COLS} FROM messages m JOIN users u ON u.id = m.user_id
+        WHERE m.channel_id = ? AND m.id < ? ORDER BY m.id DESC LIMIT ?`).all(channel.id, before, limit)
+    : db.prepare(`SELECT ${MESSAGE_COLS} FROM messages m JOIN users u ON u.id = m.user_id
+        WHERE m.channel_id = ? ORDER BY m.id DESC LIMIT ?`).all(channel.id, limit);
 
-  for (const m of rows) m.reactions = reactionsFor(m.id);
-  res.json({ messages: rows.reverse() });
+  res.json({ messages: decorate(rows).reverse() });
+});
+
+/** Messages épinglés d'un salon. */
+router.get('/:id/pins', (req, res) => {
+  const channel = accessibleChannel(req.params.id, req.userId);
+  if (!channel) return res.status(403).json({ error: 'Accès refusé à ce salon' });
+  const rows = db.prepare(`SELECT ${MESSAGE_COLS} FROM messages m JOIN users u ON u.id = m.user_id
+    WHERE m.channel_id = ? AND m.pinned = 1 ORDER BY m.id DESC`).all(channel.id);
+  res.json({ messages: decorate(rows) });
 });
 
 /** Suppression d'un salon (propriétaire ou permission « Gérer les salons »). */

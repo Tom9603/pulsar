@@ -90,22 +90,59 @@ db.exec(`
     PRIMARY KEY (message_id, user_id, emoji)
   );
 
+  CREATE TABLE IF NOT EXISTS categories (
+    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+    server_id  INTEGER NOT NULL REFERENCES servers(id) ON DELETE CASCADE,
+    name       TEXT NOT NULL,
+    position   INTEGER NOT NULL DEFAULT 0
+  );
+
+  CREATE TABLE IF NOT EXISTS channel_reads (
+    user_id      INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    channel_id   INTEGER NOT NULL REFERENCES channels(id) ON DELETE CASCADE,
+    last_read_id INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (user_id, channel_id)
+  );
+
+  CREATE TABLE IF NOT EXISTS friendships (
+    id           INTEGER PRIMARY KEY AUTOINCREMENT,
+    requester_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    addressee_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    status       TEXT NOT NULL DEFAULT 'pending',
+    created_at   TEXT NOT NULL DEFAULT (datetime('now')),
+    UNIQUE (requester_id, addressee_id)
+  );
+
+  CREATE TABLE IF NOT EXISTS blocks (
+    blocker_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    blocked_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    PRIMARY KEY (blocker_id, blocked_id)
+  );
+
   CREATE INDEX IF NOT EXISTS idx_messages_channel ON messages(channel_id, id);
   CREATE INDEX IF NOT EXISTS idx_members_user ON server_members(user_id);
   CREATE INDEX IF NOT EXISTS idx_member_roles ON member_roles(server_id, user_id);
   CREATE INDEX IF NOT EXISTS idx_dm_pair ON dm_messages(sender_id, recipient_id, id);
   CREATE INDEX IF NOT EXISTS idx_reactions ON message_reactions(message_id);
+  CREATE INDEX IF NOT EXISTS idx_friendships ON friendships(addressee_id, status);
 `);
 
 // --- Migrations légères : ajoute les colonnes manquantes aux bases déjà créées ---
 function columnsOf(table) {
   return new Set(db.prepare(`SELECT name FROM pragma_table_info('${table}')`).all().map((r) => r.name));
 }
-const msgCols = columnsOf('messages');
-if (!msgCols.has('edited')) db.exec('ALTER TABLE messages ADD COLUMN edited INTEGER NOT NULL DEFAULT 0');
-if (!msgCols.has('attachment_url')) db.exec('ALTER TABLE messages ADD COLUMN attachment_url TEXT');
-const dmCols = columnsOf('dm_messages');
-if (!dmCols.has('attachment_url')) db.exec('ALTER TABLE dm_messages ADD COLUMN attachment_url TEXT');
+function ensure(table, col, def) {
+  if (!columnsOf(table).has(col)) db.exec(`ALTER TABLE ${table} ADD COLUMN ${col} ${def}`);
+}
+ensure('messages', 'edited', 'INTEGER NOT NULL DEFAULT 0');
+ensure('messages', 'attachment_url', 'TEXT');
+ensure('messages', 'attachment_name', 'TEXT');
+ensure('messages', 'reply_to_id', 'INTEGER');
+ensure('messages', 'pinned', 'INTEGER NOT NULL DEFAULT 0');
+ensure('dm_messages', 'attachment_url', 'TEXT');
+ensure('dm_messages', 'attachment_name', 'TEXT');
+ensure('channels', 'category_id', 'INTEGER');
+ensure('servers', 'icon_url', 'TEXT');
 
 /** Exécute une fonction dans une transaction (node:sqlite n'a pas de wrapper natif). */
 export function transaction(fn) {

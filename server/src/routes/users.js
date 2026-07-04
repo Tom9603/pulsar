@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import db from '../db.js';
-import { authMiddleware, publicUser } from '../auth.js';
+import { authMiddleware, publicUser, hashPassword, verifyPassword } from '../auth.js';
 
 const router = Router();
 router.use(authMiddleware);
@@ -26,6 +26,30 @@ router.patch('/me', (req, res) => {
 
   const user = db.prepare('SELECT * FROM users WHERE id = ?').get(req.userId);
   res.json({ user: publicUser(user) });
+});
+
+/** Changer son mot de passe. */
+router.patch('/me/password', (req, res) => {
+  const { old_password, new_password } = req.body || {};
+  const user = db.prepare('SELECT * FROM users WHERE id = ?').get(req.userId);
+  if (!user || !verifyPassword(old_password || '', user.password_hash)) {
+    return res.status(403).json({ error: 'Mot de passe actuel incorrect' });
+  }
+  if (!new_password || new_password.length < 6) {
+    return res.status(400).json({ error: 'Nouveau mot de passe trop court (6 min.)' });
+  }
+  db.prepare('UPDATE users SET password_hash = ? WHERE id = ?').run(hashPassword(new_password), req.userId);
+  res.json({ ok: true });
+});
+
+/** Supprimer son compte (nécessite le mot de passe). */
+router.delete('/me', (req, res) => {
+  const user = db.prepare('SELECT * FROM users WHERE id = ?').get(req.userId);
+  if (!user || !verifyPassword(req.body?.password || '', user.password_hash)) {
+    return res.status(403).json({ error: 'Mot de passe incorrect' });
+  }
+  db.prepare('DELETE FROM users WHERE id = ?').run(req.userId); // cascade sur le reste
+  res.json({ ok: true });
 });
 
 /** Profil public d'un autre utilisateur. */

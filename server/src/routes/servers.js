@@ -92,6 +92,21 @@ router.get('/:id', (req, res) => {
     "SELECT * FROM channels WHERE server_id = ? ORDER BY (type = 'voice') ASC, position ASC, id ASC"
   ).all(server.id);
 
+  // Non-lus + mentions par salon textuel
+  const me = db.prepare('SELECT username FROM users WHERE id = ?').get(req.userId);
+  const mentionLike = '%@' + me.username + '%';
+  for (const c of channels) {
+    if (c.type !== 'text') continue;
+    const lastRead = db.prepare('SELECT last_read_id FROM channel_reads WHERE user_id = ? AND channel_id = ?')
+      .get(req.userId, c.id)?.last_read_id || 0;
+    c.unread = !!db.prepare('SELECT 1 FROM messages WHERE channel_id = ? AND id > ? AND user_id != ? LIMIT 1')
+      .get(c.id, lastRead, req.userId);
+    c.mentions = db.prepare('SELECT COUNT(*) AS n FROM messages WHERE channel_id = ? AND id > ? AND user_id != ? AND content LIKE ?')
+      .get(c.id, lastRead, req.userId, mentionLike).n;
+  }
+
+  const categories = db.prepare('SELECT * FROM categories WHERE server_id = ? ORDER BY position ASC, id ASC').all(server.id);
+
   const roles = db.prepare('SELECT * FROM roles WHERE server_id = ? ORDER BY position DESC, id ASC')
     .all(server.id)
     .map(parseRole);
@@ -112,11 +127,84 @@ router.get('/:id', (req, res) => {
   res.json({
     server,
     channels,
+    categories,
     roles,
     members,
     is_owner: server.owner_id === req.userId,
     my_permissions: Array.from(memberPermissions(server.id, req.userId)),
   });
+});
+
+/** Recherche de messages dans les salons d'un serveur. */
+router.get('/:id/search', (req, res) => {
+  const server = db.prepare('SELECT * FROM servers WHERE id = ?').get(req.params.id);
+  if (!server) return res.status(404).json({ error: 'Serveur introuvable' });
+  if (!isMember(server.id, req.userId)) return res.status(403).json({ error: 'Non membre' });
+  const q = (req.query.q || '').toString().trim();
+  if (q.length < 2) return res.json({ results: [] });
+
+  const results = db.prepare(`
+    SELECT m.id, m.content, m.created_at, m.channel_id, c.name AS channel_name,
+           u.display_name, u.avatar_color, u.avatar_url, u.username
+    FROM messages m
+    JOIN channels c ON c.id = m.channel_id
+    JOIN users u ON u.id = m.user_id
+    WHERE c.server_id = ? AND m.content LIKE ?
+    ORDER BY m.id DESC LIMIT 50
+  `).all(server.id, '%' + q + '%');
+  res.json({ results });
+});
+
+/** Renommer le serveur / changer son icône (permission « Modifier le serveur »). */
+router.patch('/:id', (req, res) => {
+  const server = db.prepare('SELECT * FROM servers WHERE id = ?').get(req.params.id);
+  if (!server) return res.status(404).json({ error: 'Serveur introuvable' });
+  if (!hasPermission(server.id, req.userId, 'MANAGE_SERVER')) {
+    return res.status(403).json({ error: 'Permission « Modifier le serveur » requise' });
+  }
+  const name = (req.body?.name ?? '').toString().trim() || server.name;
+  const iconUrl = req.body?.icon_url === undefined ? server.icon_url : (req.body.icon_url || null);
+  db.prepare('UPDATE servers SET name = ?, icon_url = ? WHERE id = ?').run(name, iconUrl, server.id);
+  notifyServerUpdate(server.id);
+  res.json({ server: db.prepare('SELECT * FROM servers WHERE id = ?').get(server.id) });
+});
+
+// ---- Catégories de salons ----
+function requireManageChannels(req, res, next) {
+  const server = db.prepare('SELECT * FROM servers WHERE id = ?').get(req.params.id);
+  if (!server) return res.status(404).json({ error: 'Serveur introuvable' });
+  if (!hasPermission(server.id, req.userId, 'MANAGE_CHANNELS')) {
+    return res.status(403).json({ error: 'Permission « Gérer les salons » requise' });
+  }
+  req.server = server;
+  next();
+}
+
+router.post('/:id/categories', requireManageChannels, (req, res) => {
+  const name = (req.body?.name || '').trim();
+  if (!name) return res.status(400).json({ error: 'Nom de catégorie requis' });
+  const row = db.prepare('SELECT MAX(position) AS m FROM categories WHERE server_id = ?').get(req.server.id);
+  db.prepare('INSERT INTO categories (server_id, name, position) VALUES (?, ?, ?)').run(req.server.id, name, (row.m ?? 0) + 1);
+  notifyServerUpdate(req.server.id);
+  res.json({ ok: true });
+});
+
+router.delete('/:id/categories/:categoryId', requireManageChannels, (req, res) => {
+  db.prepare('UPDATE channels SET category_id = NULL WHERE category_id = ?').run(req.params.categoryId);
+  db.prepare('DELETE FROM categories WHERE id = ? AND server_id = ?').run(req.params.categoryId, req.server.id);
+  notifyServerUpdate(req.server.id);
+  res.json({ ok: true });
+});
+
+/** Déplacer un salon dans une catégorie (ou l'en retirer avec categoryId null). */
+router.patch('/:id/channels/:channelId', requireManageChannels, (req, res) => {
+  const channel = db.prepare('SELECT * FROM channels WHERE id = ? AND server_id = ?').get(req.params.channelId, req.server.id);
+  if (!channel) return res.status(404).json({ error: 'Salon introuvable' });
+  const catId = req.body?.category_id || null;
+  const name = (req.body?.name ?? '').toString().trim() || channel.name;
+  db.prepare('UPDATE channels SET category_id = ?, name = ? WHERE id = ?').run(catId, name, channel.id);
+  notifyServerUpdate(req.server.id);
+  res.json({ ok: true });
 });
 
 /** Création d'un salon (propriétaire ou permission « Gérer les salons »). */

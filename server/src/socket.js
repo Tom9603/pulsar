@@ -36,14 +36,29 @@ export function reactionsFor(messageId) {
   return Array.from(map, ([emoji, userIds]) => ({ emoji, count: userIds.length, userIds }));
 }
 
-/** Message de salon complet (auteur + pièce jointe + réactions). */
+/** Aperçu court d'un message référencé (pour les réponses). */
+export function replyPreview(id) {
+  if (!id) return null;
+  const r = db.prepare(`
+    SELECT m.id, m.content, m.attachment_url, u.display_name
+    FROM messages m JOIN users u ON u.id = m.user_id WHERE m.id = ?
+  `).get(id);
+  if (!r) return null;
+  return { id: r.id, display_name: r.display_name, content: r.content, attachment_url: r.attachment_url };
+}
+
+/** Message de salon complet (auteur + pièce jointe + réactions + réponse + épinglé). */
 export function fullMessage(id) {
   const m = db.prepare(`
-    SELECT m.id, m.content, m.created_at, m.user_id, m.edited, m.attachment_url, m.channel_id,
+    SELECT m.id, m.content, m.created_at, m.user_id, m.edited, m.attachment_url, m.attachment_name,
+           m.reply_to_id, m.pinned, m.channel_id,
            u.username, u.display_name, u.avatar_color, u.avatar_url
     FROM messages m JOIN users u ON u.id = m.user_id WHERE m.id = ?
   `).get(id);
-  if (m) m.reactions = reactionsFor(id);
+  if (m) {
+    m.reactions = reactionsFor(id);
+    m.reply_to = replyPreview(m.reply_to_id);
+  }
   return m;
 }
 
@@ -112,7 +127,7 @@ export function setupSocket(io) {
     // ------------------------------------------------------------------
     // Chat de serveur
     // ------------------------------------------------------------------
-    socket.on('message:send', ({ channelId, content, attachmentUrl }) => {
+    socket.on('message:send', ({ channelId, content, attachmentUrl, attachmentName, replyTo }) => {
       const text = (content || '').trim().slice(0, 2000);
       const attach = validAttachment(attachmentUrl);
       if (!text && !attach) return;
@@ -120,12 +135,39 @@ export function setupSocket(io) {
       if (!channel || channel.type !== 'text') return;
       if (!db.prepare('SELECT 1 FROM server_members WHERE server_id = ? AND user_id = ?').get(channel.server_id, userId)) return;
 
-      const info = db.prepare('INSERT INTO messages (channel_id, user_id, content, attachment_url) VALUES (?, ?, ?, ?)')
-        .run(channelId, userId, text, attach);
+      let replyId = null;
+      if (replyTo) {
+        const r = db.prepare('SELECT id FROM messages WHERE id = ? AND channel_id = ?').get(replyTo, channelId);
+        if (r) replyId = r.id;
+      }
+      const name = attach && typeof attachmentName === 'string' ? attachmentName.slice(0, 120) : null;
+
+      const info = db.prepare(
+        'INSERT INTO messages (channel_id, user_id, content, attachment_url, attachment_name, reply_to_id) VALUES (?, ?, ?, ?, ?, ?)'
+      ).run(channelId, userId, text, attach, name, replyId);
       io.to('server:' + channel.server_id).emit('message:new', {
         channelId: Number(channelId),
         message: fullMessage(info.lastInsertRowid),
       });
+    });
+
+    socket.on('message:pin', ({ messageId, pinned }) => {
+      const m = db.prepare('SELECT m.channel_id, c.server_id FROM messages m JOIN channels c ON c.id = m.channel_id WHERE m.id = ?').get(messageId);
+      if (!m || !hasPermission(m.server_id, userId, 'MANAGE_CHANNELS')) return;
+      db.prepare('UPDATE messages SET pinned = ? WHERE id = ?').run(pinned ? 1 : 0, messageId);
+      io.to('server:' + m.server_id).emit('message:updated', { channelId: m.channel_id, message: fullMessage(messageId) });
+      io.to('server:' + m.server_id).emit('pins:changed', { channelId: m.channel_id });
+    });
+
+    // Marque un salon comme lu (jusqu'au dernier message).
+    socket.on('channel:read', ({ channelId }) => {
+      const channel = db.prepare('SELECT server_id FROM channels WHERE id = ?').get(channelId);
+      if (!channel) return;
+      if (!db.prepare('SELECT 1 FROM server_members WHERE server_id = ? AND user_id = ?').get(channel.server_id, userId)) return;
+      const last = db.prepare('SELECT MAX(id) AS m FROM messages WHERE channel_id = ?').get(channelId).m || 0;
+      db.prepare(
+        'INSERT INTO channel_reads (user_id, channel_id, last_read_id) VALUES (?, ?, ?) ON CONFLICT(user_id, channel_id) DO UPDATE SET last_read_id = excluded.last_read_id'
+      ).run(userId, channelId, last);
     });
 
     socket.on('message:edit', ({ messageId, content }) => {
@@ -170,17 +212,23 @@ export function setupSocket(io) {
     // ------------------------------------------------------------------
     // Messages privés (DM)
     // ------------------------------------------------------------------
-    socket.on('dm:send', ({ toUserId, content, attachmentUrl }) => {
+    socket.on('dm:send', ({ toUserId, content, attachmentUrl, attachmentName }) => {
       const text = (content || '').trim().slice(0, 2000);
       const attach = validAttachment(attachmentUrl);
       if ((!text && !attach) || !toUserId) return;
       const recipient = db.prepare('SELECT id FROM users WHERE id = ?').get(toUserId);
       if (!recipient || recipient.id === userId) return;
 
-      const info = db.prepare('INSERT INTO dm_messages (sender_id, recipient_id, content, attachment_url) VALUES (?, ?, ?, ?)')
-        .run(userId, recipient.id, text, attach);
+      const blocked = db.prepare(
+        'SELECT 1 FROM blocks WHERE (blocker_id = ? AND blocked_id = ?) OR (blocker_id = ? AND blocked_id = ?)'
+      ).get(userId, recipient.id, recipient.id, userId);
+      if (blocked) { socket.emit('dm:blocked', { toUserId: recipient.id }); return; }
+
+      const name = attach && typeof attachmentName === 'string' ? attachmentName.slice(0, 120) : null;
+      const info = db.prepare('INSERT INTO dm_messages (sender_id, recipient_id, content, attachment_url, attachment_name) VALUES (?, ?, ?, ?, ?)')
+        .run(userId, recipient.id, text, attach, name);
       const message = db.prepare(`
-        SELECT d.id, d.content, d.created_at, d.sender_id, d.recipient_id, d.attachment_url,
+        SELECT d.id, d.content, d.created_at, d.sender_id, d.recipient_id, d.attachment_url, d.attachment_name,
                u.username, u.display_name, u.avatar_color, u.avatar_url
         FROM dm_messages d JOIN users u ON u.id = d.sender_id WHERE d.id = ?
       `).get(info.lastInsertRowid);

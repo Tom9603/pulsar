@@ -1,6 +1,6 @@
 import { useState } from 'react';
 
-/** Liste des salons du serveur actif (textuels + vocaux) + menu du serveur. */
+/** Liste des salons du serveur actif (textuels + vocaux, par catégorie) + menu du serveur. */
 export default function ChannelSidebar({
   detail,
   isOwner,
@@ -14,16 +14,20 @@ export default function ChannelSidebar({
   onDeleteServer,
   onLeaveServer,
   onManageRoles,
+  onServerSettings,
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [adding, setAdding] = useState(null); // 'text' | 'voice' | null
   const [newName, setNewName] = useState('');
+  const [collapsed, setCollapsed] = useState({});
 
   if (!detail) return <div className="channel-sidebar" />;
 
   const manageChannels = can('MANAGE_CHANNELS');
+  const categories = detail.categories || [];
   const textChannels = detail.channels.filter((c) => c.type === 'text');
   const voiceChannels = detail.channels.filter((c) => c.type === 'voice');
+  const uncategorized = textChannels.filter((c) => !c.category_id);
 
   async function submitChannel(e) {
     e.preventDefault();
@@ -33,6 +37,12 @@ export default function ChannelSidebar({
     setNewName('');
     setAdding(null);
   }
+
+  const renderText = (c) => (
+    <ChannelRow key={c.id} channel={c} active={c.id === activeChannelId}
+      canDelete={manageChannels && detail.channels.length > 1}
+      onSelect={() => onSelectChannel(c.id)} onDelete={() => onDeleteChannel(c.id)} />
+  );
 
   return (
     <div className="channel-sidebar">
@@ -48,19 +58,20 @@ export default function ChannelSidebar({
             <button onClick={() => navigator.clipboard?.writeText(detail.server.invite_code)}>Copier</button>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 8 }}>
+            {can('MANAGE_SERVER') && (
+              <button className="btn btn-ghost" style={{ padding: '6px 12px', fontSize: 13 }} onClick={() => { setMenuOpen(false); onServerSettings(); }}>
+                ⚙️ Paramètres du serveur
+              </button>
+            )}
             {can('MANAGE_ROLES') && (
               <button className="btn btn-ghost" style={{ padding: '6px 12px', fontSize: 13 }} onClick={() => { setMenuOpen(false); onManageRoles(); }}>
                 🛡️ Gérer les rôles
               </button>
             )}
             {isOwner ? (
-              <button className="btn btn-danger" style={{ padding: '6px 12px', fontSize: 13 }} onClick={onDeleteServer}>
-                Supprimer le serveur
-              </button>
+              <button className="btn btn-danger" style={{ padding: '6px 12px', fontSize: 13 }} onClick={onDeleteServer}>Supprimer le serveur</button>
             ) : (
-              <button className="btn btn-danger" style={{ padding: '6px 12px', fontSize: 13 }} onClick={onLeaveServer}>
-                Quitter le serveur
-              </button>
+              <button className="btn btn-danger" style={{ padding: '6px 12px', fontSize: 13 }} onClick={onLeaveServer}>Quitter le serveur</button>
             )}
           </div>
         </div>
@@ -71,11 +82,20 @@ export default function ChannelSidebar({
           <span>Salons textuels</span>
           {manageChannels && <button title="Créer un salon textuel" onClick={() => { setAdding('text'); setNewName(''); }}>+</button>}
         </div>
-        {textChannels.map((c) => (
-          <ChannelRow key={c.id} channel={c} active={c.id === activeChannelId}
-            canDelete={manageChannels && detail.channels.length > 1}
-            onSelect={() => onSelectChannel(c.id)} onDelete={() => onDeleteChannel(c.id)} />
-        ))}
+        {uncategorized.map(renderText)}
+
+        {categories.map((cat) => {
+          const chans = textChannels.filter((c) => c.category_id === cat.id);
+          const isCollapsed = collapsed[cat.id];
+          return (
+            <div key={cat.id}>
+              <div className="channel-category cat-header" onClick={() => setCollapsed((s) => ({ ...s, [cat.id]: !s[cat.id] }))}>
+                <span>{isCollapsed ? '▸' : '▾'} {cat.name}</span>
+              </div>
+              {!isCollapsed && chans.map(renderText)}
+            </div>
+          );
+        })}
 
         <div className="channel-category">
           <span>Salons vocaux</span>
@@ -115,11 +135,13 @@ export default function ChannelSidebar({
 }
 
 function ChannelRow({ channel, active, connected, canDelete, onSelect, onDelete }) {
+  const unread = channel.type === 'text' && channel.unread && !active;
   return (
-    <div className={`channel-item ${active ? 'active' : ''}`} onClick={onSelect}>
+    <div className={`channel-item ${active ? 'active' : ''} ${unread ? 'unread' : ''}`} onClick={onSelect}>
       <span className="hash">{channel.type === 'voice' ? '🔊' : '#'}</span>
       <span className="name">{channel.name}</span>
       {connected && <span title="Connecté au vocal" style={{ color: 'var(--online)', fontSize: 11 }}>●</span>}
+      {channel.mentions > 0 && <span className="mention-badge">{channel.mentions}</span>}
       {canDelete && (
         <button className="del" title="Supprimer le salon" onClick={(e) => { e.stopPropagation(); onDelete(); }}>✕</button>
       )}
