@@ -7,16 +7,12 @@ on:
       - 'v*'
 
 jobs:
-  release:
+  # 1) Chaque système construit son installateur (sans publier).
+  build:
     strategy:
       matrix:
         os: [macos-latest, windows-latest, ubuntu-latest]
     runs-on: ${{ matrix.os }}
-
-    # Autorise le jeton automatique à créer la Release et y déposer les fichiers.
-    permissions:
-      contents: write
-
     steps:
       - name: Récupérer le code
         uses: actions/checkout@v4
@@ -34,8 +30,37 @@ jobs:
       - name: Compiler le client
         run: npm --prefix client run build
 
-      - name: Construire et publier l'app desktop
-        env:
-          # Fourni automatiquement par GitHub Actions — permet de publier la version.
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: npx electron-builder --publish always
+      - name: Construire l'app desktop
+        run: npx electron-builder --publish never
+
+      - name: Récupérer les installateurs
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-${{ matrix.os }}
+          if-no-files-found: ignore
+          path: |
+            desktop/release/*.exe
+            desktop/release/*.exe.blockmap
+            desktop/release/*.dmg
+            desktop/release/*.dmg.blockmap
+            desktop/release/*.AppImage
+            desktop/release/latest*.yml
+
+  # 2) Un seul job rassemble tout et crée la Release (aucune course possible).
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Rassembler les installateurs
+        uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: Créer la Release et y déposer les fichiers
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          files: dist/*
