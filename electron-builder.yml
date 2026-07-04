@@ -20,7 +20,7 @@ extraMetadata:
 # Où publier les versions pour la mise à jour automatique.
 publish:
   provider: github
-  owner: tom9603
+  owner: Tom9603
   repo: concord
 
 win:
