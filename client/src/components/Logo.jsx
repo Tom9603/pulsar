@@ -1,28 +1,22 @@
-/** Logo Pulsar : étoile à pulsations + mot-symbole. */
-export default function Logo({ size = 52, wordmark = true }) {
+/** Logo Pulsar : signal qui pulse (arcs) en dégradé violet→bleu + mot-symbole. */
+export default function Logo({ size = 62, wordmark = true }) {
   return (
     <div className="brand-logo">
-      <svg width={size} height={size} viewBox="0 0 100 100" aria-hidden="true">
+      <svg width={size} height={(size * 110) / 120} viewBox="0 0 120 110" aria-hidden="true">
         <defs>
-          <linearGradient id="lg-pulse" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0%" stopColor="#67E8F9" />
-            <stop offset="60%" stopColor="#22D3EE" />
-            <stop offset="100%" stopColor="#7C5CFF" />
+          <linearGradient id="sig" x1="0" y1="1" x2="1" y2="0">
+            <stop offset="0%" stopColor="#8B5CF6" />
+            <stop offset="100%" stopColor="#3B82F6" />
           </linearGradient>
-          <radialGradient id="lg-core" cx="50%" cy="50%" r="50%">
-            <stop offset="0%" stopColor="#FFFFFF" />
-            <stop offset="60%" stopColor="#A9F4FB" />
-            <stop offset="100%" stopColor="#22D3EE" />
-          </radialGradient>
         </defs>
-        <g transform="translate(50,50)">
-          <circle r="18" fill="none" stroke="url(#lg-pulse)" strokeWidth="4" opacity="0.95" />
-          <circle r="29" fill="none" stroke="url(#lg-pulse)" strokeWidth="2.6" opacity="0.5" />
-          <circle r="39" fill="none" stroke="url(#lg-pulse)" strokeWidth="1.6" opacity="0.24" />
-          <circle r="7" fill="url(#lg-core)" />
+        <g fill="none" stroke="url(#sig)" strokeWidth="9" strokeLinecap="round">
+          <path d="M25.3 56.9 A44 44 0 0 1 94.7 56.9" />
+          <path d="M36.4 65.5 A30 30 0 0 1 83.6 65.5" />
+          <path d="M47.4 74.1 A16 16 0 0 1 72.6 74.1" />
         </g>
+        <circle cx="60" cy="86" r="6.5" fill="url(#sig)" />
       </svg>
-      {wordmark && <span className="brand-word">Pulsar</span>}
+      {wordmark && <span className="brand-word">PULSAR</span>}
     </div>
   );
 }
