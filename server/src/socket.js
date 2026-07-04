@@ -6,6 +6,8 @@ import { hasPermission } from './permissions.js';
 const onlineUsers = new Map();
 // Vocal : channelId -> Map(socketId -> { socketId, userId, user, muted, speaking })
 const voiceRooms = new Map();
+// Appels privés (1-à-1) : callId -> { callerId, calleeId, callerSocketId, calleeSocketId }
+const activeCalls = new Map();
 
 function roomMembers(channelId) {
   return Array.from(voiceRooms.get(channelId)?.values() || []);
@@ -15,7 +17,13 @@ function serverIdOfChannel(channelId) {
   return db.prepare('SELECT server_id FROM channels WHERE id = ?').get(channelId)?.server_id;
 }
 
-const validAttachment = (url) => (typeof url === 'string' && url.startsWith('/uploads/') ? url : null);
+// Autorise nos images (/uploads/...) et les GIF Tenor.
+const validAttachment = (url) => {
+  if (typeof url !== 'string') return null;
+  if (url.startsWith('/uploads/')) return url;
+  if (/^https:\/\/([a-z0-9-]+\.)*tenor\.com\//i.test(url)) return url;
+  return null;
+};
 
 /** Réactions agrégées d'un message : [{ emoji, count, userIds }]. */
 export function reactionsFor(messageId) {
@@ -230,8 +238,74 @@ export function setupSocket(io) {
 
     socket.on('voice:leave', () => removeSocketFromVoice(io, socket));
 
+    // ------------------------------------------------------------------
+    // Appels vocaux privés (DM) — 1-à-1
+    // ------------------------------------------------------------------
+    socket.on('call:invite', ({ toUserId }) => {
+      if (!toUserId || toUserId === userId) return;
+      const callee = db.prepare('SELECT * FROM users WHERE id = ?').get(toUserId);
+      if (!callee) return;
+      if (!onlineUsers.get(toUserId)?.size) {
+        socket.emit('call:unavailable', { reason: 'offline' });
+        return;
+      }
+      const callId = `${userId}-${toUserId}-${Date.now()}`;
+      activeCalls.set(callId, { callerId: userId, calleeId: toUserId, callerSocketId: socket.id, calleeSocketId: null });
+      io.to('user:' + toUserId).emit('call:incoming', { callId, from: user });
+      socket.emit('call:ringing', { callId, to: publicUser(callee) });
+      setTimeout(() => {
+        const c = activeCalls.get(callId);
+        if (c && !c.calleeSocketId) {
+          activeCalls.delete(callId);
+          io.to('user:' + c.callerId).emit('call:ended', { callId, reason: 'no-answer' });
+          io.to('user:' + c.calleeId).emit('call:canceled', { callId });
+        }
+      }, 30000);
+    });
+
+    socket.on('call:accept', ({ callId }) => {
+      const c = activeCalls.get(callId);
+      if (!c || c.calleeId !== userId) return;
+      c.calleeSocketId = socket.id;
+      io.to(c.callerSocketId).emit('call:accepted', { callId, peerSocketId: socket.id }); // l'appelant initie
+      socket.emit('call:connected', { callId, peerSocketId: c.callerSocketId });
+    });
+
+    socket.on('call:decline', ({ callId }) => {
+      const c = activeCalls.get(callId);
+      if (!c || c.calleeId !== userId) return;
+      activeCalls.delete(callId);
+      io.to(c.callerSocketId).emit('call:declined', { callId });
+    });
+
+    socket.on('call:cancel', ({ callId }) => {
+      const c = activeCalls.get(callId);
+      if (!c || c.callerId !== userId) return;
+      activeCalls.delete(callId);
+      io.to('user:' + c.calleeId).emit('call:canceled', { callId });
+    });
+
+    socket.on('call:end', ({ callId }) => {
+      const c = activeCalls.get(callId);
+      if (!c || (c.callerId !== userId && c.calleeId !== userId)) return;
+      activeCalls.delete(callId);
+      const otherId = c.callerId === userId ? c.calleeId : c.callerId;
+      io.to('user:' + otherId).emit('call:ended', { callId });
+    });
+
+    socket.on('call:signal', ({ targetSocketId, data }) => {
+      if (targetSocketId) io.to(targetSocketId).emit('call:signal', { fromSocketId: socket.id, data });
+    });
+
     socket.on('disconnect', () => {
       removeSocketFromVoice(io, socket);
+      for (const [callId, c] of activeCalls) {
+        if (c.callerSocketId === socket.id || c.calleeSocketId === socket.id) {
+          activeCalls.delete(callId);
+          const otherId = c.callerId === userId ? c.calleeId : c.callerId;
+          io.to('user:' + otherId).emit('call:ended', { callId, reason: 'disconnect' });
+        }
+      }
       const set = onlineUsers.get(userId);
       if (set) {
         set.delete(socket.id);

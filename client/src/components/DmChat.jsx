@@ -1,48 +1,22 @@
 import { useEffect, useRef, useState } from 'react';
-import { api, uploadImage, mediaUrl } from '../api.js';
+import { api, mediaUrl, isAudio } from '../api.js';
 import { getSocket } from '../socket.js';
 import Avatar from './Avatar.jsx';
+import Composer from './Composer.jsx';
 
 function formatTime(ts) {
   const d = new Date(ts.replace(' ', 'T') + 'Z');
   return d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
 }
 
-const readAsDataURL = (file) =>
-  new Promise((resolve, reject) => {
-    const r = new FileReader();
-    r.onload = () => resolve(r.result);
-    r.onerror = reject;
-    r.readAsDataURL(file);
-  });
-
-/** Conversation privée avec un utilisateur. */
-export default function DmChat({ peer, currentUser, onlineIds }) {
+/** Conversation privée avec un utilisateur (texte, images, GIF, vocal, appel). */
+export default function DmChat({ peer, currentUser, onlineIds, onCall }) {
   const [messages, setMessages] = useState([]);
-  const [input, setInput] = useState('');
   const [peerTyping, setPeerTyping] = useState(false);
-  const [uploading, setUploading] = useState(false);
   const scrollRef = useRef(null);
   const typingTimer = useRef(null);
   const lastTypingSent = useRef(0);
   const online = new Set(onlineIds).has(peer.id);
-
-  async function onPickImage(e) {
-    const file = e.target.files?.[0];
-    e.target.value = '';
-    if (!file) return;
-    if (file.size > 4 * 1024 * 1024) { alert('Image trop lourde (4 Mo max).'); return; }
-    setUploading(true);
-    try {
-      const url = await uploadImage(await readAsDataURL(file));
-      getSocket().emit('dm:send', { toUserId: peer.id, content: input.trim(), attachmentUrl: url });
-      setInput('');
-    } catch (err) {
-      alert(err.message);
-    } finally {
-      setUploading(false);
-    }
-  }
 
   useEffect(() => {
     let cancelled = false;
@@ -80,21 +54,12 @@ export default function DmChat({ peer, currentUser, onlineIds }) {
     if (el) el.scrollTop = el.scrollHeight;
   }, [messages, peerTyping]);
 
-  function handleChange(e) {
-    setInput(e.target.value);
+  function onTypingSignal() {
     const now = Date.now();
     if (now - lastTypingSent.current > 2000) {
       lastTypingSent.current = now;
       getSocket().emit('dm:typing', { toUserId: peer.id });
     }
-  }
-
-  function send(e) {
-    e.preventDefault();
-    const content = input.trim();
-    if (!content) return;
-    getSocket().emit('dm:send', { toUserId: peer.id, content });
-    setInput('');
   }
 
   return (
@@ -103,6 +68,8 @@ export default function DmChat({ peer, currentUser, onlineIds }) {
         <Avatar user={peer} size={24} status={online ? peer.status : 'offline'} />
         <span>{peer.display_name}</span>
         <span className="topic">@{peer.username}</span>
+        <span className="spacer" />
+        <button className="header-btn" title="Appel vocal" onClick={() => onCall(peer)}>📞</button>
       </div>
 
       <div className="content-body">
@@ -117,7 +84,7 @@ export default function DmChat({ peer, currentUser, onlineIds }) {
 
             {messages.map((m, i) => {
               const prev = messages[i - 1];
-              const grouped = prev && prev.sender_id === m.sender_id;
+              const grouped = prev && prev.sender_id === m.sender_id && !m.attachment_url;
               return (
                 <div className={`message ${grouped ? 'grouped' : ''}`} key={m.id}>
                   {grouped ? (
@@ -133,14 +100,16 @@ export default function DmChat({ peer, currentUser, onlineIds }) {
                       </div>
                     )}
                     {m.content && <div className="msg-text">{m.content}</div>}
-                    {m.attachment_url && (
+                    {m.attachment_url && (isAudio(m.attachment_url) ? (
+                      <audio className="msg-audio" controls src={mediaUrl(m.attachment_url)} />
+                    ) : (
                       <img
                         className="msg-image"
                         src={mediaUrl(m.attachment_url)}
                         alt="pièce jointe"
                         onClick={() => window.open(mediaUrl(m.attachment_url), '_blank')}
                       />
-                    )}
+                    ))}
                   </div>
                 </div>
               );
@@ -151,21 +120,12 @@ export default function DmChat({ peer, currentUser, onlineIds }) {
             {peerTyping && `${peer.display_name} est en train d’écrire…`}
           </div>
 
-          <form className="composer" onSubmit={send}>
-            <div className="composer-inner">
-              <label className="composer-attach" title="Envoyer une image">
-                📎
-                <input type="file" accept="image/*" hidden onChange={onPickImage} />
-              </label>
-              <input
-                value={input}
-                onChange={handleChange}
-                placeholder={uploading ? 'Envoi de l’image…' : `Envoyer un message à ${peer.display_name}`}
-                maxLength={2000}
-                disabled={uploading}
-              />
-            </div>
-          </form>
+          <Composer
+            placeholder={`Envoyer un message à ${peer.display_name}`}
+            onSendText={(t) => getSocket().emit('dm:send', { toUserId: peer.id, content: t })}
+            onSendAttachment={(url, text) => getSocket().emit('dm:send', { toUserId: peer.id, content: text || '', attachmentUrl: url })}
+            onTyping={onTypingSignal}
+          />
         </div>
       </div>
     </div>

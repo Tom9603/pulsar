@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
-import { api, uploadImage, mediaUrl } from '../api.js';
+import { api, mediaUrl, isAudio } from '../api.js';
 import { getSocket } from '../socket.js';
 import Avatar from './Avatar.jsx';
+import Composer from './Composer.jsx';
 
 const QUICK_EMOJIS = ['👍', '❤️', '😂', '😮', '😢', '🎉'];
 
@@ -36,22 +37,12 @@ function renderContent(text, currentUser) {
   return parts;
 }
 
-const readAsDataURL = (file) =>
-  new Promise((resolve, reject) => {
-    const r = new FileReader();
-    r.onload = () => resolve(r.result);
-    r.onerror = reject;
-    r.readAsDataURL(file);
-  });
-
 export default function ChatView({ channel, currentUser, canManage }) {
   const [messages, setMessages] = useState([]);
-  const [input, setInput] = useState('');
   const [typing, setTyping] = useState({});
   const [editingId, setEditingId] = useState(null);
   const [editText, setEditText] = useState('');
   const [pickerFor, setPickerFor] = useState(null);
-  const [uploading, setUploading] = useState(false);
   const scrollRef = useRef(null);
   const typingTimers = useRef({});
   const lastTypingSent = useRef(0);
@@ -112,37 +103,11 @@ export default function ChatView({ channel, currentUser, canManage }) {
     if (el) el.scrollTop = el.scrollHeight;
   }, [messages, typing]);
 
-  function handleChange(e) {
-    setInput(e.target.value);
+  function onTyping() {
     const now = Date.now();
     if (now - lastTypingSent.current > 2000) {
       lastTypingSent.current = now;
       getSocket().emit('typing', { channelId: channel.id });
-    }
-  }
-
-  function send(e) {
-    e.preventDefault();
-    const content = input.trim();
-    if (!content) return;
-    getSocket().emit('message:send', { channelId: channel.id, content });
-    setInput('');
-  }
-
-  async function onPickImage(e) {
-    const file = e.target.files?.[0];
-    e.target.value = '';
-    if (!file) return;
-    if (file.size > 4 * 1024 * 1024) { alert('Image trop lourde (4 Mo max).'); return; }
-    setUploading(true);
-    try {
-      const url = await uploadImage(await readAsDataURL(file));
-      getSocket().emit('message:send', { channelId: channel.id, content: input.trim(), attachmentUrl: url });
-      setInput('');
-    } catch (err) {
-      alert(err.message);
-    } finally {
-      setUploading(false);
     }
   }
 
@@ -205,14 +170,16 @@ export default function ChatView({ channel, currentUser, canManage }) {
                         {m.edited ? <span className="msg-edited"> (modifié)</span> : null}
                       </div>
                     )}
-                    {m.attachment_url && (
+                    {m.attachment_url && (isAudio(m.attachment_url) ? (
+                      <audio className="msg-audio" controls src={mediaUrl(m.attachment_url)} />
+                    ) : (
                       <img
                         className="msg-image"
                         src={mediaUrl(m.attachment_url)}
                         alt="pièce jointe"
                         onClick={() => window.open(mediaUrl(m.attachment_url), '_blank')}
                       />
-                    )}
+                    ))}
                   </>
                 )}
 
@@ -257,21 +224,12 @@ export default function ChatView({ channel, currentUser, canManage }) {
             : `${typingNames.join(', ')} sont en train d’écrire…`)}
       </div>
 
-      <form className="composer" onSubmit={send}>
-        <div className="composer-inner">
-          <label className="composer-attach" title="Envoyer une image">
-            📎
-            <input type="file" accept="image/*" hidden onChange={onPickImage} />
-          </label>
-          <input
-            value={input}
-            onChange={handleChange}
-            placeholder={uploading ? 'Envoi de l’image…' : `Envoyer un message dans #${channel.name}`}
-            maxLength={2000}
-            disabled={uploading}
-          />
-        </div>
-      </form>
+      <Composer
+        placeholder={`Envoyer un message dans #${channel.name}`}
+        onSendText={(t) => getSocket().emit('message:send', { channelId: channel.id, content: t })}
+        onSendAttachment={(url, text) => getSocket().emit('message:send', { channelId: channel.id, content: text || '', attachmentUrl: url })}
+        onTyping={onTyping}
+      />
     </div>
   );
 }

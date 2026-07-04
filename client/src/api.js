@@ -38,3 +38,8 @@ export function mediaUrl(path) {
   if (!path) return '';
   return path.startsWith('http') ? path : getServerUrl() + path;
 }
+
+/** La pièce jointe est-elle un fichier audio (message vocal) ? */
+export function isAudio(url) {
+  return /\.(webm|ogg|mp3|m4a|mp4|mpeg|wav)$/i.test(url || '');
+}

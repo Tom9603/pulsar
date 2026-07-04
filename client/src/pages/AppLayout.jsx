@@ -3,6 +3,7 @@ import { api } from '../api.js';
 import { getSocket } from '../socket.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useVoice } from '../hooks/useVoice.js';
+import { useCall } from '../hooks/useCall.js';
 import { makeCan } from '../permissions.js';
 import { initNotifications, playPing, desktopNotify } from '../notify.js';
 
@@ -25,10 +26,12 @@ import CreateServerModal from '../components/CreateServerModal.jsx';
 import SettingsModal from '../components/SettingsModal.jsx';
 import RolesModal from '../components/RolesModal.jsx';
 import MemberModal from '../components/MemberModal.jsx';
+import CallOverlay from '../components/CallOverlay.jsx';
 
 export default function AppLayout() {
   const { user } = useAuth();
   const voice = useVoice();
+  const call = useCall();
 
   const [view, setView] = useState('server'); // 'server' | 'dm'
   const [servers, setServers] = useState([]);
@@ -263,7 +266,7 @@ export default function AppLayout() {
       {/* Zone principale */}
       {view === 'dm' ? (
         activeDm ? (
-          <DmChat peer={activeDm} currentUser={user} onlineIds={onlineIds} />
+          <DmChat peer={activeDm} currentUser={user} onlineIds={onlineIds} onCall={call.startCall} />
         ) : (
           <div className="main-content">
             <div className="msg-welcome" style={{ margin: 'auto', textAlign: 'center' }}>
@@ -329,6 +332,9 @@ export default function AppLayout() {
           <audio key={sid} autoPlay ref={(el) => { if (el && el.srcObject !== stream) { el.srcObject = stream; el.play?.().catch(() => {}); } }} />
         ))}
       </div>
+
+      {/* Appels vocaux privés (entrant / en cours) */}
+      <CallOverlay call={call} />
 
       {/* Modales */}
       {modal === 'create' && <CreateServerModal onClose={() => setModal(null)} onReady={handleServerReady} />}

@@ -24,10 +24,11 @@ Aucune dépendance native à compiler : SQLite et le chiffrement utilisent des m
 - **Serveurs** : création, code d’invitation, rejoindre, quitter, supprimer
 - **Salons** : textuels et vocaux, création / suppression
 - **Chat textuel** : messages temps réel, historique, indicateur « écrit… »,
-  **modifier / supprimer**, **réactions emoji**, **mentions @**, **images / GIF**
+  **modifier / supprimer**, **réactions emoji**, **mentions @**, **images**,
+  **GIF** (recherche Tenor) et **messages vocaux** (enregistrement)
 - **Vocal** : **audio réel WebRTC** (mesh P2P), micro coupé/actif, détection de la parole,
   connexion persistante entre salons (STUN + TURN configurable)
-- **Messages privés** (DM) en temps réel, avec images
+- **Messages privés** (DM) en temps réel : texte, images, GIF, vocal, et **appel vocal 1-à-1**
 - **Rôles & permissions** par serveur (gérer salons/rôles, expulser…)
 - **Notifications** bureau + son (nouveaux DM, mentions)
 - **Présence** : membres en ligne / hors ligne en direct
@@ -146,7 +147,7 @@ TURN_URL="turn:IP_DU_SERVEUR:3478" TURN_USERNAME=concord TURN_CREDENTIAL=motdepa
 2. **Serveur TURN** dédié pour un vocal fiable (voir ci-dessus)
 3. **Signature de code** (certificats payants) pour supprimer les avertissements Windows/Mac
 4. **Partage d’écran / vidéo** dans les salons vocaux
-5. **Sélecteur de GIF** (recherche Tenor/Giphy) — nécessite une clé API gratuite
+5. **Applications mobiles** (iOS / Android) — voir la note ci-dessous
 
 ## 🔐 Note de sécurité
 
