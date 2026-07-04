@@ -1,9 +1,17 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { api } from '../api.js';
 import { getSocket } from '../socket.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useVoice } from '../hooks/useVoice.js';
 import { makeCan } from '../permissions.js';
+import { initNotifications, playPing, desktopNotify } from '../notify.js';
+
+/** Le message mentionne-t-il l'utilisateur (@pseudo) ? */
+function mentionsUser(content, user) {
+  if (!content) return false;
+  const low = content.toLowerCase();
+  return low.includes('@' + user.username.toLowerCase()) || low.includes('@' + user.display_name.toLowerCase());
+}
 
 import ServerRail from '../components/ServerRail.jsx';
 import ChannelSidebar from '../components/ChannelSidebar.jsx';
@@ -42,6 +50,14 @@ export default function AppLayout() {
 
   const can = makeCan(detail?.is_owner, detail?.my_permissions);
 
+  // Refs pour connaître l'état courant depuis les gestionnaires socket (sans les recréer).
+  const viewRef = useRef(view);
+  const activeChannelRef = useRef(activeChannelId);
+  const activeDmRef = useRef(activeDm);
+  useEffect(() => { viewRef.current = view; }, [view]);
+  useEffect(() => { activeChannelRef.current = activeChannelId; }, [activeChannelId]);
+  useEffect(() => { activeDmRef.current = activeDm; }, [activeDm]);
+
   // ---- Données ----
   const refreshServers = useCallback(async () => {
     const { servers } = await api('/servers');
@@ -69,6 +85,7 @@ export default function AppLayout() {
   }, []);
 
   useEffect(() => {
+    initNotifications();
     refreshServers().then((list) => {
       if (list.length) setActiveServerId(list[0].id);
     });
@@ -88,14 +105,24 @@ export default function AppLayout() {
     };
     const onDmNew = ({ message }) => {
       refreshConversations();
-      const incoming = message.recipient_id === user.id;
-      setActiveDm((cur) => {
-        setView((v) => {
-          if (incoming && !(v === 'dm' && cur && cur.id === message.sender_id)) setHasUnreadDm(true);
-          return v;
+      if (message.recipient_id !== user.id) return; // seulement les messages entrants
+      const viewingThisDm = viewRef.current === 'dm' && activeDmRef.current?.id === message.sender_id && !document.hidden;
+      if (viewingThisDm) return;
+      setHasUnreadDm(true);
+      playPing();
+      desktopNotify(`${message.display_name} — message privé`, message.content || '📷 Image', () => {
+        openDm({
+          id: message.sender_id, username: message.username, display_name: message.display_name,
+          avatar_color: message.avatar_color, avatar_url: message.avatar_url, status: 'online',
         });
-        return cur;
       });
+    };
+    const onMessageNew = ({ channelId, message }) => {
+      if (message.user_id === user.id || !mentionsUser(message.content, user)) return;
+      const activeFocused = viewRef.current === 'server' && activeChannelRef.current === channelId && !document.hidden;
+      if (activeFocused) return;
+      playPing();
+      desktopNotify(`${message.display_name} t’a mentionné`, message.content);
     };
     const onKicked = ({ serverId }) => {
       refreshServers().then((list) => {
@@ -107,14 +134,17 @@ export default function AppLayout() {
     socket.on('voice:state', onVoice);
     socket.on('server:updated', onServerUpdated);
     socket.on('dm:new', onDmNew);
+    socket.on('message:new', onMessageNew);
     socket.on('server:kicked', onKicked);
     return () => {
       socket.off('presence', onPresence);
       socket.off('voice:state', onVoice);
       socket.off('server:updated', onServerUpdated);
       socket.off('dm:new', onDmNew);
+      socket.off('message:new', onMessageNew);
       socket.off('server:kicked', onKicked);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user.id, refreshDetail, refreshServers, refreshConversations]);
 
   // ---- Actions serveurs ----
@@ -265,7 +295,7 @@ export default function AppLayout() {
                 onToggleMute={voice.toggleMute}
               />
             ) : (
-              <ChatView channel={activeChannel} currentUser={user} />
+              <ChatView channel={activeChannel} currentUser={user} canManage={can('MANAGE_CHANNELS')} />
             )}
 
             {showMembers && detail && (

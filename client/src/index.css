@@ -396,6 +396,7 @@ input, textarea { font-family: inherit; }
   display: flex;
   gap: 14px;
   padding: 4px 16px;
+  position: relative;
 }
 .message:hover { background: rgba(0, 0, 0, 0.12); }
 .message.grouped { padding-top: 1px; padding-bottom: 1px; }
@@ -555,6 +556,110 @@ input, textarea { font-family: inherit; }
   border-radius: 8px;
   margin-bottom: 20px;
 }
+
+/* Mentions */
+.mention {
+  background: rgba(20, 184, 166, 0.15);
+  color: var(--accent);
+  border-radius: 3px;
+  padding: 0 2px;
+  font-weight: 600;
+}
+.mention-me {
+  background: rgba(250, 166, 26, 0.18);
+  color: #f0b232;
+}
+
+/* Message : marqueur « modifié », image, édition */
+.msg-edited { font-size: 10px; color: var(--text-faint); }
+.msg-image {
+  display: block;
+  margin-top: 4px;
+  max-width: 400px;
+  max-height: 300px;
+  border-radius: 8px;
+  cursor: pointer;
+  object-fit: cover;
+}
+.msg-edit-input {
+  width: 100%;
+  background: var(--bg-input);
+  border: none;
+  border-radius: 6px;
+  color: var(--text);
+  font-size: 15px;
+  padding: 8px 10px;
+  outline: none;
+}
+
+/* Barre d'actions au survol d'un message */
+.msg-actions {
+  position: absolute;
+  top: -12px;
+  right: 12px;
+  display: none;
+  gap: 2px;
+  background: var(--bg-content-alt);
+  border: 1px solid rgba(0, 0, 0, 0.3);
+  border-radius: 8px;
+  padding: 2px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+.message:hover .msg-actions { display: flex; }
+.msg-actions button {
+  background: none;
+  width: 30px;
+  height: 30px;
+  border-radius: 6px;
+  font-size: 15px;
+}
+.msg-actions button:hover { background: var(--bg-hover); }
+.emoji-picker {
+  position: absolute;
+  top: 34px;
+  right: 0;
+  display: flex;
+  gap: 2px;
+  background: var(--bg-content-alt);
+  border: 1px solid rgba(0, 0, 0, 0.3);
+  border-radius: 8px;
+  padding: 4px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  z-index: 10;
+}
+.emoji-picker button { background: none; font-size: 20px; padding: 4px; border-radius: 6px; }
+.emoji-picker button:hover { background: var(--bg-hover); }
+
+/* Réactions sous un message */
+.reactions { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+.reaction-chip {
+  background: var(--bg-input);
+  border: 1px solid transparent;
+  border-radius: 10px;
+  padding: 2px 8px;
+  font-size: 13px;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+.reaction-chip:hover { border-color: var(--bg-active); }
+.reaction-chip.reacted {
+  background: rgba(20, 184, 166, 0.15);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* Bouton pièce jointe dans le composer */
+.composer-attach {
+  display: flex;
+  align-items: center;
+  font-size: 20px;
+  cursor: pointer;
+  padding-right: 10px;
+  opacity: 0.7;
+}
+.composer-attach:hover { opacity: 1; }
 
 /* Scrollbars discrètes */
 ::-webkit-scrollbar { width: 8px; height: 8px; }

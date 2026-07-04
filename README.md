@@ -22,11 +22,17 @@ Aucune dépendance native à compiler : SQLite et le chiffrement utilisent des m
 
 - **Comptes** : inscription / connexion, session persistante
 - **Serveurs** : création, code d’invitation, rejoindre, quitter, supprimer
-- **Salons** : textuels et vocaux, création / suppression (propriétaire)
-- **Chat textuel** : messages en temps réel, historique, regroupement, indicateur « écrit… »
-- **Vocal** : présence dans les salons vocaux *(stub — l’audio WebRTC viendra ensuite)*
+- **Salons** : textuels et vocaux, création / suppression
+- **Chat textuel** : messages temps réel, historique, indicateur « écrit… »,
+  **modifier / supprimer**, **réactions emoji**, **mentions @**, **images / GIF**
+- **Vocal** : **audio réel WebRTC** (mesh P2P), micro coupé/actif, détection de la parole,
+  connexion persistante entre salons (STUN + TURN configurable)
+- **Messages privés** (DM) en temps réel, avec images
+- **Rôles & permissions** par serveur (gérer salons/rôles, expulser…)
+- **Notifications** bureau + son (nouveaux DM, mentions)
 - **Présence** : membres en ligne / hors ligne en direct
 - **Profil** : nom affiché, couleur ou image d’avatar, statut, bio
+- **App desktop** (Windows / macOS / Linux) avec mise à jour automatique
 
 ## 🚀 Démarrage
 
@@ -106,13 +112,41 @@ La publication passe par **GitHub Releases** + **GitHub Actions** :
 > Les changements **côté serveur** (nouvelles fonctions, corrections) ne nécessitent
 > PAS de nouvelle version de l'app : il suffit de redéployer le serveur.
 
+## ⚙️ Configuration du serveur (variables d’environnement)
+
+| Variable | Rôle |
+|----------|------|
+| `PORT` | Port d’écoute (défaut 3001) |
+| `JWT_SECRET` | Secret de signature des jetons (**à définir en production**) |
+| `CONCORD_DATA_DIR` | Dossier de la base SQLite + images uploadées |
+| `TURN_URL` / `TURN_USERNAME` / `TURN_CREDENTIAL` | Ton serveur TURN pour le vocal |
+
+### Vocal entre réseaux différents (TURN)
+
+Sur un même réseau Wi-Fi, le STUN suffit. Pour que le vocal marche entre des réseaux
+différents (chacun chez soi), il faut un **serveur TURN**. Le plus simple est
+[coturn](https://github.com/coturn/coturn) sur un petit serveur :
+
+```bash
+# exemple minimal
+turnserver -a -u concord:motdepasse -r concord --no-tls
+```
+
+Puis côté serveur Concord :
+
+```bash
+TURN_URL="turn:IP_DU_SERVEUR:3478" TURN_USERNAME=concord TURN_CREDENTIAL=motdepasse npm start
+```
+
+> Sans config, un TURN public gratuit (best-effort) est utilisé pour les tests.
+
 ## 🗺️ Prochaines étapes suggérées
 
 1. **Hébergement du serveur** (pour jouer à plusieurs hors du réseau local)
-2. **Serveur TURN** pour un vocal fiable entre réseaux différents
-3. **Signature de code** (certificats) pour supprimer les avertissements Windows/Mac
-4. Upload de fichiers / images dans les messages
-5. Icône personnalisée de l'app (`desktop/build/icon.icns` / `icon.ico`)
+2. **Serveur TURN** dédié pour un vocal fiable (voir ci-dessus)
+3. **Signature de code** (certificats payants) pour supprimer les avertissements Windows/Mac
+4. **Partage d’écran / vidéo** dans les salons vocaux
+5. **Sélecteur de GIF** (recherche Tenor/Giphy) — nécessite une clé API gratuite
 
 ## 🔐 Note de sécurité
 

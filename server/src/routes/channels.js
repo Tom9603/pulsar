@@ -3,6 +3,7 @@ import db from '../db.js';
 import { authMiddleware } from '../auth.js';
 import { hasPermission } from '../permissions.js';
 import { getIO } from '../realtime.js';
+import { reactionsFor } from '../socket.js';
 
 const router = Router();
 router.use(authMiddleware);
@@ -29,18 +30,19 @@ router.get('/:id/messages', (req, res) => {
 
   const rows = before
     ? db.prepare(`
-        SELECT m.id, m.content, m.created_at, m.user_id,
+        SELECT m.id, m.content, m.created_at, m.user_id, m.edited, m.attachment_url,
                u.username, u.display_name, u.avatar_color, u.avatar_url
         FROM messages m JOIN users u ON u.id = m.user_id
         WHERE m.channel_id = ? AND m.id < ?
         ORDER BY m.id DESC LIMIT ?`).all(channel.id, before, limit)
     : db.prepare(`
-        SELECT m.id, m.content, m.created_at, m.user_id,
+        SELECT m.id, m.content, m.created_at, m.user_id, m.edited, m.attachment_url,
                u.username, u.display_name, u.avatar_color, u.avatar_url
         FROM messages m JOIN users u ON u.id = m.user_id
         WHERE m.channel_id = ?
         ORDER BY m.id DESC LIMIT ?`).all(channel.id, limit);
 
+  for (const m of rows) m.reactions = reactionsFor(m.id);
   res.json({ messages: rows.reverse() });
 });
 

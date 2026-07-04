@@ -1,5 +1,6 @@
 import db from './db.js';
 import { verifyToken, publicUser } from './auth.js';
+import { hasPermission } from './permissions.js';
 
 // Présence : userId -> Set(socketId)
 const onlineUsers = new Map();
@@ -12,6 +13,30 @@ function roomMembers(channelId) {
 
 function serverIdOfChannel(channelId) {
   return db.prepare('SELECT server_id FROM channels WHERE id = ?').get(channelId)?.server_id;
+}
+
+const validAttachment = (url) => (typeof url === 'string' && url.startsWith('/uploads/') ? url : null);
+
+/** Réactions agrégées d'un message : [{ emoji, count, userIds }]. */
+export function reactionsFor(messageId) {
+  const rows = db.prepare('SELECT emoji, user_id FROM message_reactions WHERE message_id = ?').all(messageId);
+  const map = new Map();
+  for (const r of rows) {
+    if (!map.has(r.emoji)) map.set(r.emoji, []);
+    map.get(r.emoji).push(r.user_id);
+  }
+  return Array.from(map, ([emoji, userIds]) => ({ emoji, count: userIds.length, userIds }));
+}
+
+/** Message de salon complet (auteur + pièce jointe + réactions). */
+export function fullMessage(id) {
+  const m = db.prepare(`
+    SELECT m.id, m.content, m.created_at, m.user_id, m.edited, m.attachment_url, m.channel_id,
+           u.username, u.display_name, u.avatar_color, u.avatar_url
+    FROM messages m JOIN users u ON u.id = m.user_id WHERE m.id = ?
+  `).get(id);
+  if (m) m.reactions = reactionsFor(id);
+  return m;
 }
 
 function emitVoiceState(io, channelId) {
@@ -43,7 +68,6 @@ function broadcastPresence(io) {
 }
 
 export function setupSocket(io) {
-  // Authentification à la connexion du socket
   io.use((socket, next) => {
     const token = socket.handshake.auth?.token;
     const payload = token ? verifyToken(token) : null;
@@ -59,14 +83,10 @@ export function setupSocket(io) {
 
     socket.data.voiceChannelId = null;
 
-    // Présence
     if (!onlineUsers.has(userId)) onlineUsers.set(userId, new Set());
     onlineUsers.get(userId).add(socket.id);
-
-    // Salon personnel (DM, notifications ciblées)
     socket.join('user:' + userId);
 
-    // Rejoindre les rooms de tous ses serveurs + envoyer l'état vocal courant
     for (const { server_id } of db.prepare('SELECT server_id FROM server_members WHERE user_id = ?').all(userId)) {
       socket.join('server:' + server_id);
       for (const { id } of db.prepare("SELECT id FROM channels WHERE server_id = ? AND type = 'voice'").all(server_id)) {
@@ -76,7 +96,6 @@ export function setupSocket(io) {
 
     broadcastPresence(io);
 
-    // S'abonner à un serveur fraîchement créé/rejoint (sans reconnecter le socket)
     socket.on('server:subscribe', ({ serverId }) => {
       const member = db.prepare('SELECT 1 FROM server_members WHERE server_id = ? AND user_id = ?').get(serverId, userId);
       if (member) socket.join('server:' + serverId);
@@ -85,21 +104,53 @@ export function setupSocket(io) {
     // ------------------------------------------------------------------
     // Chat de serveur
     // ------------------------------------------------------------------
-    socket.on('message:send', ({ channelId, content }) => {
-      if (!content || !content.trim()) return;
+    socket.on('message:send', ({ channelId, content, attachmentUrl }) => {
+      const text = (content || '').trim().slice(0, 2000);
+      const attach = validAttachment(attachmentUrl);
+      if (!text && !attach) return;
       const channel = db.prepare('SELECT * FROM channels WHERE id = ?').get(channelId);
       if (!channel || channel.type !== 'text') return;
       if (!db.prepare('SELECT 1 FROM server_members WHERE server_id = ? AND user_id = ?').get(channel.server_id, userId)) return;
 
-      const info = db.prepare('INSERT INTO messages (channel_id, user_id, content) VALUES (?, ?, ?)')
-        .run(channelId, userId, content.trim().slice(0, 2000));
-      const message = db.prepare(`
-        SELECT m.id, m.content, m.created_at, m.user_id,
-               u.username, u.display_name, u.avatar_color, u.avatar_url
-        FROM messages m JOIN users u ON u.id = m.user_id WHERE m.id = ?
-      `).get(info.lastInsertRowid);
+      const info = db.prepare('INSERT INTO messages (channel_id, user_id, content, attachment_url) VALUES (?, ?, ?, ?)')
+        .run(channelId, userId, text, attach);
+      io.to('server:' + channel.server_id).emit('message:new', {
+        channelId: Number(channelId),
+        message: fullMessage(info.lastInsertRowid),
+      });
+    });
 
-      io.to('server:' + channel.server_id).emit('message:new', { channelId: Number(channelId), message });
+    socket.on('message:edit', ({ messageId, content }) => {
+      const text = (content || '').trim().slice(0, 2000);
+      if (!text) return;
+      const m = db.prepare('SELECT m.user_id, m.channel_id, c.server_id FROM messages m JOIN channels c ON c.id = m.channel_id WHERE m.id = ?').get(messageId);
+      if (!m || m.user_id !== userId) return; // seul l'auteur peut éditer
+      db.prepare('UPDATE messages SET content = ?, edited = 1 WHERE id = ?').run(text, messageId);
+      io.to('server:' + m.server_id).emit('message:updated', { channelId: m.channel_id, message: fullMessage(messageId) });
+    });
+
+    socket.on('message:delete', ({ messageId }) => {
+      const m = db.prepare('SELECT m.user_id, m.channel_id, c.server_id FROM messages m JOIN channels c ON c.id = m.channel_id WHERE m.id = ?').get(messageId);
+      if (!m) return;
+      const allowed = m.user_id === userId || hasPermission(m.server_id, userId, 'MANAGE_CHANNELS');
+      if (!allowed) return;
+      db.prepare('DELETE FROM messages WHERE id = ?').run(messageId);
+      io.to('server:' + m.server_id).emit('message:deleted', { channelId: m.channel_id, messageId: Number(messageId) });
+    });
+
+    socket.on('reaction:toggle', ({ messageId, emoji }) => {
+      if (!emoji || String(emoji).length > 12) return;
+      const m = db.prepare('SELECT m.channel_id, c.server_id FROM messages m JOIN channels c ON c.id = m.channel_id WHERE m.id = ?').get(messageId);
+      if (!m) return;
+      if (!db.prepare('SELECT 1 FROM server_members WHERE server_id = ? AND user_id = ?').get(m.server_id, userId)) return;
+      const exists = db.prepare('SELECT 1 FROM message_reactions WHERE message_id = ? AND user_id = ? AND emoji = ?').get(messageId, userId, emoji);
+      if (exists) db.prepare('DELETE FROM message_reactions WHERE message_id = ? AND user_id = ? AND emoji = ?').run(messageId, userId, emoji);
+      else db.prepare('INSERT INTO message_reactions (message_id, user_id, emoji) VALUES (?, ?, ?)').run(messageId, userId, emoji);
+      io.to('server:' + m.server_id).emit('reaction:update', {
+        channelId: m.channel_id,
+        messageId: Number(messageId),
+        reactions: reactionsFor(messageId),
+      });
     });
 
     socket.on('typing', ({ channelId }) => {
@@ -111,15 +162,17 @@ export function setupSocket(io) {
     // ------------------------------------------------------------------
     // Messages privés (DM)
     // ------------------------------------------------------------------
-    socket.on('dm:send', ({ toUserId, content }) => {
-      if (!content || !content.trim() || !toUserId) return;
+    socket.on('dm:send', ({ toUserId, content, attachmentUrl }) => {
+      const text = (content || '').trim().slice(0, 2000);
+      const attach = validAttachment(attachmentUrl);
+      if ((!text && !attach) || !toUserId) return;
       const recipient = db.prepare('SELECT id FROM users WHERE id = ?').get(toUserId);
       if (!recipient || recipient.id === userId) return;
 
-      const info = db.prepare('INSERT INTO dm_messages (sender_id, recipient_id, content) VALUES (?, ?, ?)')
-        .run(userId, recipient.id, content.trim().slice(0, 2000));
+      const info = db.prepare('INSERT INTO dm_messages (sender_id, recipient_id, content, attachment_url) VALUES (?, ?, ?, ?)')
+        .run(userId, recipient.id, text, attach);
       const message = db.prepare(`
-        SELECT d.id, d.content, d.created_at, d.sender_id, d.recipient_id,
+        SELECT d.id, d.content, d.created_at, d.sender_id, d.recipient_id, d.attachment_url,
                u.username, u.display_name, u.avatar_color, u.avatar_url
         FROM dm_messages d JOIN users u ON u.id = d.sender_id WHERE d.id = ?
       `).get(info.lastInsertRowid);
@@ -140,20 +193,18 @@ export function setupSocket(io) {
       if (!channel || channel.type !== 'voice') return;
       if (!db.prepare('SELECT 1 FROM server_members WHERE server_id = ? AND user_id = ?').get(channel.server_id, userId)) return;
 
-      removeSocketFromVoice(io, socket); // quitter un éventuel salon précédent
+      removeSocketFromVoice(io, socket);
 
-      const existing = roomMembers(channelId); // pairs déjà présents (avant de m'ajouter)
+      const existing = roomMembers(channelId);
       if (!voiceRooms.has(channelId)) voiceRooms.set(channelId, new Map());
       voiceRooms.get(channelId).set(socket.id, { socketId: socket.id, userId, user, muted: false, speaking: false });
       socket.data.voiceChannelId = channelId;
       socket.join('voice:' + channelId);
 
-      // Le nouveau venu initie les connexions vers les pairs existants
       socket.emit('voice:peers', { channelId: Number(channelId), peers: existing });
       emitVoiceState(io, channelId);
     });
 
-    // Relais de signalisation WebRTC (offre / réponse / candidats ICE) vers un pair précis
     socket.on('voice:signal', ({ targetSocketId, data }) => {
       if (!targetSocketId) return;
       io.to(targetSocketId).emit('voice:signal', { fromSocketId: socket.id, data });
@@ -179,7 +230,6 @@ export function setupSocket(io) {
 
     socket.on('voice:leave', () => removeSocketFromVoice(io, socket));
 
-    // ------------------------------------------------------------------
     socket.on('disconnect', () => {
       removeSocketFromVoice(io, socket);
       const set = onlineUsers.get(userId);

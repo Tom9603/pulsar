@@ -26,3 +26,15 @@ export async function api(path, { method = 'GET', body } = {}) {
   if (!res.ok) throw new Error(data.error || 'Erreur serveur');
   return data;
 }
+
+/** Envoie une image (data URL base64) au serveur, renvoie son chemin public (/uploads/...). */
+export async function uploadImage(dataUrl) {
+  const { url } = await api('/uploads', { method: 'POST', body: { dataUrl } });
+  return url;
+}
+
+/** Transforme un chemin serveur (/uploads/...) en URL complète affichable. */
+export function mediaUrl(path) {
+  if (!path) return '';
+  return path.startsWith('http') ? path : getServerUrl() + path;
+}

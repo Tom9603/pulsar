@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { getSocket } from '../socket.js';
+import { api } from '../api.js';
 
-// Serveur STUN public (aide à traverser les NAT sur un réseau local / la plupart des cas).
-const RTC_CONFIG = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
+// Config par défaut (STUN seul) ; la vraie config (avec TURN) est récupérée depuis le serveur.
+const DEFAULT_ICE = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
 
 /**
  * Gère la connexion vocale WebRTC en maillage (chaque pair se connecte à tous les autres).
@@ -20,8 +21,16 @@ export function useVoice() {
   const speakingRef = useRef(false);
   const audioCtx = useRef(null);
   const rafId = useRef(null);
+  const iceConfig = useRef(DEFAULT_ICE);
 
   const socket = getSocket();
+
+  // Récupère la config ICE/TURN du serveur au montage.
+  useEffect(() => {
+    api('/ice')
+      .then((cfg) => { if (cfg?.iceServers?.length) iceConfig.current = cfg; })
+      .catch(() => {});
+  }, []);
 
   const removePeer = useCallback((socketId) => {
     const pc = pcs.current.get(socketId);
@@ -41,7 +50,7 @@ export function useVoice() {
 
   const createPeer = useCallback((peerSocketId, initiator) => {
     if (pcs.current.has(peerSocketId)) return pcs.current.get(peerSocketId);
-    const pc = new RTCPeerConnection(RTC_CONFIG);
+    const pc = new RTCPeerConnection(iceConfig.current);
     pcs.current.set(peerSocketId, pc);
 
     if (localStream.current) {

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { api } from '../api.js';
+import { api, uploadImage, mediaUrl } from '../api.js';
 import { getSocket } from '../socket.js';
 import Avatar from './Avatar.jsx';
 
@@ -8,15 +8,41 @@ function formatTime(ts) {
   return d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
 }
 
+const readAsDataURL = (file) =>
+  new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => resolve(r.result);
+    r.onerror = reject;
+    r.readAsDataURL(file);
+  });
+
 /** Conversation privée avec un utilisateur. */
 export default function DmChat({ peer, currentUser, onlineIds }) {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [peerTyping, setPeerTyping] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const scrollRef = useRef(null);
   const typingTimer = useRef(null);
   const lastTypingSent = useRef(0);
   const online = new Set(onlineIds).has(peer.id);
+
+  async function onPickImage(e) {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    if (file.size > 4 * 1024 * 1024) { alert('Image trop lourde (4 Mo max).'); return; }
+    setUploading(true);
+    try {
+      const url = await uploadImage(await readAsDataURL(file));
+      getSocket().emit('dm:send', { toUserId: peer.id, content: input.trim(), attachmentUrl: url });
+      setInput('');
+    } catch (err) {
+      alert(err.message);
+    } finally {
+      setUploading(false);
+    }
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -106,7 +132,15 @@ export default function DmChat({ peer, currentUser, onlineIds }) {
                         <span className="msg-time">{formatTime(m.created_at)}</span>
                       </div>
                     )}
-                    <div className="msg-text">{m.content}</div>
+                    {m.content && <div className="msg-text">{m.content}</div>}
+                    {m.attachment_url && (
+                      <img
+                        className="msg-image"
+                        src={mediaUrl(m.attachment_url)}
+                        alt="pièce jointe"
+                        onClick={() => window.open(mediaUrl(m.attachment_url), '_blank')}
+                      />
+                    )}
                   </div>
                 </div>
               );
@@ -119,11 +153,16 @@ export default function DmChat({ peer, currentUser, onlineIds }) {
 
           <form className="composer" onSubmit={send}>
             <div className="composer-inner">
+              <label className="composer-attach" title="Envoyer une image">
+                📎
+                <input type="file" accept="image/*" hidden onChange={onPickImage} />
+              </label>
               <input
                 value={input}
                 onChange={handleChange}
-                placeholder={`Envoyer un message à ${peer.display_name}`}
+                placeholder={uploading ? 'Envoi de l’image…' : `Envoyer un message à ${peer.display_name}`}
                 maxLength={2000}
+                disabled={uploading}
               />
             </div>
           </form>

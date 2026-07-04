@@ -83,11 +83,29 @@ db.exec(`
     created_at   TEXT NOT NULL DEFAULT (datetime('now'))
   );
 
+  CREATE TABLE IF NOT EXISTS message_reactions (
+    message_id INTEGER NOT NULL REFERENCES messages(id) ON DELETE CASCADE,
+    user_id    INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    emoji      TEXT NOT NULL,
+    PRIMARY KEY (message_id, user_id, emoji)
+  );
+
   CREATE INDEX IF NOT EXISTS idx_messages_channel ON messages(channel_id, id);
   CREATE INDEX IF NOT EXISTS idx_members_user ON server_members(user_id);
   CREATE INDEX IF NOT EXISTS idx_member_roles ON member_roles(server_id, user_id);
   CREATE INDEX IF NOT EXISTS idx_dm_pair ON dm_messages(sender_id, recipient_id, id);
+  CREATE INDEX IF NOT EXISTS idx_reactions ON message_reactions(message_id);
 `);
+
+// --- Migrations légères : ajoute les colonnes manquantes aux bases déjà créées ---
+function columnsOf(table) {
+  return new Set(db.prepare(`SELECT name FROM pragma_table_info('${table}')`).all().map((r) => r.name));
+}
+const msgCols = columnsOf('messages');
+if (!msgCols.has('edited')) db.exec('ALTER TABLE messages ADD COLUMN edited INTEGER NOT NULL DEFAULT 0');
+if (!msgCols.has('attachment_url')) db.exec('ALTER TABLE messages ADD COLUMN attachment_url TEXT');
+const dmCols = columnsOf('dm_messages');
+if (!dmCols.has('attachment_url')) db.exec('ALTER TABLE dm_messages ADD COLUMN attachment_url TEXT');
 
 /** Exécute une fonction dans une transaction (node:sqlite n'a pas de wrapper natif). */
 export function transaction(fn) {

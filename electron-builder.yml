@@ -36,6 +36,10 @@ mac:
   target: [dmg]
   category: public.app-category.social
   identity: null # pas de signature (version de test)
+  # Indispensable : sans ces descriptions, macOS refuse/plante l'accès micro & caméra.
+  extendInfo:
+    NSMicrophoneUsageDescription: Concord utilise ton microphone pour les salons vocaux.
+    NSCameraUsageDescription: Concord peut utiliser ta caméra pour la vidéo.
 
 linux:
   target: [AppImage]

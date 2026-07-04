@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, shell } = require('electron');
+const { app, BrowserWindow, ipcMain, shell, session, systemPreferences } = require('electron');
 const path = require('node:path');
 const electronUpdater = require('electron-updater');
 
@@ -6,6 +6,18 @@ const autoUpdater = electronUpdater.autoUpdater;
 const isDev = !app.isPackaged;
 
 let mainWindow = null;
+
+// Autorise le micro (et la caméra) demandés par l'interface web à l'intérieur de l'app.
+function setupMediaPermissions() {
+  session.defaultSession.setPermissionRequestHandler((_wc, permission, callback) => {
+    const allowed = ['media', 'microphone', 'camera', 'audioCapture', 'videoCapture'];
+    callback(allowed.includes(permission));
+  });
+  // Sur macOS, déclenche la demande d'autorisation système au démarrage.
+  if (process.platform === 'darwin') {
+    systemPreferences.askForMediaAccess('microphone').catch(() => {});
+  }
+}
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -42,6 +54,7 @@ function createWindow() {
 }
 
 app.whenReady().then(() => {
+  setupMediaPermissions();
   createWindow();
 
   // Mises à jour automatiques (uniquement en version installée).

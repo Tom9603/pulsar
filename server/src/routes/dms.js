@@ -48,7 +48,7 @@ router.get('/:userId/messages', (req, res) => {
 
   const limit = Math.min(parseInt(req.query.limit, 10) || 50, 100);
   const rows = db.prepare(`
-    SELECT d.id, d.content, d.created_at, d.sender_id, d.recipient_id,
+    SELECT d.id, d.content, d.created_at, d.sender_id, d.recipient_id, d.attachment_url,
            u.username, u.display_name, u.avatar_color, u.avatar_url
     FROM dm_messages d JOIN users u ON u.id = d.sender_id
     WHERE (d.sender_id = @me AND d.recipient_id = @other)
