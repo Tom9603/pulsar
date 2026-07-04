@@ -1,7 +1,7 @@
 /** Logo Pulsar : signal qui pulse (arcs) en dégradé violet→bleu + mot-symbole. */
-export default function Logo({ size = 62, wordmark = true }) {
+export default function Logo({ size = 62, wordmark = true, row = false }) {
   return (
-    <div className="brand-logo">
+    <div className={`brand-logo ${row ? 'brand-row' : ''}`}>
       <svg width={size} height={(size * 110) / 120} viewBox="0 0 120 110" aria-hidden="true">
         <defs>
           <linearGradient id="sig" x1="0" y1="1" x2="1" y2="0">

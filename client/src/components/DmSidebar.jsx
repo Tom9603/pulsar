@@ -26,12 +26,12 @@ export default function DmSidebar({ conversations, activeUserId, onlineIds, onSe
         <span>Messages privés</span>
       </div>
 
-      <div className={`friends-entry ${friendsActive ? 'active' : ''}`} onClick={onOpenFriends}>
-        👥 Amis
-      </div>
-      <div className={`friends-entry ${savedActive ? 'active' : ''}`} onClick={onOpenSaved}>
-        🔖 Sauvegardés
-      </div>
+      {onOpenFriends && (
+        <div className={`friends-entry ${friendsActive ? 'active' : ''}`} onClick={onOpenFriends}>👥 Amis</div>
+      )}
+      {onOpenSaved && (
+        <div className={`friends-entry ${savedActive ? 'active' : ''}`} onClick={onOpenSaved}>🔖 Sauvegardés</div>
+      )}
 
       <form onSubmit={start} style={{ padding: '10px 8px' }}>
         <input
