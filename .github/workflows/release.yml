@@ -13,6 +13,10 @@ jobs:
         os: [macos-latest, windows-latest, ubuntu-latest]
     runs-on: ${{ matrix.os }}
 
+    # Autorise le jeton automatique à créer la Release et y déposer les fichiers.
+    permissions:
+      contents: write
+
     steps:
       - name: Récupérer le code
         uses: actions/checkout@v4
