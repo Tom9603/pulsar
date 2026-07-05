@@ -17,6 +17,9 @@ files:
 extraMetadata:
   main: desktop/main.js
 
+# Signe l'app en ad-hoc (macOS) pour éviter le message « endommagée » sur Apple Silicon.
+afterPack: desktop/afterPack.cjs
+
 # Où publier les versions pour la mise à jour automatique.
 publish:
   provider: github
