@@ -1,6 +1,6 @@
 import db from './db.js';
 import { verifyToken, publicUser } from './auth.js';
-import { hasPermission } from './permissions.js';
+import { hasPermission, canAccessChannel } from './permissions.js';
 
 // Présence : userId -> Set(socketId)
 const onlineUsers = new Map();
@@ -163,7 +163,7 @@ export function setupSocket(io) {
       if (!text && !attach) return;
       const channel = db.prepare('SELECT * FROM channels WHERE id = ?').get(channelId);
       if (!channel || channel.type !== 'text') return;
-      if (!db.prepare('SELECT 1 FROM server_members WHERE server_id = ? AND user_id = ?').get(channel.server_id, userId)) return;
+      if (!canAccessChannel(channelId, userId)) return;
 
       let replyId = null;
       if (replyTo) {
@@ -193,7 +193,7 @@ export function setupSocket(io) {
     socket.on('channel:read', ({ channelId }) => {
       const channel = db.prepare('SELECT server_id FROM channels WHERE id = ?').get(channelId);
       if (!channel) return;
-      if (!db.prepare('SELECT 1 FROM server_members WHERE server_id = ? AND user_id = ?').get(channel.server_id, userId)) return;
+      if (!canAccessChannel(channelId, userId)) return;
       const last = db.prepare('SELECT MAX(id) AS m FROM messages WHERE channel_id = ?').get(channelId).m || 0;
       db.prepare(
         'INSERT INTO channel_reads (user_id, channel_id, last_read_id) VALUES (?, ?, ?) ON CONFLICT(user_id, channel_id) DO UPDATE SET last_read_id = excluded.last_read_id'
@@ -235,7 +235,7 @@ export function setupSocket(io) {
 
     socket.on('typing', ({ channelId }) => {
       const serverId = serverIdOfChannel(channelId);
-      if (!serverId) return;
+      if (!serverId || !canAccessChannel(channelId, userId)) return;
       socket.to('server:' + serverId).emit('typing', { channelId: Number(channelId), user });
     });
 
@@ -277,7 +277,7 @@ export function setupSocket(io) {
     socket.on('voice:join', ({ channelId }) => {
       const channel = db.prepare('SELECT * FROM channels WHERE id = ?').get(channelId);
       if (!channel || channel.type !== 'voice') return;
-      if (!db.prepare('SELECT 1 FROM server_members WHERE server_id = ? AND user_id = ?').get(channel.server_id, userId)) return;
+      if (!canAccessChannel(channelId, userId)) return;
 
       removeSocketFromVoice(io, socket);
 
@@ -380,8 +380,8 @@ export function setupSocket(io) {
     // ------------------------------------------------------------------
     function watchMember(channelId) {
       const channel = db.prepare('SELECT server_id FROM channels WHERE id = ?').get(channelId);
-      if (!channel) return null;
-      return db.prepare('SELECT 1 FROM server_members WHERE server_id = ? AND user_id = ?').get(channel.server_id, userId) ? channel : null;
+      if (!channel || !canAccessChannel(channelId, userId)) return null;
+      return channel;
     }
 
     socket.on('watch:start', ({ channelId, url }) => {

@@ -2,6 +2,12 @@
 
 let audioCtx = null;
 
+// Préférences (persistées) : son et notifications bureau activés par défaut.
+export const isSoundEnabled = () => localStorage.getItem('pulsar_sound') !== 'off';
+export const setSoundEnabled = (on) => localStorage.setItem('pulsar_sound', on ? 'on' : 'off');
+export const isDesktopEnabled = () => localStorage.getItem('pulsar_desktop') !== 'off';
+export const setDesktopEnabled = (on) => localStorage.setItem('pulsar_desktop', on ? 'on' : 'off');
+
 /** Demande l'autorisation d'afficher des notifications (au démarrage). */
 export function initNotifications() {
   if (typeof Notification !== 'undefined' && Notification.permission === 'default') {
@@ -11,6 +17,7 @@ export function initNotifications() {
 
 /** Petit « ping » sonore (généré, aucun fichier requis). */
 export function playPing() {
+  if (!isSoundEnabled()) return;
   try {
     audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
     if (audioCtx.state === 'suspended') audioCtx.resume();
@@ -33,6 +40,7 @@ export function playPing() {
 
 /** Notification système (si autorisée). onClick ramène la fenêtre au premier plan. */
 export function desktopNotify(title, body, onClick) {
+  if (!isDesktopEnabled()) return;
   if (typeof Notification === 'undefined' || Notification.permission !== 'granted') return;
   try {
     const n = new Notification(title, { body, silent: true });

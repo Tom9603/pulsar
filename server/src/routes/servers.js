@@ -7,6 +7,7 @@ import {
   memberPermissions,
   isOwner,
   sanitizePermissions,
+  canAccessChannel,
 } from '../permissions.js';
 import { getIO } from '../realtime.js';
 
@@ -88,9 +89,17 @@ router.get('/:id', (req, res) => {
   if (!server) return res.status(404).json({ error: 'Serveur introuvable' });
   if (!isMember(server.id, req.userId)) return res.status(403).json({ error: 'Vous n’êtes pas membre de ce serveur' });
 
-  const channels = db.prepare(
+  const allChannels = db.prepare(
     "SELECT * FROM channels WHERE server_id = ? ORDER BY (type = 'voice') ASC, position ASC, id ASC"
   ).all(server.id);
+
+  // Salons privés (« espaces clients ») : masqués à qui n'y a pas accès.
+  const channels = allChannels.filter((c) => !c.private || canAccessChannel(c.id, req.userId));
+  for (const c of channels) {
+    if (c.private) {
+      c.member_ids = db.prepare('SELECT user_id FROM channel_members WHERE channel_id = ?').all(c.id).map((r) => r.user_id);
+    }
+  }
 
   // Non-lus + mentions par salon textuel
   const me = db.prepare('SELECT username FROM users WHERE id = ?').get(req.userId);
@@ -196,13 +205,42 @@ router.delete('/:id/categories/:categoryId', requireManageChannels, (req, res) =
   res.json({ ok: true });
 });
 
-/** Déplacer un salon dans une catégorie (ou l'en retirer avec categoryId null). */
+/** Modifier un salon : catégorie, nom, étiquette projet/client, accès privé. */
 router.patch('/:id/channels/:channelId', requireManageChannels, (req, res) => {
   const channel = db.prepare('SELECT * FROM channels WHERE id = ? AND server_id = ?').get(req.params.channelId, req.server.id);
   if (!channel) return res.status(404).json({ error: 'Salon introuvable' });
-  const catId = req.body?.category_id || null;
+  const catId = req.body?.category_id === undefined ? channel.category_id : (req.body.category_id || null);
   const name = (req.body?.name ?? '').toString().trim() || channel.name;
-  db.prepare('UPDATE channels SET category_id = ?, name = ? WHERE id = ?').run(catId, name, channel.id);
+  const clientLabel = req.body?.client_label === undefined
+    ? channel.client_label
+    : ((req.body.client_label || '').toString().trim().slice(0, 80) || null);
+  const isPrivate = req.body?.private === undefined ? channel.private : (req.body.private ? 1 : 0);
+  db.prepare('UPDATE channels SET category_id = ?, name = ?, client_label = ?, private = ? WHERE id = ?')
+    .run(catId, name, clientLabel, isPrivate, channel.id);
+  // Passage en privé : garantir que le gestionnaire courant reste membre.
+  if (isPrivate && !channel.private) {
+    db.prepare('INSERT OR IGNORE INTO channel_members (channel_id, user_id) VALUES (?, ?)').run(channel.id, req.userId);
+  }
+  notifyServerUpdate(req.server.id);
+  res.json({ ok: true });
+});
+
+/** Inviter un membre dans un espace privé (salon client). */
+router.post('/:id/channels/:channelId/members', requireManageChannels, (req, res) => {
+  const channel = db.prepare('SELECT * FROM channels WHERE id = ? AND server_id = ?').get(req.params.channelId, req.server.id);
+  if (!channel) return res.status(404).json({ error: 'Salon introuvable' });
+  const targetId = Number(req.body?.userId);
+  if (!isMember(req.server.id, targetId)) return res.status(400).json({ error: 'Cette personne n’est pas membre du serveur' });
+  db.prepare('INSERT OR IGNORE INTO channel_members (channel_id, user_id) VALUES (?, ?)').run(channel.id, targetId);
+  notifyServerUpdate(req.server.id);
+  res.json({ ok: true });
+});
+
+/** Retirer un membre d'un espace privé. */
+router.delete('/:id/channels/:channelId/members/:userId', requireManageChannels, (req, res) => {
+  const channel = db.prepare('SELECT * FROM channels WHERE id = ? AND server_id = ?').get(req.params.channelId, req.server.id);
+  if (!channel) return res.status(404).json({ error: 'Salon introuvable' });
+  db.prepare('DELETE FROM channel_members WHERE channel_id = ? AND user_id = ?').run(channel.id, Number(req.params.userId));
   notifyServerUpdate(req.server.id);
   res.json({ ok: true });
 });
@@ -219,10 +257,20 @@ router.post('/:id/channels', (req, res) => {
   const type = req.body?.type === 'voice' ? 'voice' : 'text';
   if (!name) return res.status(400).json({ error: 'Le nom du salon est requis' });
 
+  const isPrivate = req.body?.private ? 1 : 0;
+  const clientLabel = (req.body?.client_label || '').toString().trim().slice(0, 80) || null;
+
   const row = db.prepare('SELECT MAX(position) AS max FROM channels WHERE server_id = ?').get(server.id);
   const info = db.prepare(
-    'INSERT INTO channels (server_id, name, type, position) VALUES (?, ?, ?, ?)'
-  ).run(server.id, name, type, (row.max ?? 0) + 1);
+    'INSERT INTO channels (server_id, name, type, position, private, client_label) VALUES (?, ?, ?, ?, ?, ?)'
+  ).run(server.id, name, type, (row.max ?? 0) + 1, isPrivate, clientLabel);
+
+  // Membres invités dans l'espace privé (le créateur est ajouté d'office).
+  if (isPrivate) {
+    const ids = new Set([req.userId, ...(Array.isArray(req.body?.member_ids) ? req.body.member_ids.map(Number) : [])]);
+    const add = db.prepare('INSERT OR IGNORE INTO channel_members (channel_id, user_id) VALUES (?, ?)');
+    for (const uid of ids) if (isMember(server.id, uid)) add.run(info.lastInsertRowid, uid);
+  }
 
   const channel = db.prepare('SELECT * FROM channels WHERE id = ?').get(info.lastInsertRowid);
   notifyServerUpdate(server.id);

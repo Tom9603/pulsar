@@ -19,12 +19,14 @@ import MemberList from '../components/MemberList.jsx';
 import DmSidebar from '../components/DmSidebar.jsx';
 import DmChat from '../components/DmChat.jsx';
 import FriendsPanel from '../components/FriendsPanel.jsx';
-import SavedPanel from '../components/SavedPanel.jsx';
+import ActionCenter from '../components/ActionCenter.jsx';
+import TaskModal from '../components/TaskModal.jsx';
 import CreateServerModal from '../components/CreateServerModal.jsx';
 import SettingsModal from '../components/SettingsModal.jsx';
 import RolesModal from '../components/RolesModal.jsx';
 import MemberModal from '../components/MemberModal.jsx';
 import ServerSettingsModal from '../components/ServerSettingsModal.jsx';
+import ChannelAccessModal from '../components/ChannelAccessModal.jsx';
 import SearchModal from '../components/SearchModal.jsx';
 import CallOverlay from '../components/CallOverlay.jsx';
 import Whiteboard from '../components/Whiteboard.jsx';
@@ -54,6 +56,13 @@ export default function AppLayout() {
   const [searchOpen, setSearchOpen] = useState(false);
   const [whiteboardOpen, setWhiteboardOpen] = useState(false);
   const [memberTarget, setMemberTarget] = useState(null);
+  const [accessChannel, setAccessChannel] = useState(null);
+
+  // Tâches (centre « À faire »)
+  const [tasks, setTasks] = useState([]);
+  const [taskFilter, setTaskFilter] = useState('mine');
+  const [taskModal, setTaskModal] = useState(null); // { task } | { prefill, members }
+  const todoCount = tasks.filter((t) => t.status !== 'done' && t.assignee_id === user.id).length;
 
   const can = makeCan(detail?.is_owner, detail?.my_permissions);
 
@@ -81,6 +90,7 @@ export default function AppLayout() {
       return firstText ? firstText.id : data.channels[0]?.id ?? null;
     });
     setMemberTarget((mt) => (mt ? data.members.find((m) => m.id === mt.id) || null : mt));
+    setAccessChannel((ac) => (ac ? data.channels.find((c) => c.id === ac.id) || null : ac));
     return data;
   }, []);
 
@@ -90,10 +100,17 @@ export default function AppLayout() {
     return conversations;
   }, []);
 
+  const refreshTasks = useCallback(async () => {
+    const { tasks } = await api('/tasks');
+    setTasks(tasks);
+    return tasks;
+  }, []);
+
   useEffect(() => {
     initNotifications();
     refreshServers();
     refreshConversations();
+    refreshTasks();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -158,6 +175,13 @@ export default function AppLayout() {
       desktopNotify('🔔 Rappel : ' + (item.author_name || 'votre message'), item.content || '📎 pièce jointe', openSaved);
     };
     const onSound = ({ sound }) => playSound(sound);
+    const onTaskChanged = ({ type, task }) => {
+      refreshTasks();
+      if (type === 'created' && task.assignee_id === user.id && task.creator_id !== user.id) {
+        playPing();
+        desktopNotify('✅ Nouvelle tâche assignée', task.title, () => setSection('saved'));
+      }
+    };
 
     socket.on('presence', onPresence);
     socket.on('voice:state', onVoice);
@@ -167,14 +191,16 @@ export default function AppLayout() {
     socket.on('server:kicked', onKicked);
     socket.on('reminder:due', onReminder);
     socket.on('sound:play', onSound);
+    socket.on('task:changed', onTaskChanged);
     return () => {
       socket.off('presence', onPresence); socket.off('voice:state', onVoice);
       socket.off('server:updated', onServerUpdated); socket.off('dm:new', onDmNew);
       socket.off('message:new', onMessageNew); socket.off('server:kicked', onKicked);
       socket.off('reminder:due', onReminder); socket.off('sound:play', onSound);
+      socket.off('task:changed', onTaskChanged);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user.id, refreshDetail, refreshServers, refreshConversations]);
+  }, [user.id, refreshDetail, refreshServers, refreshConversations, refreshTasks]);
 
   // ---- Actions ----
   async function handleServerReady(server) {
@@ -182,7 +208,7 @@ export default function AppLayout() {
     openServer(server.id);
     setModal(null);
   }
-  async function createChannel(name, type) { await api(`/servers/${activeServerId}/channels`, { method: 'POST', body: { name, type } }); await refreshDetail(activeServerId, true); }
+  async function createChannel(name, type, opts = {}) { await api(`/servers/${activeServerId}/channels`, { method: 'POST', body: { name, type, ...opts } }); await refreshDetail(activeServerId, true); }
   async function deleteChannel(channelId) { await api(`/channels/${channelId}`, { method: 'DELETE' }); await refreshDetail(activeServerId, activeChannelId !== channelId); }
   async function deleteServer() {
     if (!confirm(`Supprimer définitivement « ${detail.server.name} » ?`)) return;
@@ -197,6 +223,14 @@ export default function AppLayout() {
     setActiveServerId(list[0]?.id ?? null); setSection('home');
   }
   async function startDm(username) { const { user: target } = await api('/dms/start', { method: 'POST', body: { username } }); openDm(target); }
+
+  // ---- Tâches ----
+  const openTaskFromMessage = (prefill) => setTaskModal({ prefill, members: detail?.members || [] });
+  const openNewTask = () => setTaskModal({ prefill: {}, members: [] });
+  const editTask = (task) => setTaskModal({ task });
+  const toggleTask = async (task) => { await api(`/tasks/${task.id}`, { method: 'PATCH', body: { status: task.status === 'done' ? 'todo' : 'done' } }); refreshTasks(); };
+  const setTaskStatus = async (task, status) => { await api(`/tasks/${task.id}`, { method: 'PATCH', body: { status } }); refreshTasks(); };
+  const deleteTask = async (task) => { if (confirm(`Supprimer la tâche « ${task.title} » ?`)) { await api(`/tasks/${task.id}`, { method: 'DELETE' }); refreshTasks(); } };
 
   function joinVoice(channel) { setVoiceInfo({ id: channel.id, name: channel.name }); voice.join(channel.id); }
   function leaveVoice() { voice.leave(); setVoiceInfo(null); }
@@ -221,6 +255,7 @@ export default function AppLayout() {
           servers={servers}
           activeServerId={activeServerId}
           hasUnreadDm={hasUnreadDm}
+          todoCount={todoCount}
           onSection={onSection}
           onSelectServer={openServer}
           onAddServer={() => setModal('create')}
@@ -232,6 +267,7 @@ export default function AppLayout() {
             activeChannelId={activeChannelId} voiceStates={voiceStates}
             connectedChannelId={voice.connectedChannelId}
             onSelectChannel={setActiveChannelId} onCreateChannel={createChannel} onDeleteChannel={deleteChannel}
+            onManageAccess={setAccessChannel}
             onDeleteServer={deleteServer} onLeaveServer={leaveServer}
             onManageRoles={() => setModal('roles')} onServerSettings={() => setModal('serverSettings')}
           />
@@ -246,7 +282,13 @@ export default function AppLayout() {
               onOpenServer={openServer} onOpenDm={openDm} onOpenFriends={openFriends} onOpenSaved={openSaved} onAddServer={() => setModal('create')} />
           )}
           {section === 'friends' && <FriendsPanel onlineIds={onlineIds} onOpenDm={openDm} />}
-          {section === 'saved' && <SavedPanel currentUser={user} />}
+          {section === 'saved' && (
+            <ActionCenter
+              currentUser={user} tasks={tasks} taskFilter={taskFilter} onTaskFilter={setTaskFilter}
+              onToggleTask={toggleTask} onSetTaskStatus={setTaskStatus} onEditTask={editTask}
+              onDeleteTask={deleteTask} onNewTask={openNewTask}
+            />
+          )}
           {section === 'dm' && (
             activeDm
               ? <DmChat peer={activeDm} currentUser={user} onlineIds={onlineIds} onCall={call.startCall} />
@@ -256,9 +298,10 @@ export default function AppLayout() {
             activeChannel ? (
               <div className="main-content">
                 <div className="content-header">
-                  <span className="hash">{activeChannel.type === 'voice' ? '🔊' : '#'}</span>
+                  <span className="hash">{activeChannel.type === 'voice' ? '🔊' : activeChannel.private ? '🔒' : '#'}</span>
                   <span>{activeChannel.name}</span>
-                  {activeChannel.type === 'text' && <span className="topic">Salon textuel</span>}
+                  {activeChannel.client_label && <span className="topic topic-client">📁 {activeChannel.client_label}</span>}
+                  {activeChannel.type === 'text' && !activeChannel.client_label && <span className="topic">Salon textuel</span>}
                   <span className="spacer" />
                   <button className="header-btn" title="Tableau blanc partagé" onClick={() => setWhiteboardOpen(true)}>🎨</button>
                   <button className="header-btn" title="Rechercher" onClick={() => setSearchOpen(true)}>🔍</button>
@@ -270,7 +313,7 @@ export default function AppLayout() {
                       connected={voice.connectedChannelId === activeChannel.id} muted={voice.muted}
                       onJoin={() => joinVoice(activeChannel)} onLeave={leaveVoice} onToggleMute={voice.toggleMute} />
                   ) : (
-                    <ChatView channel={activeChannel} currentUser={user} canManage={can('MANAGE_CHANNELS')} />
+                    <ChatView channel={activeChannel} currentUser={user} canManage={can('MANAGE_CHANNELS')} onCreateTask={openTaskFromMessage} />
                   )}
                 </div>
               </div>
@@ -294,6 +337,18 @@ export default function AppLayout() {
       <CallOverlay call={call} />
       {whiteboardOpen && activeChannel && <Whiteboard channelId={activeChannel.id} onClose={() => setWhiteboardOpen(false)} />}
 
+      {taskModal && (
+        <TaskModal
+          task={taskModal.task}
+          prefill={taskModal.prefill}
+          members={taskModal.members}
+          servers={servers}
+          currentUser={user}
+          onClose={() => setTaskModal(null)}
+          onSaved={refreshTasks}
+        />
+      )}
+
       {modal === 'create' && <CreateServerModal onClose={() => setModal(null)} onReady={handleServerReady} />}
       {modal === 'settings' && <SettingsModal onClose={() => setModal(null)} />}
       {modal === 'roles' && detail && <RolesModal serverId={detail.server.id} roles={detail.roles} onClose={() => setModal(null)} onChanged={() => refreshDetail(activeServerId, true)} />}
@@ -302,6 +357,10 @@ export default function AppLayout() {
       {memberTarget && detail && (
         <MemberModal member={memberTarget} roles={detail.roles} server={detail.server} canManageRoles={can('MANAGE_ROLES')} canKick={can('KICK_MEMBERS')} currentUserId={user.id}
           onClose={() => setMemberTarget(null)} onChanged={() => refreshDetail(activeServerId, true)} onMessage={openDm} />
+      )}
+      {accessChannel && detail && (
+        <ChannelAccessModal channel={accessChannel} members={detail.members} serverId={detail.server.id} ownerId={detail.server.owner_id}
+          onClose={() => setAccessChannel(null)} onChanged={() => refreshDetail(activeServerId, true)} />
       )}
     </div>
   );

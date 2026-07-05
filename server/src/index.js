@@ -21,6 +21,7 @@ import friendRoutes from './routes/friends.js';
 import savedRoutes from './routes/saved.js';
 import quickRoutes from './routes/quick.js';
 import soundRoutes from './routes/sounds.js';
+import taskRoutes from './routes/tasks.js';
 import { setupSocket } from './socket.js';
 import { setIO } from './realtime.js';
 
@@ -41,6 +42,7 @@ app.use('/api/friends', friendRoutes);
 app.use('/api/saved', savedRoutes);
 app.use('/api/quick', quickRoutes);
 app.use('/api/sounds', soundRoutes);
+app.use('/api/tasks', taskRoutes);
 
 // Fichiers uploadés : nosniff + téléchargement forcé pour tout ce qui n'est pas média (anti-XSS).
 app.use(

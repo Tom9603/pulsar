@@ -1275,6 +1275,136 @@ input, textarea { font-family: inherit; }
 .contact-name { font-weight: 600; font-size: 14px; }
 .contact-sub { font-size: 12px; color: var(--text-muted); }
 
+/* ================= Palier Pro v0.9 ================= */
+
+/* Rail : compteur « À faire » */
+.nav-count {
+  position: absolute; top: -4px; right: -8px; min-width: 16px; height: 16px; padding: 0 4px;
+  background: var(--grad); color: #fff; font-size: 10px; font-weight: 700; line-height: 16px;
+  text-align: center; border-radius: 8px; box-shadow: 0 0 0 2px var(--bg-rail);
+}
+.nav-ico { position: relative; }
+
+/* Centre « À faire » — onglets */
+.ac-tabs { display: flex; gap: 4px; margin-left: 16px; }
+.ac-tabs button {
+  background: none; color: var(--text-muted); font-size: 13px; font-weight: 600; padding: 6px 12px;
+  border-radius: 999px; display: flex; align-items: center; gap: 6px;
+}
+.ac-tabs button.active { background: var(--bg-active); color: var(--text); }
+.ac-badge { background: var(--grad); color: #fff; font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 999px; }
+.ac-body { flex: 1; overflow-y: auto; }
+
+/* Panneau des tâches */
+.tasks-panel { padding: 18px 22px; max-width: 860px; margin: 0 auto; width: 100%; }
+.tasks-bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 18px; }
+.seg { display: inline-flex; background: var(--bg-content-alt); border: 1px solid var(--border); border-radius: 999px; padding: 3px; }
+.seg button { background: none; color: var(--text-muted); font-size: 13px; font-weight: 600; padding: 6px 14px; border-radius: 999px; }
+.seg button.active { background: var(--grad); color: #fff; }
+.tasks-empty { color: var(--text-faint); font-size: 14px; text-align: center; padding: 40px 20px; }
+.tasks-group { margin-bottom: 22px; }
+.tasks-group h3 { font-size: 13px; text-transform: uppercase; letter-spacing: 0.6px; color: var(--text-muted); margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
+.tasks-count { background: var(--bg-content-alt); color: var(--text-muted); font-size: 11px; padding: 1px 8px; border-radius: 999px; }
+
+.task-item {
+  display: flex; align-items: flex-start; gap: 12px; padding: 12px 14px; margin-bottom: 8px;
+  background: var(--bg-content-alt); border: 1px solid var(--border); border-radius: 14px; transition: border-color 0.15s;
+}
+.task-item:hover { border-color: rgba(139, 92, 246, 0.4); }
+.task-item.is-done { opacity: 0.55; }
+.task-item.is-done .task-title { text-decoration: line-through; }
+.task-check {
+  flex-shrink: 0; width: 22px; height: 22px; margin-top: 1px; border-radius: 50%;
+  border: 2px solid var(--text-faint); background: none; color: #fff; font-size: 13px; line-height: 1;
+  display: flex; align-items: center; justify-content: center; cursor: pointer;
+}
+.task-check.on { background: var(--grad); border-color: transparent; }
+.task-main { flex: 1; min-width: 0; }
+.task-title { display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 15px; }
+.task-prio { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.task-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 6px; font-size: 12px; color: var(--text-muted); }
+.task-assignee { display: inline-flex; align-items: center; gap: 5px; }
+.task-unassigned { color: var(--text-faint); font-style: italic; }
+.task-due { color: var(--text-muted); }
+.task-due.overdue { color: var(--danger); font-weight: 600; }
+.task-src { background: var(--bg-input); padding: 1px 8px; border-radius: 6px; }
+.task-actions { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
+.task-actions select {
+  background: var(--bg-input); border: 1px solid var(--border); color: var(--text); font-size: 12px;
+  padding: 4px 6px; border-radius: 8px; cursor: pointer;
+}
+.task-actions button { background: none; padding: 4px 6px; border-radius: 6px; font-size: 14px; }
+.task-actions button:hover { background: var(--bg-hover); }
+
+/* Fenêtre de tâche */
+.task-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0 16px; }
+.task-grid .field { min-width: 0; }
+
+/* Rappel : date précise */
+.save-custom { border-top: 1px solid var(--border); margin-top: 6px; padding-top: 8px; display: flex; flex-direction: column; gap: 6px; }
+.save-custom label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.4px; color: var(--text-faint); }
+.save-custom input { background: var(--bg-input); border: 1px solid var(--border); color: var(--text); border-radius: 8px; padding: 6px 8px; font-size: 12px; }
+.save-custom-go { background: var(--grad) !important; color: #fff !important; text-align: center !important; justify-content: center; font-weight: 600; }
+.save-custom-go:disabled { opacity: 0.5; }
+
+/* En-tête : étiquette projet/client */
+.content-header .topic-client { color: var(--accent); border-left-color: rgba(139, 92, 246, 0.4); }
+
+/* Barre des salons : espaces clients */
+.channel-tag {
+  font-size: 10px; font-weight: 600; color: var(--accent); background: rgba(139, 92, 246, 0.14);
+  padding: 1px 7px; border-radius: 6px; margin-left: auto; max-width: 96px; overflow: hidden;
+  text-overflow: ellipsis; white-space: nowrap;
+}
+.channel-add-form { display: flex; flex-direction: column; gap: 8px; padding: 10px; margin: 4px 6px; background: var(--bg-content-alt); border: 1px solid var(--border); border-radius: 12px; }
+.channel-add-input { width: 100%; padding: 8px 10px; background: var(--bg-input); border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-size: 13px; }
+.channel-add-check { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-muted); cursor: pointer; }
+.channel-add-invite { background: var(--bg-input); border-radius: 8px; padding: 8px; max-height: 140px; overflow-y: auto; }
+.cai-title { font-size: 11px; text-transform: uppercase; letter-spacing: 0.4px; color: var(--text-faint); margin-bottom: 6px; }
+.cai-empty { font-size: 12px; color: var(--text-faint); }
+.cai-row { display: flex; align-items: center; gap: 8px; font-size: 13px; padding: 3px 0; cursor: pointer; }
+.channel-add-actions { display: flex; justify-content: flex-end; gap: 8px; }
+
+/* Fenêtre d'accès à un espace client */
+.access-list { max-height: 46vh; overflow-y: auto; margin-top: 4px; }
+.access-row { display: flex; align-items: center; gap: 10px; padding: 8px; border-radius: 10px; cursor: pointer; font-size: 14px; }
+.access-row:hover { background: var(--bg-hover); }
+.access-name { flex: 1; }
+
+/* Réglages en menus */
+.modal-settings { width: 760px; padding: 0; }
+.settings-layout { display: flex; min-height: 520px; max-height: 84vh; }
+.settings-menu { width: 210px; flex-shrink: 0; background: var(--bg-sidebar); border-right: 1px solid var(--border); border-radius: 18px 0 0 18px; padding: 20px 12px; overflow-y: auto; }
+.settings-menu-title { font-family: var(--font-display); font-weight: 700; font-size: 16px; padding: 0 8px 14px; }
+.settings-menu-group { margin-bottom: 14px; }
+.settings-menu-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.6px; color: var(--text-faint); padding: 0 8px 6px; }
+.settings-menu button { display: block; width: 100%; text-align: left; background: none; color: var(--text-muted); font-size: 13px; font-weight: 500; padding: 8px 10px; border-radius: 9px; }
+.settings-menu button:hover { background: var(--bg-hover); color: var(--text); }
+.settings-menu button.active { background: var(--bg-active); color: var(--text); }
+.settings-content { flex: 1; padding: 26px; overflow-y: auto; min-width: 0; }
+.settings-two { display: grid; grid-template-columns: 1fr 1fr; gap: 0 16px; }
+.settings-two .field { min-width: 0; }
+.settings-toggle { display: flex; align-items: center; gap: 12px; padding: 12px 0; font-size: 14px; color: var(--text); cursor: pointer; border-bottom: 1px solid var(--border); }
+.settings-toggle input { width: 18px; height: 18px; accent-color: var(--accent); }
+.cv-chip { display: flex; align-items: center; gap: 10px; margin-top: 8px; }
+.cv-chip a { color: var(--accent); font-size: 13px; font-weight: 600; }
+.cv-chip button { background: var(--bg-content-alt); border: 1px solid var(--border); color: var(--text-muted); font-size: 12px; padding: 4px 10px; border-radius: 8px; }
+
+/* Fiche pro (profil membre) */
+.pro-card { background: var(--bg-content-alt); border: 1px solid var(--border); border-radius: 14px; padding: 14px 16px; margin-bottom: 16px; display: flex; flex-direction: column; gap: 10px; }
+.pro-line { display: flex; flex-wrap: wrap; gap: 14px; font-size: 14px; color: var(--text); }
+.pro-contacts { display: flex; flex-wrap: wrap; gap: 12px; }
+.pro-contacts a { color: var(--accent); font-size: 13px; }
+.pro-skills { display: flex; flex-wrap: wrap; gap: 6px; }
+.pro-skill { background: var(--grad-soft); border: 1px solid rgba(139, 92, 246, 0.3); color: var(--text); font-size: 12px; padding: 3px 10px; border-radius: 999px; }
+.pro-summary { font-size: 13px; color: var(--text-muted); line-height: 1.5; white-space: pre-wrap; }
+.pro-cv { color: var(--accent); font-size: 13px; font-weight: 600; }
+
+@media (max-width: 640px) {
+  .task-grid, .settings-two { grid-template-columns: 1fr; }
+  .settings-menu { width: 150px; }
+}
+
 /* Scrollbars discrètes */
 ::-webkit-scrollbar { width: 8px; height: 8px; }
 ::-webkit-scrollbar-thumb { background: #0a0b0e; border-radius: 4px; }

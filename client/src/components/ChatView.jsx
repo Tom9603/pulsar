@@ -22,7 +22,7 @@ function shouldGroup(prev, cur) {
   return gap < 5 * 60 * 1000;
 }
 
-export default function ChatView({ channel, currentUser, canManage }) {
+export default function ChatView({ channel, currentUser, canManage, onCreateTask }) {
   const [messages, setMessages] = useState([]);
   const [typing, setTyping] = useState({});
   const [editingId, setEditingId] = useState(null);
@@ -220,6 +220,16 @@ export default function ChatView({ channel, currentUser, canManage }) {
                 <div className="msg-actions">
                   <button title="Réagir" onClick={() => (pickerFor === m.id ? setPickerFor(null) : openPicker(m.id))}>😊</button>
                   <button title="Répondre" onClick={() => setReplyingTo(m)}>↩️</button>
+                  {onCreateTask && (
+                    <button title="Créer une tâche depuis ce message" onClick={() => onCreateTask({
+                      title: (m.content || '').replace(/\s+/g, ' ').trim().slice(0, 140),
+                      description: m.content && m.content.length > 140 ? m.content : '',
+                      server_id: channel.server_id,
+                      channel_id: channel.id,
+                      source_message_id: m.id,
+                      source_label: `#${channel.name}`,
+                    })}>✔️</button>
+                  )}
                   <SaveButton content={m.content} attachmentUrl={m.attachment_url} authorName={m.display_name} source={`#${channel.name}`} />
                   {canManage && <button title={m.pinned ? 'Détacher' : 'Épingler'} onClick={() => pin(m)}>📌</button>}
                   {isOwn && <button title="Modifier" onClick={() => startEdit(m)}>✏️</button>}

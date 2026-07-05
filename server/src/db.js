@@ -146,12 +146,38 @@ db.exec(`
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
   );
 
+  CREATE TABLE IF NOT EXISTS tasks (
+    id                INTEGER PRIMARY KEY AUTOINCREMENT,
+    server_id         INTEGER REFERENCES servers(id) ON DELETE CASCADE,
+    channel_id        INTEGER REFERENCES channels(id) ON DELETE SET NULL,
+    creator_id        INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    assignee_id       INTEGER REFERENCES users(id) ON DELETE SET NULL,
+    title             TEXT NOT NULL,
+    description       TEXT DEFAULT '',
+    status            TEXT NOT NULL DEFAULT 'todo',
+    priority          TEXT NOT NULL DEFAULT 'normal',
+    due_at            INTEGER,
+    source_message_id INTEGER,
+    source_label      TEXT,
+    created_at        TEXT NOT NULL DEFAULT (datetime('now')),
+    done_at           TEXT
+  );
+
+  CREATE TABLE IF NOT EXISTS channel_members (
+    channel_id INTEGER NOT NULL REFERENCES channels(id) ON DELETE CASCADE,
+    user_id    INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    PRIMARY KEY (channel_id, user_id)
+  );
+
   CREATE INDEX IF NOT EXISTS idx_messages_channel ON messages(channel_id, id);
   CREATE INDEX IF NOT EXISTS idx_members_user ON server_members(user_id);
   CREATE INDEX IF NOT EXISTS idx_member_roles ON member_roles(server_id, user_id);
   CREATE INDEX IF NOT EXISTS idx_dm_pair ON dm_messages(sender_id, recipient_id, id);
   CREATE INDEX IF NOT EXISTS idx_reactions ON message_reactions(message_id);
   CREATE INDEX IF NOT EXISTS idx_friendships ON friendships(addressee_id, status);
+  CREATE INDEX IF NOT EXISTS idx_tasks_assignee ON tasks(assignee_id, status);
+  CREATE INDEX IF NOT EXISTS idx_tasks_server ON tasks(server_id);
+  CREATE INDEX IF NOT EXISTS idx_channel_members ON channel_members(channel_id);
 `);
 
 // --- Migrations légères : ajoute les colonnes manquantes aux bases déjà créées ---
@@ -169,7 +195,21 @@ ensure('messages', 'pinned', 'INTEGER NOT NULL DEFAULT 0');
 ensure('dm_messages', 'attachment_url', 'TEXT');
 ensure('dm_messages', 'attachment_name', 'TEXT');
 ensure('channels', 'category_id', 'INTEGER');
+ensure('channels', 'client_label', 'TEXT');            // projet / client rattaché au salon
+ensure('channels', 'private', 'INTEGER NOT NULL DEFAULT 0'); // salon restreint (espace client)
 ensure('servers', 'icon_url', 'TEXT');
+
+// Fiche professionnelle enrichie (profil)
+ensure('users', 'headline', 'TEXT');      // poste / intitulé ("Développeuse web", "Gérant")
+ensure('users', 'company', 'TEXT');       // entreprise
+ensure('users', 'location', 'TEXT');      // localisation
+ensure('users', 'website', 'TEXT');       // site / lien
+ensure('users', 'email_pro', 'TEXT');     // email professionnel affiché
+ensure('users', 'phone', 'TEXT');         // téléphone
+ensure('users', 'skills', 'TEXT');        // compétences (séparées par des virgules)
+ensure('users', 'cv_url', 'TEXT');        // CV joint (fichier)
+ensure('users', 'cv_name', 'TEXT');       // nom du fichier CV
+ensure('users', 'cv_summary', 'TEXT');    // résumé du CV en bref
 
 /** Exécute une fonction dans une transaction (node:sqlite n'a pas de wrapper natif). */
 export function transaction(fn) {

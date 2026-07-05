@@ -12,7 +12,8 @@ router.patch('/me', (req, res) => {
   const current = db.prepare('SELECT * FROM users WHERE id = ?').get(req.userId);
   if (!current) return res.status(404).json({ error: 'Utilisateur introuvable' });
 
-  const { display_name, avatar_color, avatar_url, about, status } = req.body || {};
+  const b = req.body || {};
+  const { display_name, avatar_color, avatar_url, about, status } = b;
 
   const nextName = (display_name ?? '').toString().trim() || current.display_name;
   const nextColor = /^#[0-9a-fA-F]{6}$/.test(avatar_color || '') ? avatar_color : current.avatar_color;
@@ -20,9 +21,27 @@ router.patch('/me', (req, res) => {
   const nextAbout = about === undefined ? current.about : String(about).slice(0, 300);
   const nextStatus = STATUSES.includes(status) ? status : current.status;
 
-  db.prepare(
-    'UPDATE users SET display_name = ?, avatar_color = ?, avatar_url = ?, about = ?, status = ? WHERE id = ?'
-  ).run(nextName, nextColor, nextAvatar, nextAbout, nextStatus, req.userId);
+  // Fiche professionnelle : chaque champ n'est mis à jour que s'il est fourni.
+  const txt = (key, max) => (b[key] === undefined ? current[key] : (String(b[key]).slice(0, max) || null));
+  const nextHeadline = txt('headline', 120);
+  const nextCompany = txt('company', 120);
+  const nextLocation = txt('location', 120);
+  const nextWebsite = txt('website', 200);
+  const nextEmailPro = txt('email_pro', 160);
+  const nextPhone = txt('phone', 40);
+  const nextSkills = txt('skills', 400);
+  const nextCvUrl = b.cv_url === undefined ? current.cv_url : (b.cv_url || null);
+  const nextCvName = b.cv_name === undefined ? current.cv_name : (b.cv_name ? String(b.cv_name).slice(0, 160) : null);
+  const nextCvSummary = txt('cv_summary', 800);
+
+  db.prepare(`
+    UPDATE users SET display_name = ?, avatar_color = ?, avatar_url = ?, about = ?, status = ?,
+      headline = ?, company = ?, location = ?, website = ?, email_pro = ?, phone = ?, skills = ?,
+      cv_url = ?, cv_name = ?, cv_summary = ?
+    WHERE id = ?
+  `).run(nextName, nextColor, nextAvatar, nextAbout, nextStatus,
+    nextHeadline, nextCompany, nextLocation, nextWebsite, nextEmailPro, nextPhone, nextSkills,
+    nextCvUrl, nextCvName, nextCvSummary, req.userId);
 
   const user = db.prepare('SELECT * FROM users WHERE id = ?').get(req.userId);
   res.json({ user: publicUser(user) });

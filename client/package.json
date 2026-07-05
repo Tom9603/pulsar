@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:isolated": "CONCORD_PROXY=http://localhost:4599 PORT=5199 vite",
     "build": "vite build",
     "preview": "vite preview"
   },

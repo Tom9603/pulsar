@@ -4,11 +4,11 @@ const SECTIONS = [
   { id: 'home', icon: '🏠', label: 'Accueil' },
   { id: 'dm', icon: '💬', label: 'Messages' },
   { id: 'friends', icon: '👥', label: 'Contacts' },
-  { id: 'saved', icon: '🔖', label: 'Rappels' },
+  { id: 'saved', icon: '✅', label: 'À faire' },
 ];
 
-/** Rail de navigation : sections de l'app (Accueil, Messages, Amis, Sauvés) + serveurs. */
-export default function NavRail({ section, servers, activeServerId, hasUnreadDm, onSection, onSelectServer, onAddServer }) {
+/** Rail de navigation : sections de l'app (Accueil, Messages, Contacts, À faire) + serveurs. */
+export default function NavRail({ section, servers, activeServerId, hasUnreadDm, todoCount = 0, onSection, onSelectServer, onAddServer }) {
   return (
     <nav className="navrail">
       {SECTIONS.map((s) => (
@@ -17,7 +17,11 @@ export default function NavRail({ section, servers, activeServerId, hasUnreadDm,
           className={`nav-item ${section === s.id ? 'active' : ''}`}
           onClick={() => onSection(s.id)}
         >
-          <span className="nav-ico">{s.icon}{s.id === 'dm' && hasUnreadDm && <span className="nav-dot" />}</span>
+          <span className="nav-ico">
+            {s.icon}
+            {s.id === 'dm' && hasUnreadDm && <span className="nav-dot" />}
+            {s.id === 'saved' && todoCount > 0 && <span className="nav-count">{todoCount}</span>}
+          </span>
           <span className="nav-label">{s.label}</span>
         </button>
       ))}

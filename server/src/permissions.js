@@ -52,3 +52,19 @@ export function isOwner(serverId, userId) {
 export function hasPermission(serverId, userId, key) {
   return memberPermissions(serverId, userId).has(key);
 }
+
+/**
+ * L'utilisateur peut-il voir / utiliser ce salon ?
+ * - Il doit être membre du serveur.
+ * - Si le salon est privé (« espace client »), seuls le propriétaire,
+ *   les gestionnaires de salons et les membres explicitement invités y accèdent.
+ */
+export function canAccessChannel(channelId, userId) {
+  const ch = db.prepare('SELECT id, server_id, private FROM channels WHERE id = ?').get(channelId);
+  if (!ch) return false;
+  if (!db.prepare('SELECT 1 FROM server_members WHERE server_id = ? AND user_id = ?').get(ch.server_id, userId)) return false;
+  if (!ch.private) return true;
+  if (isOwner(ch.server_id, userId)) return true;
+  if (hasPermission(ch.server_id, userId, 'MANAGE_CHANNELS')) return true;
+  return !!db.prepare('SELECT 1 FROM channel_members WHERE channel_id = ? AND user_id = ?').get(channelId, userId);
+}

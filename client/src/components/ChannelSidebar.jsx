@@ -11,6 +11,7 @@ export default function ChannelSidebar({
   onSelectChannel,
   onCreateChannel,
   onDeleteChannel,
+  onManageAccess,
   onDeleteServer,
   onLeaveServer,
   onManageRoles,
@@ -19,6 +20,9 @@ export default function ChannelSidebar({
   const [menuOpen, setMenuOpen] = useState(false);
   const [adding, setAdding] = useState(null); // 'text' | 'voice' | null
   const [newName, setNewName] = useState('');
+  const [isPrivate, setIsPrivate] = useState(false);
+  const [clientLabel, setClientLabel] = useState('');
+  const [invited, setInvited] = useState([]); // ids invités à l'espace privé
   const [collapsed, setCollapsed] = useState({});
 
   if (!detail) return <div className="channel-sidebar" />;
@@ -28,20 +32,29 @@ export default function ChannelSidebar({
   const textChannels = detail.channels.filter((c) => c.type === 'text');
   const voiceChannels = detail.channels.filter((c) => c.type === 'voice');
   const uncategorized = textChannels.filter((c) => !c.category_id);
+  const otherMembers = (detail.members || []).filter((m) => m.id !== detail.server.owner_id);
+
+  function startAdd(type) {
+    setAdding(type); setNewName(''); setIsPrivate(false); setClientLabel(''); setInvited([]);
+  }
 
   async function submitChannel(e) {
     e.preventDefault();
     const name = newName.trim();
     if (!name) return;
-    await onCreateChannel(name, adding);
-    setNewName('');
-    setAdding(null);
+    await onCreateChannel(name, adding, adding === 'text'
+      ? { private: isPrivate, client_label: clientLabel.trim(), member_ids: isPrivate ? invited : [] }
+      : {});
+    setAdding(null); setNewName(''); setIsPrivate(false); setClientLabel(''); setInvited([]);
   }
+
+  const toggleInvite = (id) => setInvited((v) => (v.includes(id) ? v.filter((x) => x !== id) : [...v, id]));
 
   const renderText = (c) => (
     <ChannelRow key={c.id} channel={c} active={c.id === activeChannelId}
-      canDelete={manageChannels && detail.channels.length > 1}
-      onSelect={() => onSelectChannel(c.id)} onDelete={() => onDeleteChannel(c.id)} />
+      canManage={manageChannels} canDelete={manageChannels && detail.channels.length > 1}
+      onSelect={() => onSelectChannel(c.id)} onDelete={() => onDeleteChannel(c.id)}
+      onManageAccess={() => onManageAccess(c)} />
   );
 
   return (
@@ -80,7 +93,7 @@ export default function ChannelSidebar({
       <div className="channel-list">
         <div className="channel-category">
           <span>Salons textuels</span>
-          {manageChannels && <button title="Créer un salon textuel" onClick={() => { setAdding('text'); setNewName(''); }}>+</button>}
+          {manageChannels && <button title="Créer un salon textuel" onClick={() => startAdd('text')}>+</button>}
         </div>
         {uncategorized.map(renderText)}
 
@@ -99,7 +112,7 @@ export default function ChannelSidebar({
 
         <div className="channel-category">
           <span>Salons vocaux</span>
-          {manageChannels && <button title="Créer un salon vocal" onClick={() => { setAdding('voice'); setNewName(''); }}>+</button>}
+          {manageChannels && <button title="Créer un salon vocal" onClick={() => startAdd('voice')}>+</button>}
         </div>
         {voiceChannels.map((c) => (
           <div key={c.id}>
@@ -118,15 +131,44 @@ export default function ChannelSidebar({
         ))}
 
         {adding && (
-          <form onSubmit={submitChannel} style={{ padding: '8px' }}>
+          <form onSubmit={submitChannel} className="channel-add-form">
             <input
-              style={{ width: '100%', padding: '8px 10px', background: 'var(--bg-input)', border: 'none', borderRadius: 4, color: 'var(--text)' }}
+              className="channel-add-input"
               autoFocus
               placeholder={`nom du salon ${adding === 'voice' ? 'vocal' : 'textuel'}`}
               value={newName}
               onChange={(e) => setNewName(e.target.value)}
-              onBlur={() => !newName && setAdding(null)}
             />
+            {adding === 'text' && (
+              <>
+                <input
+                  className="channel-add-input"
+                  placeholder="Projet / client (optionnel)"
+                  value={clientLabel}
+                  onChange={(e) => setClientLabel(e.target.value)}
+                />
+                <label className="channel-add-check">
+                  <input type="checkbox" checked={isPrivate} onChange={(e) => setIsPrivate(e.target.checked)} />
+                  🔒 Espace client (accès restreint)
+                </label>
+                {isPrivate && (
+                  <div className="channel-add-invite">
+                    <div className="cai-title">Inviter dans cet espace :</div>
+                    {otherMembers.length === 0 && <div className="cai-empty">Aucun autre membre à inviter pour l’instant.</div>}
+                    {otherMembers.map((m) => (
+                      <label key={m.id} className="cai-row">
+                        <input type="checkbox" checked={invited.includes(m.id)} onChange={() => toggleInvite(m.id)} />
+                        {m.display_name}
+                      </label>
+                    ))}
+                  </div>
+                )}
+              </>
+            )}
+            <div className="channel-add-actions">
+              <button type="button" className="btn btn-ghost" style={{ width: 'auto', padding: '5px 10px', fontSize: 12 }} onClick={() => setAdding(null)}>Annuler</button>
+              <button type="submit" className="btn" style={{ width: 'auto', padding: '5px 12px', fontSize: 12 }}>Créer</button>
+            </div>
           </form>
         )}
       </div>
@@ -134,14 +176,18 @@ export default function ChannelSidebar({
   );
 }
 
-function ChannelRow({ channel, active, connected, canDelete, onSelect, onDelete }) {
+function ChannelRow({ channel, active, connected, canManage, canDelete, onSelect, onDelete, onManageAccess }) {
   const unread = channel.type === 'text' && channel.unread && !active;
   return (
     <div className={`channel-item ${active ? 'active' : ''} ${unread ? 'unread' : ''}`} onClick={onSelect}>
-      <span className="hash">{channel.type === 'voice' ? '🔊' : '#'}</span>
+      <span className="hash">{channel.type === 'voice' ? '🔊' : channel.private ? '🔒' : '#'}</span>
       <span className="name">{channel.name}</span>
+      {channel.client_label && <span className="channel-tag" title={`Projet / client : ${channel.client_label}`}>{channel.client_label}</span>}
       {connected && <span title="Connecté au vocal" style={{ color: 'var(--online)', fontSize: 11 }}>●</span>}
       {channel.mentions > 0 && <span className="mention-badge">{channel.mentions}</span>}
+      {canManage && channel.private && onManageAccess && (
+        <button className="del" title="Gérer l’accès" onClick={(e) => { e.stopPropagation(); onManageAccess(); }}>👥</button>
+      )}
       {canDelete && (
         <button className="del" title="Supprimer le salon" onClick={(e) => { e.stopPropagation(); onDelete(); }}>✕</button>
       )}

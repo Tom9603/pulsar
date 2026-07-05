@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import db from '../db.js';
 import { authMiddleware } from '../auth.js';
-import { hasPermission } from '../permissions.js';
+import { hasPermission, canAccessChannel } from '../permissions.js';
 import { getIO } from '../realtime.js';
 import { reactionsFor, replyPreview } from '../socket.js';
 
@@ -29,8 +29,7 @@ function accessibleChannel(channelId, userId) {
     WHERE c.id = ?
   `).get(channelId);
   if (!row) return null;
-  const member = db.prepare('SELECT 1 FROM server_members WHERE server_id = ? AND user_id = ?').get(row.server_id, userId);
-  return member ? row : null;
+  return canAccessChannel(row.id, userId) ? row : null;
 }
 
 /** Historique des messages d'un salon textuel. */
