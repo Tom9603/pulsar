@@ -1,14 +1,15 @@
 import { useState } from 'react';
 import Modal from './Modal.jsx';
 import Avatar from './Avatar.jsx';
+import Icon from './Icon.jsx';
 import { api, mediaUrl } from '../api.js';
 
 /** Bloc « fiche professionnelle » d'un membre (affiché s'il a renseigné quelque chose). */
 export function ProCard({ u }) {
   const contacts = [
-    u.website && { icon: '🔗', text: u.website, href: /^https?:\/\//.test(u.website) ? u.website : `https://${u.website}` },
-    u.email_pro && { icon: '✉️', text: u.email_pro, href: `mailto:${u.email_pro}` },
-    u.phone && { icon: '📞', text: u.phone, href: `tel:${u.phone}` },
+    u.website && { icon: 'link', text: u.website, href: /^https?:\/\//.test(u.website) ? u.website : `https://${u.website}` },
+    u.email_pro && { icon: 'envelope', text: u.email_pro, href: `mailto:${u.email_pro}` },
+    u.phone && { icon: 'phone', text: u.phone, href: `tel:${u.phone}` },
   ].filter(Boolean);
   const skills = (u.skills || '').split(',').map((s) => s.trim()).filter(Boolean);
   const hasAny = u.company || u.location || contacts.length || skills.length || u.cv_summary || u.cv_url;
@@ -18,20 +19,20 @@ export function ProCard({ u }) {
     <div className="pro-card">
       {(u.company || u.location) && (
         <div className="pro-line">
-          {u.company && <span>🏢 {u.company}</span>}
-          {u.location && <span>📍 {u.location}</span>}
+          {u.company && <span><Icon name="building" /> {u.company}</span>}
+          {u.location && <span><Icon name="location-dot" /> {u.location}</span>}
         </div>
       )}
       {contacts.length > 0 && (
         <div className="pro-contacts">
-          {contacts.map((c) => <a key={c.text} href={c.href} target="_blank" rel="noreferrer">{c.icon} {c.text}</a>)}
+          {contacts.map((c) => <a key={c.text} href={c.href} target="_blank" rel="noreferrer"><Icon name={c.icon} /> {c.text}</a>)}
         </div>
       )}
       {skills.length > 0 && (
         <div className="pro-skills">{skills.map((s) => <span key={s} className="pro-skill">{s}</span>)}</div>
       )}
       {u.cv_summary && <div className="pro-summary">{u.cv_summary}</div>}
-      {u.cv_url && <a className="pro-cv" href={mediaUrl(u.cv_url)} target="_blank" rel="noreferrer">📄 {u.cv_name || 'Consulter le CV'}</a>}
+      {u.cv_url && <a className="pro-cv" href={mediaUrl(u.cv_url)} target="_blank" rel="noreferrer"><Icon name="file-lines" /> {u.cv_name || 'Consulter le CV'}</a>}
     </div>
   );
 }
@@ -72,7 +73,7 @@ export default function MemberModal({ member, roles, server, canManageRoles, can
         <div>
           <div style={{ fontWeight: 700, fontSize: 18 }}>
             {member.display_name}
-            {isTargetOwner && <span title="Propriétaire"> 👑</span>}
+            {isTargetOwner && <span title="Propriétaire"> <Icon name="crown" style={{ color: '#f0b232' }} /></span>}
           </div>
           <div style={{ color: 'var(--text-muted)', fontSize: 13 }}>@{member.username}</div>
           {member.headline && <div style={{ color: 'var(--accent)', fontSize: 13, marginTop: 2 }}>{member.headline}</div>}
@@ -107,7 +108,7 @@ export default function MemberModal({ member, roles, server, canManageRoles, can
       <div className="modal-actions">
         {member.id !== currentUserId && (
           <button className="btn btn-ghost" style={{ width: 'auto', padding: '8px 16px' }} onClick={() => { onMessage(member); onClose(); }}>
-            💬 Message privé
+            <Icon name="message" /> Message privé
           </button>
         )}
         {canKick && !isTargetOwner && member.id !== currentUserId && (

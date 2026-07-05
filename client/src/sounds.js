@@ -38,14 +38,14 @@ function noise(c, { dur = 0.15, gain = 0.3, delay = 0, cutoff = 1200 }) {
 
 // Sons de base synthétisés (identifiés par un id — tout le monde joue le même).
 export const BUILTIN_SOUNDS = [
-  { id: 'ding', emoji: '🔔', label: 'Ding' },
-  { id: 'beep', emoji: '📟', label: 'Beep' },
-  { id: 'boop', emoji: '👇', label: 'Boop' },
-  { id: 'tada', emoji: '🎉', label: 'Tada' },
-  { id: 'sad', emoji: '📉', label: 'Sad' },
-  { id: 'drum', emoji: '🥁', label: 'Drum' },
-  { id: 'laser', emoji: '🔫', label: 'Laser' },
-  { id: 'pop', emoji: '🫧', label: 'Pop' },
+  { id: 'ding', icon: 'bell', label: 'Ding' },
+  { id: 'beep', icon: 'pager', label: 'Beep' },
+  { id: 'boop', icon: 'hand-point-down', label: 'Boop' },
+  { id: 'tada', icon: 'champagne-glasses', label: 'Tada' },
+  { id: 'sad', icon: 'arrow-trend-down', label: 'Sad' },
+  { id: 'drum', icon: 'drum', label: 'Drum' },
+  { id: 'laser', icon: 'wand-magic-sparkles', label: 'Laser' },
+  { id: 'pop', icon: 'circle-dot', label: 'Pop' },
 ];
 
 export function playBuiltin(id) {

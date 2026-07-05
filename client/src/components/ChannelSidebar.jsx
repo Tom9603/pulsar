@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import Icon from './Icon.jsx';
 
 /** Liste des salons du serveur actif (textuels + vocaux, par catégorie) + menu du serveur. */
 export default function ChannelSidebar({
@@ -61,7 +62,7 @@ export default function ChannelSidebar({
     <div className="channel-sidebar">
       <div className="sidebar-header" onClick={() => setMenuOpen((v) => !v)}>
         <span>{detail.server.name}</span>
-        <span className="chevron">{menuOpen ? '✕' : '▾'}</span>
+        <span className="chevron"><Icon name={menuOpen ? 'xmark' : 'chevron-down'} /></span>
       </div>
 
       {menuOpen && (
@@ -73,12 +74,12 @@ export default function ChannelSidebar({
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 8 }}>
             {can('MANAGE_SERVER') && (
               <button className="btn btn-ghost" style={{ padding: '6px 12px', fontSize: 13 }} onClick={() => { setMenuOpen(false); onServerSettings(); }}>
-                ⚙️ Paramètres du serveur
+                <Icon name="gear" /> Paramètres du serveur
               </button>
             )}
             {can('MANAGE_ROLES') && (
               <button className="btn btn-ghost" style={{ padding: '6px 12px', fontSize: 13 }} onClick={() => { setMenuOpen(false); onManageRoles(); }}>
-                🛡️ Gérer les rôles
+                <Icon name="shield-halved" /> Gérer les rôles
               </button>
             )}
             {isOwner ? (
@@ -93,7 +94,7 @@ export default function ChannelSidebar({
       <div className="channel-list">
         <div className="channel-category">
           <span>Salons textuels</span>
-          {manageChannels && <button title="Créer un salon textuel" onClick={() => startAdd('text')}>+</button>}
+          {manageChannels && <button title="Créer un salon textuel" onClick={() => startAdd('text')}><Icon name="plus" /></button>}
         </div>
         {uncategorized.map(renderText)}
 
@@ -103,7 +104,7 @@ export default function ChannelSidebar({
           return (
             <div key={cat.id}>
               <div className="channel-category cat-header" onClick={() => setCollapsed((s) => ({ ...s, [cat.id]: !s[cat.id] }))}>
-                <span>{isCollapsed ? '▸' : '▾'} {cat.name}</span>
+                <span><Icon name={isCollapsed ? 'chevron-right' : 'chevron-down'} /> {cat.name}</span>
               </div>
               {!isCollapsed && chans.map(renderText)}
             </div>
@@ -112,7 +113,7 @@ export default function ChannelSidebar({
 
         <div className="channel-category">
           <span>Salons vocaux</span>
-          {manageChannels && <button title="Créer un salon vocal" onClick={() => startAdd('voice')}>+</button>}
+          {manageChannels && <button title="Créer un salon vocal" onClick={() => startAdd('voice')}><Icon name="plus" /></button>}
         </div>
         {voiceChannels.map((c) => (
           <div key={c.id}>
@@ -123,7 +124,7 @@ export default function ChannelSidebar({
             <div className="voice-occupants">
               {(voiceStates[c.id] || []).map((m) => (
                 <div className={`voice-occupant ${m.speaking ? 'speaking' : ''}`} key={m.socketId}>
-                  <span>{m.muted ? '🔇' : '🎧'}</span> {m.user.display_name}
+                  <span><Icon name={m.muted ? 'microphone-slash' : 'headphones'} /></span> {m.user.display_name}
                 </div>
               ))}
             </div>
@@ -149,7 +150,7 @@ export default function ChannelSidebar({
                 />
                 <label className="channel-add-check">
                   <input type="checkbox" checked={isPrivate} onChange={(e) => setIsPrivate(e.target.checked)} />
-                  🔒 Espace client (accès restreint)
+                  <Icon name="lock" /> Espace client (accès restreint)
                 </label>
                 {isPrivate && (
                   <div className="channel-add-invite">
@@ -180,16 +181,16 @@ function ChannelRow({ channel, active, connected, canManage, canDelete, onSelect
   const unread = channel.type === 'text' && channel.unread && !active;
   return (
     <div className={`channel-item ${active ? 'active' : ''} ${unread ? 'unread' : ''}`} onClick={onSelect}>
-      <span className="hash">{channel.type === 'voice' ? '🔊' : channel.private ? '🔒' : '#'}</span>
+      <span className="hash"><Icon name={channel.type === 'voice' ? 'volume-high' : channel.private ? 'lock' : 'hashtag'} /></span>
       <span className="name">{channel.name}</span>
       {channel.client_label && <span className="channel-tag" title={`Projet / client : ${channel.client_label}`}>{channel.client_label}</span>}
       {connected && <span title="Connecté au vocal" style={{ color: 'var(--online)', fontSize: 11 }}>●</span>}
       {channel.mentions > 0 && <span className="mention-badge">{channel.mentions}</span>}
       {canManage && channel.private && onManageAccess && (
-        <button className="del" title="Gérer l’accès" onClick={(e) => { e.stopPropagation(); onManageAccess(); }}>👥</button>
+        <button className="del" title="Gérer l’accès" onClick={(e) => { e.stopPropagation(); onManageAccess(); }}><Icon name="user-gear" /></button>
       )}
       {canDelete && (
-        <button className="del" title="Supprimer le salon" onClick={(e) => { e.stopPropagation(); onDelete(); }}>✕</button>
+        <button className="del" title="Supprimer le salon" onClick={(e) => { e.stopPropagation(); onDelete(); }}><Icon name="xmark" /></button>
       )}
     </div>
   );

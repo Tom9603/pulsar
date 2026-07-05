@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import Avatar from './Avatar.jsx';
+import Icon from './Icon.jsx';
 import { api, mediaUrl } from '../api.js';
 import ContactLibraryModal from './ContactLibraryModal.jsx';
 
@@ -22,9 +23,9 @@ export default function HomeView({ user, servers, dmConversations, onlineIds, on
         </div>
 
         <div className="home-quick">
-          <button className="quick-tile" onClick={onOpenFriends}><span>👥</span> Contacts</button>
-          <button className="quick-tile" onClick={onOpenSaved}><span>🔖</span> Rappels</button>
-          <button className="quick-tile add" onClick={onAddServer}><span>＋</span> Nouveau serveur</button>
+          <button className="quick-tile" onClick={onOpenFriends}><span><Icon name="user-group" /></span> Contacts</button>
+          <button className="quick-tile" onClick={onOpenSaved}><span><Icon name="circle-check" /></span> À faire</button>
+          <button className="quick-tile add" onClick={onAddServer}><span><Icon name="plus" /></span> Nouveau serveur</button>
         </div>
 
         <section className="home-section">
@@ -68,7 +69,7 @@ export default function HomeView({ user, servers, dmConversations, onlineIds, on
           <div className="home-section-head">
             <h2>Vos contacts{contacts.length ? ` — ${contacts.length}` : ''}</h2>
             {contacts.length > 0 && (
-              <button className="home-more" onClick={() => setLibrary(true)}>📇 Voir tous mes contacts</button>
+              <button className="home-more" onClick={() => setLibrary(true)}><Icon name="address-book" /> Voir tous mes contacts</button>
             )}
           </div>
           {contacts.length === 0 ? (

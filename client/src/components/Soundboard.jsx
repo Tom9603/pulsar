@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { api, uploadFile } from '../api.js';
 import { getSocket } from '../socket.js';
 import { BUILTIN_SOUNDS, playSound } from '../sounds.js';
+import Icon from './Icon.jsx';
 
 const readAsDataURL = (file) =>
   new Promise((resolve, reject) => {
@@ -41,23 +42,23 @@ export default function Soundboard({ channelId, serverId }) {
 
   return (
     <div className="soundboard">
-      <div className="sb-title">🔊 Soundboard</div>
+      <div className="sb-title"><Icon name="volume-high" /> Soundboard</div>
       <div className="sb-grid">
         {BUILTIN_SOUNDS.map((s) => (
           <button key={s.id} className="sb-btn" onClick={() => trigger({ id: s.id })} title={s.label}>
-            <span className="sb-emoji">{s.emoji}</span>
+            <span className="sb-emoji"><Icon name={s.icon} /></span>
             <span className="sb-name">{s.label}</span>
           </button>
         ))}
         {custom.map((s) => (
           <button key={s.id} className="sb-btn custom" onClick={() => trigger({ url: s.url })} title={s.name}>
-            <span className="sb-emoji">🎵</span>
+            <span className="sb-emoji"><Icon name="music" /></span>
             <span className="sb-name">{s.name}</span>
-            <span className="sb-del" onClick={(e) => { e.stopPropagation(); remove(s.id); }} title="Supprimer">✕</span>
+            <span className="sb-del" onClick={(e) => { e.stopPropagation(); remove(s.id); }} title="Supprimer"><Icon name="xmark" /></span>
           </button>
         ))}
         <label className="sb-btn sb-add" title="Ajouter un son (audio, 1 Mo max)">
-          <span className="sb-emoji">➕</span>
+          <span className="sb-emoji"><Icon name="plus" /></span>
           <span className="sb-name">{busy ? '…' : 'Ajouter'}</span>
           <input type="file" accept="audio/*" hidden onChange={onUpload} />
         </label>

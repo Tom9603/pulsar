@@ -1,4 +1,5 @@
 import Avatar from './Avatar.jsx';
+import Icon from './Icon.jsx';
 
 /** Affiche l'état d'un appel privé (entrant / sortant / en cours) + joue l'audio distant. */
 export default function CallOverlay({ call }) {
@@ -40,7 +41,7 @@ export default function CallOverlay({ call }) {
         <div className="call-bar connected">
           <span className="call-live-dot" /> En appel avec <strong>{peer.display_name}</strong>
           <button className="call-icon" title={muted ? 'Réactiver le micro' : 'Couper le micro'} onClick={toggleMute}>
-            {muted ? '🔇' : '🎙️'}
+            <Icon name={muted ? 'microphone-slash' : 'microphone'} />
           </button>
           <button className="call-btn decline small" onClick={hangup}>Raccrocher</button>
         </div>

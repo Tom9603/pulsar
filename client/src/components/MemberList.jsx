@@ -1,4 +1,5 @@
 import Avatar from './Avatar.jsx';
+import Icon from './Icon.jsx';
 
 /** Couleur du rôle le plus haut porté par le membre (roles est trié par position décroissante). */
 function topRoleColor(member, roles) {
@@ -28,7 +29,7 @@ export default function MemberList({ members, onlineIds, ownerId, roles = [], on
             >
               <Avatar user={m} size={32} status={isOnline ? m.status : 'offline'} />
               <span className="m-name" style={color ? { color } : undefined}>{m.display_name}</span>
-              {m.id === ownerId && <span className="owner-crown" title="Propriétaire du serveur">👑</span>}
+              {m.id === ownerId && <span className="owner-crown" title="Propriétaire du serveur"><Icon name="crown" /></span>}
             </div>
           );
         })}

@@ -7,7 +7,7 @@ import { authMiddleware } from '../auth.js';
 
 const router = Router();
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const dataDir = process.env.CONCORD_DATA_DIR || path.join(__dirname, '..', '..', 'data');
+const dataDir = process.env.PULSAR_DATA_DIR || process.env.CONCORD_DATA_DIR || path.join(__dirname, '..', '..', 'data');
 export const uploadsDir = path.join(dataDir, 'uploads');
 fs.mkdirSync(uploadsDir, { recursive: true });
 

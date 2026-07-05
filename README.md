@@ -1,16 +1,18 @@
-# Concord
+# Pulsar
 
-Un clone de Discord centré sur les **fonctionnalités de base** : serveurs, salons textuels & vocaux,
-messagerie en temps réel et personnalisation de profil. Pas de boutique, pas de superflu.
+**Pulsar** est une messagerie d'équipe en temps réel pensée pour les **professionnels**
+(TPE, PME, ESN, indépendants) : serveurs, salons textuels & vocaux, appels, et surtout
+de quoi **travailler** — transformer un message en tâche, regrouper ce qui attend une action,
+inviter un client sur un espace dédié, et présenter une vraie fiche professionnelle.
 
-> Pensé pour devenir une **vraie application téléchargeable** (.exe / .dmg) via Electron par la suite —
-> la base est une app web, exactement comme le vrai client Discord.
+L'esprit reste celui d'un Discord, en plus pro. La base est une application web, empaquetable
+en **vraie application téléchargeable** (`.exe` / `.dmg` / `.AppImage`) via Electron.
 
-## 🧱 Stack
+## Stack
 
 | Partie   | Techno |
 |----------|--------|
-| Frontend | React + Vite |
+| Frontend | React + Vite (Font Awesome pour les icônes) |
 | Backend  | Node.js + Express + Socket.IO |
 | Base     | SQLite (module `node:sqlite` natif — zéro installation) |
 | Auth     | JWT + mots de passe hashés (scrypt natif) |
@@ -18,37 +20,32 @@ messagerie en temps réel et personnalisation de profil. Pas de boutique, pas de
 
 Aucune dépendance native à compiler : SQLite et le chiffrement utilisent des modules intégrés à Node.
 
-## ✅ Fonctionnalités
+## Fonctionnalités
 
 - **Comptes** : inscription / connexion, session persistante
-- **Serveurs** : création, code d’invitation, rejoindre, quitter, supprimer
-- **Salons** : textuels et vocaux, création / suppression
-- **Chat textuel** : temps réel, **Markdown** (gras/italique/code/liens), **répondre**,
-  **modifier / supprimer**, **réactions** (sélecteur d’emoji complet), **mentions @**,
-  **messages épinglés**, **images / GIF (Tenor) / messages vocaux / fichiers**
-- **Non-lus** : pastilles par salon + badges de mention, marquage auto en lecture
-- **Recherche** de messages dans un serveur
-- **Vocal** : **audio réel WebRTC** (mesh P2P), micro coupé/actif, détection de la parole,
-  connexion persistante (STUN + TURN configurable)
+- **Serveurs** : création, code d'invitation, rôles & permissions, catégories, renommage, icône
+- **Salons** : textuels et vocaux ; **espaces clients privés** (accès restreint) + étiquette projet/client
+- **Chat** : temps réel, Markdown, réponses, modification / suppression, réactions, mentions @,
+  messages épinglés, images / GIF (Tenor) / messages vocaux / fichiers
+- **Tâches** : transformer n'importe quel message en **tâche** (responsable, échéance date+heure, priorité, statut)
+- **Centre « À faire »** : un seul endroit pour les tâches assignées + les rappels en attente d'action
+- **Rappels** : garder un message et se le faire rappeler à une **date et une heure précises**
+- **Vocal** : audio réel WebRTC (mesh P2P), micro coupé/actif, détection de la parole (STUN + TURN configurable)
 - **Messages privés** : texte, images, GIF, vocal, fichiers, et **appel vocal 1-à-1**
-- **Amis** : demandes, acceptation, blocage
-- **Serveurs** : rôles & permissions, **catégories de salons**, renommage, icône image
-- **Notifications** bureau + son (DM, mentions)
-- **Compte** : changer le mot de passe, supprimer son compte
-- **Profil** : nom affiché, couleur ou image d’avatar, statut, bio
-- **App desktop** (Windows / macOS / Linux) avec mise à jour automatique
+- **Contacts** : demandes, acceptation, blocage, bibliothèque de contacts
+- **Profil pro** : fiche (poste, entreprise, coordonnées, compétences), **CV joint** + résumé
+- **Notifications** : cloche in-app + son + notifications bureau (messages, mentions, tâches, rappels)
+- **Navigation** : bouton retour, profils consultables en fenêtre au clic sur un nom
+- **App desktop** (Windows / macOS / Linux) avec mise à jour automatique (Windows)
 
-### ✨ Fonctionnalités signature (ce que Discord ne fait pas / mal)
+### Fonctionnalités signature
 
-- **📺 Regarder / écouter ensemble** : colle un lien YouTube ou un fichier vidéo/audio →
-  lecture **synchronisée** pour tout le salon (play/pause/avance partagés)
-- **⚡ Messages express** : bibliothèque perso de messages tout prêts, envoi en 1 clic
-- **🔖 Messages sauvegardés & rappels** : garde n’importe quel message, avec **rappel** programmé
-  (« rappelle-moi dans 1 h ») + notification
-- **🔊 Soundboard** : sons de base + sons téléchargeables, joués pour tout le salon vocal
-- **🎨 Tableau blanc partagé** : dessiner / écrire à plusieurs en temps réel par salon
+- **Regarder / écouter ensemble** : un lien YouTube ou un fichier vidéo/audio → lecture **synchronisée** pour tout le salon
+- **Messages express** : bibliothèque de messages tout prêts, envoi en 1 clic
+- **Soundboard** : sons de base + sons téléchargeables, joués pour tout le salon vocal
+- **Tableau blanc partagé** : dessiner / écrire à plusieurs en temps réel
 
-## 🚀 Démarrage
+## Démarrage
 
 Prérequis : **Node.js ≥ 24** (pour le module `node:sqlite`).
 
@@ -58,111 +55,83 @@ npm run install:all   # installe racine + serveur + client
 npm run dev           # lance le serveur (3001) ET le client (5173)
 ```
 
-Puis ouvre **http://localhost:5173**.
+Puis ouvrez **http://localhost:5173**.
 
-> Pour tester le temps réel : ouvre un second onglet en navigation privée,
-> crée un autre compte, rejoins le même serveur avec le code d’invitation.
+> Pour tester le temps réel : ouvrez un second onglet en navigation privée,
+> créez un autre compte, rejoignez le même serveur avec le code d'invitation.
 
-### Lancer séparément
-
-```bash
-npm --prefix server run dev   # backend seul
-npm --prefix client run dev   # frontend seul
-```
-
-## 📁 Structure
+## Structure
 
 ```
-concord/
-├── server/                 # API Express + Socket.IO (le "cerveau")
+pulsar/
+├── server/                 # API Express + Socket.IO
 │   └── src/
 │       ├── index.js        # point d'entrée
-│       ├── db.js           # schéma SQLite
+│       ├── db.js           # schéma SQLite (+ migrations)
 │       ├── auth.js         # JWT + hash mots de passe
-│       ├── permissions.js  # rôles & permissions
-│       ├── socket.js       # temps réel (messages, présence, vocal WebRTC, DM)
-│       └── routes/         # auth, users, servers, channels, dms
+│       ├── permissions.js  # rôles, permissions, accès aux salons privés
+│       ├── socket.js       # temps réel (messages, présence, vocal WebRTC, DM, tâches)
+│       └── routes/         # auth, users, servers, channels, dms, tasks, saved…
 ├── client/                 # Interface React (Vite)
 │   └── src/
 │       ├── pages/          # Login, Register, AppLayout
-│       ├── components/     # ServerRail, ChatView, VoiceView, Dm*, Roles*…
-│       ├── hooks/          # useVoice (WebRTC)
+│       ├── components/     # ChatView, TasksPanel, ActionCenter, ProfileModal…
+│       ├── hooks/          # useVoice / useCall (WebRTC)
 │       └── context/        # AuthContext
 ├── desktop/                # App Electron (main.js, preload.js)
 ├── electron-builder.yml    # Config de packaging (Win/Mac/Linux)
 └── .github/workflows/      # CI : construit & publie les versions
 ```
 
-## 🖥️ Application desktop (Electron)
+## Application desktop (Electron)
 
-Concord peut être empaquetée en **vraie application téléchargeable** (Windows `.exe`,
+Pulsar peut être empaquetée en **vraie application téléchargeable** (Windows `.exe`,
 macOS `.dmg`, Linux `.AppImage`), avec **mise à jour automatique**.
 
-> ⚠️ L'app desktop est le **client**. Le **serveur** (`server/`) doit tourner
-> séparément sur une machine accessible (celle d'un « host » ou un hébergement).
-> Dans l'app, l'écran de connexion permet d'indiquer l'adresse du serveur.
+> ⚠️ L'app desktop est le **client**. Le **serveur** (`server/`) doit tourner séparément
+> sur une machine accessible. L'écran de connexion permet d'indiquer l'adresse du serveur.
 
 ```bash
-npm run desktop:dev      # lance serveur + client + fenêtre Electron (développement)
-npm run desktop:build    # construit l'installateur pour TON système (dans desktop/release/)
+npm run desktop:dev      # serveur + client + fenêtre Electron (développement)
+npm run desktop:build    # construit l'installateur pour votre système
 ```
 
-### Publier une nouvelle version (mise à jour automatique)
+### Publier une nouvelle version
 
-La publication passe par **GitHub Releases** + **GitHub Actions** :
-
-1. Dans [`electron-builder.yml`](electron-builder.yml), remplace `VOTRE-PSEUDO-GITHUB`
-   par ton pseudo GitHub.
-2. Incrémente la version dans [`package.json`](package.json) (ex. `0.1.0` → `0.1.1`).
-3. Publie :
+1. Incrémentez la version dans [`package.json`](package.json).
+2. Publiez :
    ```bash
-   git add -A && git commit -m "v0.1.1"
-   git tag v0.1.1
+   git add -A && git commit -m "vX.Y.Z"
+   git tag vX.Y.Z
    git push && git push --tags
    ```
-4. GitHub Actions construit alors les installateurs Windows/Mac/Linux et les met en ligne.
-   Les apps déjà installées se mettent à jour **toutes seules** au prochain lancement.
+3. GitHub Actions construit les installateurs Windows/Mac/Linux et les met en ligne.
 
-> Les changements **côté serveur** (nouvelles fonctions, corrections) ne nécessitent
-> PAS de nouvelle version de l'app : il suffit de redéployer le serveur.
-
-## ⚙️ Configuration du serveur (variables d’environnement)
+## Configuration du serveur (variables d'environnement)
 
 | Variable | Rôle |
 |----------|------|
-| `PORT` | Port d’écoute (défaut 3001) |
+| `PORT` | Port d'écoute (défaut 3001) |
 | `JWT_SECRET` | Secret de signature des jetons (**à définir en production**) |
-| `CONCORD_DATA_DIR` | Dossier de la base SQLite + images uploadées |
-| `TURN_URL` / `TURN_USERNAME` / `TURN_CREDENTIAL` | Ton serveur TURN pour le vocal |
+| `PULSAR_DATA_DIR` | Dossier de la base SQLite + fichiers uploadés |
+| `TURN_URL` / `TURN_USERNAME` / `TURN_CREDENTIAL` | Serveur TURN pour le vocal |
 
 ### Vocal entre réseaux différents (TURN)
 
-Sur un même réseau Wi-Fi, le STUN suffit. Pour que le vocal marche entre des réseaux
-différents (chacun chez soi), il faut un **serveur TURN**. Le plus simple est
-[coturn](https://github.com/coturn/coturn) sur un petit serveur :
+Sur un même réseau, le STUN suffit. Entre réseaux différents, il faut un **serveur TURN**
+([coturn](https://github.com/coturn/coturn) par exemple) :
 
 ```bash
-# exemple minimal
-turnserver -a -u concord:motdepasse -r concord --no-tls
+turnserver -a -u pulsar:motdepasse -r pulsar --no-tls
 ```
 
-Puis côté serveur Concord :
+Puis côté serveur Pulsar :
 
 ```bash
-TURN_URL="turn:IP_DU_SERVEUR:3478" TURN_USERNAME=concord TURN_CREDENTIAL=motdepasse npm start
+TURN_URL="turn:IP_DU_SERVEUR:3478" TURN_USERNAME=pulsar TURN_CREDENTIAL=motdepasse npm start
 ```
 
-> Sans config, un TURN public gratuit (best-effort) est utilisé pour les tests.
+## Note de sécurité
 
-## 🗺️ Prochaines étapes suggérées
-
-1. **Hébergement du serveur** (pour jouer à plusieurs hors du réseau local)
-2. **Serveur TURN** dédié pour un vocal fiable (voir ci-dessus)
-3. **Signature de code** (certificats payants) pour supprimer les avertissements Windows/Mac
-4. **Partage d’écran / vidéo** dans les salons vocaux
-5. **Applications mobiles** (iOS / Android) — voir la note ci-dessous
-
-## 🔐 Note de sécurité
-
-Le secret JWT par défaut est un secret de développement. En production, définis
-`JWT_SECRET` dans l’environnement du serveur.
+Le secret JWT par défaut est un secret de développement. En production, définissez
+`JWT_SECRET` dans l'environnement du serveur.

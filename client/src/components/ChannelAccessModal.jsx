@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import Modal from './Modal.jsx';
 import Avatar from './Avatar.jsx';
+import Icon from './Icon.jsx';
 import { api } from '../api.js';
 
 /** Gérer qui a accès à un espace client (salon privé). */
@@ -22,7 +23,7 @@ export default function ChannelAccessModal({ channel, members, serverId, ownerId
 
   return (
     <Modal onClose={onClose}>
-      <h2>Accès à 🔒 {channel.name}</h2>
+      <h2><Icon name="lock" /> Accès à {channel.name}</h2>
       <p className="modal-sub">Seules les personnes cochées voient ce salon. Idéal pour inviter un client sur son projet sans lui ouvrir le reste.</p>
       {error && <div className="error-msg">{error}</div>}
       <div className="access-list">
@@ -33,7 +34,7 @@ export default function ChannelAccessModal({ channel, members, serverId, ownerId
             <label key={m.id} className="access-row">
               <input type="checkbox" checked={checked} disabled={busy || isOwnerMember} onChange={() => toggle(m)} />
               <Avatar user={m} size={28} />
-              <span className="access-name">{m.display_name}{isOwnerMember && ' 👑'}</span>
+              <span className="access-name">{m.display_name}{isOwnerMember && <Icon name="crown" style={{ color: '#f0b232', marginLeft: 4 }} />}</span>
             </label>
           );
         })}

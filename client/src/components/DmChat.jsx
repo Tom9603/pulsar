@@ -3,6 +3,7 @@ import { api } from '../api.js';
 import { getSocket } from '../socket.js';
 import { renderRich } from '../richtext.jsx';
 import Avatar from './Avatar.jsx';
+import Icon from './Icon.jsx';
 import Composer from './Composer.jsx';
 import Attachment from './Attachment.jsx';
 import SaveButton from './SaveButton.jsx';
@@ -13,7 +14,7 @@ function formatTime(ts) {
 }
 
 /** Conversation privée avec un utilisateur (texte, images, GIF, vocal, appel). */
-export default function DmChat({ peer, currentUser, onlineIds, onCall }) {
+export default function DmChat({ peer, currentUser, onlineIds, onCall, onOpenProfile }) {
   const [messages, setMessages] = useState([]);
   const [peerTyping, setPeerTyping] = useState(false);
   const scrollRef = useRef(null);
@@ -68,11 +69,11 @@ export default function DmChat({ peer, currentUser, onlineIds, onCall }) {
   return (
     <div className="main-content">
       <div className="content-header">
-        <Avatar user={peer} size={24} status={online ? peer.status : 'offline'} />
-        <span>{peer.display_name}</span>
+        <Avatar user={peer} size={24} status={online ? peer.status : 'offline'} onClick={() => onOpenProfile?.(peer.id)} />
+        <span className="clickable" onClick={() => onOpenProfile?.(peer.id)}>{peer.display_name}</span>
         <span className="topic">@{peer.username}</span>
         <span className="spacer" />
-        <button className="header-btn" title="Appel vocal" onClick={() => onCall(peer)}>📞</button>
+        <button className="header-btn" title="Appel vocal" onClick={() => onCall(peer)}><Icon name="phone" /></button>
       </div>
 
       <div className="content-body">
@@ -80,7 +81,7 @@ export default function DmChat({ peer, currentUser, onlineIds, onCall }) {
           <div className="messages" ref={scrollRef}>
             <div className="spacer-top" />
             <div className="msg-welcome">
-              <Avatar user={peer} size={64} />
+              <Avatar user={peer} size={64} onClick={() => onOpenProfile?.(peer.id)} />
               <h2 style={{ marginTop: 12 }}>{peer.display_name}</h2>
               <p>Ceci est le début de votre conversation privée avec <strong>{peer.display_name}</strong>.</p>
             </div>
@@ -93,12 +94,12 @@ export default function DmChat({ peer, currentUser, onlineIds, onCall }) {
                   {grouped ? (
                     <div className="gutter gutter-time">{formatTime(m.created_at)}</div>
                   ) : (
-                    <Avatar user={m} size={40} />
+                    <Avatar user={m} size={40} onClick={() => onOpenProfile?.(m.sender_id)} />
                   )}
                   <div className="msg-body">
                     {!grouped && (
                       <div className="msg-head">
-                        <span className="msg-author">{m.display_name}</span>
+                        <span className="msg-author clickable" onClick={() => onOpenProfile?.(m.sender_id)}>{m.display_name}</span>
                         <span className="msg-time">{formatTime(m.created_at)}</span>
                       </div>
                     )}

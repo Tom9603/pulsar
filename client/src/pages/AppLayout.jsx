@@ -10,6 +10,7 @@ import { playSound } from '../sounds.js';
 import { mentionsUser } from '../richtext.jsx';
 
 import TopBar from '../components/TopBar.jsx';
+import Icon from '../components/Icon.jsx';
 import NavRail from '../components/NavRail.jsx';
 import HomeView from '../components/HomeView.jsx';
 import ChannelSidebar from '../components/ChannelSidebar.jsx';
@@ -27,6 +28,7 @@ import RolesModal from '../components/RolesModal.jsx';
 import MemberModal from '../components/MemberModal.jsx';
 import ServerSettingsModal from '../components/ServerSettingsModal.jsx';
 import ChannelAccessModal from '../components/ChannelAccessModal.jsx';
+import ProfileModal from '../components/ProfileModal.jsx';
 import SearchModal from '../components/SearchModal.jsx';
 import CallOverlay from '../components/CallOverlay.jsx';
 import Whiteboard from '../components/Whiteboard.jsx';
@@ -57,6 +59,19 @@ export default function AppLayout() {
   const [whiteboardOpen, setWhiteboardOpen] = useState(false);
   const [memberTarget, setMemberTarget] = useState(null);
   const [accessChannel, setAccessChannel] = useState(null);
+  const [profileTarget, setProfileTarget] = useState(null); // id d'utilisateur
+
+  // Navigation « retour »
+  const [history, setHistory] = useState([]);
+  const locRef = useRef(null);
+  const backNav = useRef(false);
+  const pendingChannelRef = useRef(null);
+
+  // Notifications (cloche)
+  const [notifications, setNotifications] = useState([]);
+  const pushNotif = useCallback((n) => {
+    setNotifications((list) => [{ id: `${Date.now()}-${Math.random()}`, at: Date.now(), read: false, ...n }, ...list].slice(0, 40));
+  }, []);
 
   // Tâches (centre « À faire »)
   const [tasks, setTasks] = useState([]);
@@ -114,7 +129,37 @@ export default function AppLayout() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  useEffect(() => { refreshDetail(activeServerId); }, [activeServerId, refreshDetail]);
+  useEffect(() => {
+    refreshDetail(activeServerId).then((data) => {
+      const pending = pendingChannelRef.current;
+      if (pending && data?.channels.some((c) => c.id === pending)) setActiveChannelId(pending);
+      pendingChannelRef.current = null;
+    });
+  }, [activeServerId, refreshDetail]);
+
+  // Historique de navigation (pour le bouton « Retour »).
+  useEffect(() => {
+    const cur = { section, activeServerId, activeChannelId, activeDm };
+    const prev = locRef.current;
+    const changed = prev && (prev.section !== cur.section || prev.activeServerId !== cur.activeServerId
+      || prev.activeChannelId !== cur.activeChannelId || (prev.activeDm?.id ?? null) !== (cur.activeDm?.id ?? null));
+    if (changed && !backNav.current) setHistory((h) => [...h.slice(-40), prev]);
+    backNav.current = false;
+    locRef.current = cur;
+  }, [section, activeServerId, activeChannelId, activeDm]);
+
+  function goBack() {
+    setHistory((h) => {
+      if (h.length === 0) return h;
+      const prev = h[h.length - 1];
+      backNav.current = true;
+      setSection(prev.section);
+      if (prev.activeServerId !== activeServerId) { pendingChannelRef.current = prev.activeChannelId; setActiveServerId(prev.activeServerId); }
+      else if (prev.activeChannelId) setActiveChannelId(prev.activeChannelId);
+      setActiveDm(prev.activeDm);
+      return h.slice(0, -1);
+    });
+  }
 
   // Marque le salon actif comme lu.
   useEffect(() => {
@@ -134,6 +179,19 @@ export default function AppLayout() {
   const openSaved = () => setSection('saved');
   function openDm(target) { setActiveDm(target); setSection('dm'); setHasUnreadDm(false); }
   function onSection(id) { ({ home: goHome, dm: openMessages, friends: openFriends, saved: openSaved }[id] || goHome)(); }
+  function openServerChannel(serverId, channelId) {
+    getSocket().emit('server:subscribe', { serverId });
+    if (serverId === activeServerId) { setSection('server'); if (channelId) setActiveChannelId(channelId); }
+    else { pendingChannelRef.current = channelId || null; setActiveServerId(serverId); setSection('server'); }
+  }
+  function openNotif(n) {
+    const nav = n.nav || {};
+    if (nav.type === 'dm') openDm(nav.peer);
+    else if (nav.type === 'channel') openServerChannel(nav.serverId, nav.channelId);
+    else if (nav.type === 'todo') setSection('saved');
+  }
+  const markAllRead = () => setNotifications((l) => l.map((n) => ({ ...n, read: true })));
+  const clearNotifs = () => setNotifications([]);
 
   // ---- Temps réel ----
   useEffect(() => {
@@ -150,11 +208,11 @@ export default function AppLayout() {
       if (viewing) return;
       setHasUnreadDm(true);
       playPing();
-      desktopNotify(`${message.display_name} — message privé`, message.content || '📷 Image', () => {
-        openDm({ id: message.sender_id, username: message.username, display_name: message.display_name, avatar_color: message.avatar_color, avatar_url: message.avatar_url, status: 'online' });
-      });
+      const peer = { id: message.sender_id, username: message.username, display_name: message.display_name, avatar_color: message.avatar_color, avatar_url: message.avatar_url, status: 'online' };
+      pushNotif({ icon: 'message', tone: 'blue', title: message.display_name, body: message.content || 'Pièce jointe', nav: { type: 'dm', peer } });
+      desktopNotify(`${message.display_name} — message privé`, message.content || 'Image', () => openDm(peer));
     };
-    const onMessageNew = ({ channelId, message }) => {
+    const onMessageNew = ({ channelId, serverId, message }) => {
       if (message.user_id === user.id) return;
       const focused = sectionRef.current === 'server' && activeChannelRef.current === channelId && !document.hidden;
       const mentioned = mentionsUser(message.content, user);
@@ -163,7 +221,11 @@ export default function AppLayout() {
           ? { ...d, channels: d.channels.map((c) => (c.id === channelId ? { ...c, unread: true, mentions: (c.mentions || 0) + (mentioned ? 1 : 0) } : c)) }
           : d));
       }
-      if (mentioned && !focused) { playPing(); desktopNotify(`${message.display_name} t’a mentionné`, message.content); }
+      if (mentioned && !focused) {
+        playPing();
+        desktopNotify(`${message.display_name} vous a mentionné`, message.content);
+        pushNotif({ icon: 'at', tone: 'purple', title: `${message.display_name} vous a mentionné`, body: message.content, nav: { type: 'channel', serverId, channelId } });
+      }
     };
     const onKicked = ({ serverId }) => {
       refreshServers();
@@ -172,14 +234,17 @@ export default function AppLayout() {
     };
     const onReminder = ({ item }) => {
       playPing();
-      desktopNotify('🔔 Rappel : ' + (item.author_name || 'votre message'), item.content || '📎 pièce jointe', openSaved);
+      const title = 'Rappel : ' + (item.author_name || 'votre message');
+      desktopNotify(title, item.content || 'pièce jointe', openSaved);
+      pushNotif({ icon: 'bell', tone: 'amber', title, body: item.content || 'Pièce jointe', nav: { type: 'todo' } });
     };
     const onSound = ({ sound }) => playSound(sound);
     const onTaskChanged = ({ type, task }) => {
       refreshTasks();
       if (type === 'created' && task.assignee_id === user.id && task.creator_id !== user.id) {
         playPing();
-        desktopNotify('✅ Nouvelle tâche assignée', task.title, () => setSection('saved'));
+        desktopNotify('Nouvelle tâche assignée', task.title, () => setSection('saved'));
+        pushNotif({ icon: 'circle-check', tone: 'green', title: 'Nouvelle tâche assignée', body: task.title, nav: { type: 'todo' } });
       }
     };
 
@@ -200,7 +265,7 @@ export default function AppLayout() {
       socket.off('task:changed', onTaskChanged);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user.id, refreshDetail, refreshServers, refreshConversations, refreshTasks]);
+  }, [user.id, refreshDetail, refreshServers, refreshConversations, refreshTasks, pushNotif]);
 
   // ---- Actions ----
   async function handleServerReady(server) {
@@ -242,11 +307,18 @@ export default function AppLayout() {
       <TopBar
         user={user}
         onHome={goHome}
+        onBack={goBack}
+        canGoBack={history.length > 0}
         onOpenSettings={() => setModal('settings')}
+        onOpenProfile={() => setProfileTarget(user.id)}
         onLogout={logout}
         voice={voice}
         voiceName={voiceInfo?.name}
         onLeaveVoice={leaveVoice}
+        notifications={notifications}
+        onOpenNotif={openNotif}
+        onMarkAllRead={markAllRead}
+        onClearNotifs={clearNotifs}
       />
 
       <div className="pulsar-body">
@@ -291,21 +363,21 @@ export default function AppLayout() {
           )}
           {section === 'dm' && (
             activeDm
-              ? <DmChat peer={activeDm} currentUser={user} onlineIds={onlineIds} onCall={call.startCall} />
-              : <div className="main-content"><div className="empty-hero"><h2>Messages 💬</h2><p>Choisissez une conversation à gauche, ou ajoutez un contact.</p></div></div>
+              ? <DmChat peer={activeDm} currentUser={user} onlineIds={onlineIds} onCall={call.startCall} onOpenProfile={setProfileTarget} />
+              : <div className="main-content"><div className="empty-hero"><h2><Icon name="comment" /> Messages</h2><p>Choisissez une conversation à gauche, ou ajoutez un contact.</p></div></div>
           )}
           {section === 'server' && (
             activeChannel ? (
               <div className="main-content">
                 <div className="content-header">
-                  <span className="hash">{activeChannel.type === 'voice' ? '🔊' : activeChannel.private ? '🔒' : '#'}</span>
+                  <span className="hash"><Icon name={activeChannel.type === 'voice' ? 'volume-high' : activeChannel.private ? 'lock' : 'hashtag'} /></span>
                   <span>{activeChannel.name}</span>
-                  {activeChannel.client_label && <span className="topic topic-client">📁 {activeChannel.client_label}</span>}
+                  {activeChannel.client_label && <span className="topic topic-client"><Icon name="folder-open" /> {activeChannel.client_label}</span>}
                   {activeChannel.type === 'text' && !activeChannel.client_label && <span className="topic">Salon textuel</span>}
                   <span className="spacer" />
-                  <button className="header-btn" title="Tableau blanc partagé" onClick={() => setWhiteboardOpen(true)}>🎨</button>
-                  <button className="header-btn" title="Rechercher" onClick={() => setSearchOpen(true)}>🔍</button>
-                  <button className={`header-btn ${showMembers ? 'active' : ''}`} title="Membres" onClick={() => setShowMembers((v) => !v)}>👥</button>
+                  <button className="header-btn" title="Tableau blanc partagé" onClick={() => setWhiteboardOpen(true)}><Icon name="palette" /></button>
+                  <button className="header-btn" title="Rechercher" onClick={() => setSearchOpen(true)}><Icon name="magnifying-glass" /></button>
+                  <button className={`header-btn ${showMembers ? 'active' : ''}`} title="Membres" onClick={() => setShowMembers((v) => !v)}><Icon name="users" /></button>
                 </div>
                 <div className="content-body">
                   {activeChannel.type === 'voice' ? (
@@ -313,7 +385,7 @@ export default function AppLayout() {
                       connected={voice.connectedChannelId === activeChannel.id} muted={voice.muted}
                       onJoin={() => joinVoice(activeChannel)} onLeave={leaveVoice} onToggleMute={voice.toggleMute} />
                   ) : (
-                    <ChatView channel={activeChannel} currentUser={user} canManage={can('MANAGE_CHANNELS')} onCreateTask={openTaskFromMessage} />
+                    <ChatView channel={activeChannel} currentUser={user} canManage={can('MANAGE_CHANNELS')} onCreateTask={openTaskFromMessage} onOpenProfile={setProfileTarget} />
                   )}
                 </div>
               </div>
@@ -361,6 +433,10 @@ export default function AppLayout() {
       {accessChannel && detail && (
         <ChannelAccessModal channel={accessChannel} members={detail.members} serverId={detail.server.id} ownerId={detail.server.owner_id}
           onClose={() => setAccessChannel(null)} onChanged={() => refreshDetail(activeServerId, true)} />
+      )}
+      {profileTarget && (
+        <ProfileModal userId={profileTarget} currentUserId={user.id}
+          onClose={() => setProfileTarget(null)} onMessage={openDm} onEditProfile={() => setModal('settings')} />
       )}
     </div>
   );

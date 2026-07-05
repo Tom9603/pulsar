@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { getSocket } from '../socket.js';
+import Icon from './Icon.jsx';
 
 // Charge l'API iframe YouTube une seule fois.
 let ytApiPromise = null;
@@ -84,16 +85,16 @@ export default function WatchTogether({ channelId }) {
   const stop = () => socket.emit('watch:stop', { channelId });
 
   if (!session && !open) {
-    return <div className="watch-bar"><button className="watch-open-btn" onClick={() => setOpen(true)}>📺 Regarder / écouter ensemble</button></div>;
+    return <div className="watch-bar"><button className="watch-open-btn" onClick={() => setOpen(true)}><Icon name="tv" /> Regarder / écouter ensemble</button></div>;
   }
 
   return (
     <div className="watch-panel">
       <div className="watch-head">
-        <span>📺 Regarder ensemble</span>
+        <span><Icon name="tv" /> Regarder ensemble</span>
         <div className="watch-head-actions">
           {session && <button className="watch-stop" onClick={stop}>Arrêter</button>}
-          <button onClick={() => setOpen(false)} title="Réduire">✕</button>
+          <button onClick={() => setOpen(false)} title="Réduire"><Icon name="xmark" /></button>
         </div>
       </div>
 

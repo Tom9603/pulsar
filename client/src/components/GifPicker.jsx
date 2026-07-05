@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { api } from '../api.js';
+import Icon from './Icon.jsx';
 
 /** Panneau de recherche de GIF (Tenor). Clique un GIF pour l'envoyer. */
 export default function GifPicker({ onSelect, onClose }) {
@@ -29,7 +30,7 @@ export default function GifPicker({ onSelect, onClose }) {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
         />
-        <button type="button" title="Fermer" onClick={onClose}>✕</button>
+        <button type="button" title="Fermer" onClick={onClose}><Icon name="xmark" /></button>
       </div>
       <div className="gif-grid">
         {loading && <div className="gif-empty">Chargement…</div>}

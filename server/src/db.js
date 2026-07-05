@@ -4,10 +4,19 @@ import path from 'node:path';
 import fs from 'node:fs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const dataDir = process.env.CONCORD_DATA_DIR || path.join(__dirname, '..', 'data');
+const dataDir = process.env.PULSAR_DATA_DIR || process.env.CONCORD_DATA_DIR || path.join(__dirname, '..', 'data');
 fs.mkdirSync(dataDir, { recursive: true });
 
-const db = new DatabaseSync(path.join(dataDir, 'concord.db'));
+// Migration du nom de fichier historique (concord.db → pulsar.db) sans perte de données.
+const dbPath = path.join(dataDir, 'pulsar.db');
+const legacyPath = path.join(dataDir, 'concord.db');
+if (!fs.existsSync(dbPath) && fs.existsSync(legacyPath)) {
+  for (const suffix of ['', '-wal', '-shm']) {
+    if (fs.existsSync(legacyPath + suffix)) fs.renameSync(legacyPath + suffix, dbPath + suffix);
+  }
+}
+
+const db = new DatabaseSync(dbPath);
 db.exec('PRAGMA journal_mode = WAL');
 db.exec('PRAGMA foreign_keys = ON');
 

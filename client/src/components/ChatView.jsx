@@ -3,6 +3,7 @@ import { api } from '../api.js';
 import { getSocket } from '../socket.js';
 import { renderRich } from '../richtext.jsx';
 import Avatar from './Avatar.jsx';
+import Icon from './Icon.jsx';
 import Composer from './Composer.jsx';
 import Attachment from './Attachment.jsx';
 import EmojiPicker from './EmojiPicker.jsx';
@@ -22,7 +23,7 @@ function shouldGroup(prev, cur) {
   return gap < 5 * 60 * 1000;
 }
 
-export default function ChatView({ channel, currentUser, canManage, onCreateTask }) {
+export default function ChatView({ channel, currentUser, canManage, onCreateTask, onOpenProfile }) {
   const [messages, setMessages] = useState([]);
   const [typing, setTyping] = useState({});
   const [editingId, setEditingId] = useState(null);
@@ -125,20 +126,20 @@ export default function ChatView({ channel, currentUser, canManage, onCreateTask
   return (
     <div className="chat-area">
       <WatchTogether channelId={channel.id} />
-      <button className="chat-pins-btn" title="Messages épinglés" onClick={togglePins}>📌</button>
+      <button className="chat-pins-btn" title="Messages épinglés" onClick={togglePins}><Icon name="thumbtack" /></button>
 
       {showPins && (
         <div className="pins-panel">
-          <div className="pins-head">Messages épinglés <button onClick={() => setShowPins(false)}>✕</button></div>
+          <div className="pins-head">Messages épinglés <button onClick={() => setShowPins(false)}><Icon name="xmark" /></button></div>
           {pins.length === 0 && <div className="pins-empty">Aucun message épinglé.</div>}
           {pins.map((m) => (
             <div className="pin-item" key={m.id}>
               <Avatar user={m} size={28} />
               <div>
                 <div className="pin-author">{m.display_name}</div>
-                <div className="pin-text">{renderRich(m.content, currentUser) || (m.attachment_url ? '📎 pièce jointe' : '')}</div>
+                <div className="pin-text">{renderRich(m.content, currentUser) || (m.attachment_url ? 'pièce jointe' : '')}</div>
               </div>
-              {canManage && <button className="pin-remove" title="Détacher" onClick={() => pin(m)}>✕</button>}
+              {canManage && <button className="pin-remove" title="Détacher" onClick={() => pin(m)}><Icon name="xmark" /></button>}
             </div>
           ))}
         </div>
@@ -160,20 +161,20 @@ export default function ChatView({ channel, currentUser, canManage, onCreateTask
               {grouped ? (
                 <div className="gutter gutter-time">{formatTime(m.created_at)}</div>
               ) : (
-                <Avatar user={m} size={40} />
+                <Avatar user={m} size={40} onClick={() => onOpenProfile?.(m.user_id)} />
               )}
               <div className="msg-body">
                 {m.reply_to && (
                   <div className="reply-preview">
-                    ↪ <strong>{m.reply_to.display_name}</strong>{' '}
-                    <span>{m.reply_to.content ? m.reply_to.content.slice(0, 60) : '📎 pièce jointe'}</span>
+                    <Icon name="reply" /> <strong>{m.reply_to.display_name}</strong>{' '}
+                    <span>{m.reply_to.content ? m.reply_to.content.slice(0, 60) : 'pièce jointe'}</span>
                   </div>
                 )}
                 {!grouped && (
                   <div className="msg-head">
-                    <span className="msg-author">{m.display_name}</span>
+                    <span className="msg-author clickable" onClick={() => onOpenProfile?.(m.user_id)}>{m.display_name}</span>
                     <span className="msg-time">{formatTime(m.created_at)}</span>
-                    {m.pinned ? <span className="msg-pin-tag" title="Épinglé">📌</span> : null}
+                    {m.pinned ? <span className="msg-pin-tag" title="Épinglé"><Icon name="thumbtack" /></span> : null}
                   </div>
                 )}
 
@@ -218,8 +219,8 @@ export default function ChatView({ channel, currentUser, canManage, onCreateTask
 
               {!editing && (
                 <div className="msg-actions">
-                  <button title="Réagir" onClick={() => (pickerFor === m.id ? setPickerFor(null) : openPicker(m.id))}>😊</button>
-                  <button title="Répondre" onClick={() => setReplyingTo(m)}>↩️</button>
+                  <button title="Réagir" onClick={() => (pickerFor === m.id ? setPickerFor(null) : openPicker(m.id))}><Icon name="face-smile" /></button>
+                  <button title="Répondre" onClick={() => setReplyingTo(m)}><Icon name="reply" /></button>
                   {onCreateTask && (
                     <button title="Créer une tâche depuis ce message" onClick={() => onCreateTask({
                       title: (m.content || '').replace(/\s+/g, ' ').trim().slice(0, 140),
@@ -228,18 +229,18 @@ export default function ChatView({ channel, currentUser, canManage, onCreateTask
                       channel_id: channel.id,
                       source_message_id: m.id,
                       source_label: `#${channel.name}`,
-                    })}>✔️</button>
+                    })}><Icon name="square-check" /></button>
                   )}
                   <SaveButton content={m.content} attachmentUrl={m.attachment_url} authorName={m.display_name} source={`#${channel.name}`} />
-                  {canManage && <button title={m.pinned ? 'Détacher' : 'Épingler'} onClick={() => pin(m)}>📌</button>}
-                  {isOwn && <button title="Modifier" onClick={() => startEdit(m)}>✏️</button>}
-                  {(isOwn || canManage) && <button title="Supprimer" onClick={() => del(m)}>🗑️</button>}
+                  {canManage && <button title={m.pinned ? 'Détacher' : 'Épingler'} onClick={() => pin(m)}><Icon name="thumbtack" /></button>}
+                  {isOwn && <button title="Modifier" onClick={() => startEdit(m)}><Icon name="pen" /></button>}
+                  {(isOwn || canManage) && <button title="Supprimer" onClick={() => del(m)}><Icon name="trash" /></button>}
                   {pickerFor === m.id && !pickerFull && (
                     <div className="emoji-picker">
                       {QUICK_EMOJIS.map((e) => (
                         <button key={e} onClick={() => react(m.id, e)}>{e}</button>
                       ))}
-                      <button className="emoji-more" title="Plus" onClick={() => setPickerFull(true)}>➕</button>
+                      <button className="emoji-more" title="Plus" onClick={() => setPickerFull(true)}><Icon name="plus" /></button>
                     </div>
                   )}
                   {pickerFor === m.id && pickerFull && (

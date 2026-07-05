@@ -177,6 +177,7 @@ export function setupSocket(io) {
       ).run(channelId, userId, text, attach, name, replyId);
       io.to('server:' + channel.server_id).emit('message:new', {
         channelId: Number(channelId),
+        serverId: channel.server_id,
         message: fullMessage(info.lastInsertRowid),
       });
     });

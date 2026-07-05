@@ -6,7 +6,13 @@
 //   configuré par l'utilisateur (par défaut http://localhost:3001), stocké localement.
 
 const DEV = import.meta.env.DEV;
-const KEY = 'concord.serverUrl';
+const KEY = 'pulsar.serverUrl';
+
+// Migration de l'ancienne clé (concord.serverUrl → pulsar.serverUrl).
+if (typeof localStorage !== 'undefined' && !localStorage.getItem(KEY) && localStorage.getItem('concord.serverUrl')) {
+  localStorage.setItem(KEY, localStorage.getItem('concord.serverUrl'));
+  localStorage.removeItem('concord.serverUrl');
+}
 
 export const IS_DESKTOP = typeof window !== 'undefined' && !!window.electron?.isDesktop;
 

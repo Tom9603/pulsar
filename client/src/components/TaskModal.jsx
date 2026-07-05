@@ -3,9 +3,9 @@ import Modal from './Modal.jsx';
 import { api } from '../api.js';
 
 const PRIORITIES = [
-  { value: 'low', label: '⬇︎ Basse' },
-  { value: 'normal', label: '◾ Normale' },
-  { value: 'high', label: '⬆︎ Haute' },
+  { value: 'low', label: 'Basse' },
+  { value: 'normal', label: 'Normale' },
+  { value: 'high', label: 'Haute' },
 ];
 
 export function toLocalInput(epoch) {

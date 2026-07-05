@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import Avatar from './Avatar.jsx';
+import Icon from './Icon.jsx';
 
 /** Barre latérale des messages privés : bouton Amis + liste des conversations. */
 export default function DmSidebar({ conversations, activeUserId, onlineIds, onSelect, onStartDm, onOpenFriends, friendsActive, onOpenSaved, savedActive }) {
@@ -27,10 +28,10 @@ export default function DmSidebar({ conversations, activeUserId, onlineIds, onSe
       </div>
 
       {onOpenFriends && (
-        <div className={`friends-entry ${friendsActive ? 'active' : ''}`} onClick={onOpenFriends}>👥 Amis</div>
+        <div className={`friends-entry ${friendsActive ? 'active' : ''}`} onClick={onOpenFriends}><Icon name="user-group" /> Contacts</div>
       )}
       {onOpenSaved && (
-        <div className={`friends-entry ${savedActive ? 'active' : ''}`} onClick={onOpenSaved}>🔖 Sauvegardés</div>
+        <div className={`friends-entry ${savedActive ? 'active' : ''}`} onClick={onOpenSaved}><Icon name="circle-check" /> À faire</div>
       )}
 
       <form onSubmit={start} style={{ padding: '10px 8px' }}>

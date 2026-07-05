@@ -1,10 +1,11 @@
 import { mediaUrl } from '../api.js';
+import Icon from './Icon.jsx';
 
 const SECTIONS = [
-  { id: 'home', icon: '🏠', label: 'Accueil' },
-  { id: 'dm', icon: '💬', label: 'Messages' },
-  { id: 'friends', icon: '👥', label: 'Contacts' },
-  { id: 'saved', icon: '✅', label: 'À faire' },
+  { id: 'home', icon: 'house', label: 'Accueil' },
+  { id: 'dm', icon: 'comment', label: 'Messages' },
+  { id: 'friends', icon: 'user-group', label: 'Contacts' },
+  { id: 'saved', icon: 'circle-check', label: 'À faire' },
 ];
 
 /** Rail de navigation : sections de l'app (Accueil, Messages, Contacts, À faire) + serveurs. */
@@ -18,7 +19,7 @@ export default function NavRail({ section, servers, activeServerId, hasUnreadDm,
           onClick={() => onSection(s.id)}
         >
           <span className="nav-ico">
-            {s.icon}
+            <Icon name={s.icon} />
             {s.id === 'dm' && hasUnreadDm && <span className="nav-dot" />}
             {s.id === 'saved' && todoCount > 0 && <span className="nav-count">{todoCount}</span>}
           </span>
@@ -39,7 +40,7 @@ export default function NavRail({ section, servers, activeServerId, hasUnreadDm,
             {sv.icon_url ? <img src={mediaUrl(sv.icon_url)} alt="" /> : sv.name.charAt(0).toUpperCase()}
           </button>
         ))}
-        <button className="nav-server nav-add" title="Ajouter un serveur" onClick={onAddServer}>+</button>
+        <button className="nav-server nav-add" title="Ajouter un serveur" onClick={onAddServer}><Icon name="plus" /></button>
       </div>
     </nav>
   );

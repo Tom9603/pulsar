@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { api } from '../api.js';
+import Icon from './Icon.jsx';
 
 function untilTomorrow9() {
   const d = new Date();
@@ -10,9 +11,9 @@ function untilTomorrow9() {
 
 const OPTIONS = [
   { label: 'Enregistrer (sans rappel)', secs: 0 },
-  { label: '⏰ Dans 1 heure', secs: 3600 },
-  { label: '⏰ Dans 3 heures', secs: 10800 },
-  { label: '⏰ Demain 9 h', secs: null }, // calculé
+  { label: 'Dans 1 heure', secs: 3600 },
+  { label: 'Dans 3 heures', secs: 10800 },
+  { label: 'Demain 9 h', secs: null }, // calculé
 ];
 
 /** Bouton « enregistrer / me rappeler ce message » (rappel relatif ou date précise). */
@@ -27,7 +28,7 @@ export default function SaveButton({ content, attachmentUrl, authorName, source 
     else body.remindInSeconds = secs === null ? untilTomorrow9() : secs;
     try {
       await api('/saved', { method: 'POST', body });
-      setDone(remindAt || body.remindInSeconds > 0 ? '⏰ Rappel programmé !' : '🔖 Enregistré !');
+      setDone(remindAt || body.remindInSeconds > 0 ? 'Rappel programmé !' : 'Enregistré !');
       setTimeout(() => { setOpen(false); setDone(''); setCustom(''); }, 1200);
     } catch {
       setDone('Erreur');
@@ -37,7 +38,7 @@ export default function SaveButton({ content, attachmentUrl, authorName, source 
 
   return (
     <span className="save-wrap">
-      <button title="Enregistrer / Me le rappeler" onClick={() => setOpen((v) => !v)}>🔖</button>
+      <button title="Enregistrer / Me le rappeler" onClick={() => setOpen((v) => !v)}><Icon name="bookmark" /></button>
       {open && (
         <div className="save-pop">
           {done ? (

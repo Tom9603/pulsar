@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import Icon from './Icon.jsx';
 
 // Jeu d'emojis groupés par catégorie (couvre le quotidien).
 const GROUPS = {
@@ -24,7 +25,7 @@ export default function EmojiPicker({ onPick, onClose }) {
             {GROUPS[n][0]}
           </button>
         ))}
-        {onClose && <button className="emoji-close" title="Fermer" onClick={onClose}>✕</button>}
+        {onClose && <button className="emoji-close" title="Fermer" onClick={onClose}><Icon name="xmark" /></button>}
       </div>
       <div className="emoji-grid">
         {GROUPS[tab].map((e, i) => (

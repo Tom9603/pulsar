@@ -1,22 +1,23 @@
 import { useState } from 'react';
 import Modal from './Modal.jsx';
 import Avatar from './Avatar.jsx';
+import Icon from './Icon.jsx';
 import { api, uploadFile, mediaUrl } from '../api.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import { isSoundEnabled, setSoundEnabled, isDesktopEnabled, setDesktopEnabled } from '../notify.js';
 
 const COLORS = ['#5865F2', '#EB459E', '#57F287', '#FAA61A', '#ED4245', '#3498DB', '#9B59B6', '#14b8a6', '#e67e22'];
 const STATUSES = [
-  { value: 'online', label: '🟢 En ligne' },
-  { value: 'idle', label: '🌙 Absent' },
-  { value: 'dnd', label: '⛔ Ne pas déranger' },
-  { value: 'invisible', label: '⚪ Invisible' },
+  { value: 'online', label: 'En ligne' },
+  { value: 'idle', label: 'Absent' },
+  { value: 'dnd', label: 'Ne pas déranger' },
+  { value: 'invisible', label: 'Invisible' },
 ];
 
 const MENU = [
-  { group: 'Mon profil', items: [{ id: 'identity', label: '🪪 Identité' }, { id: 'pro', label: '💼 Fiche professionnelle' }] },
-  { group: 'Application', items: [{ id: 'notif', label: '🔔 Notifications' }] },
-  { group: 'Compte', items: [{ id: 'account', label: '🔐 Sécurité & compte' }] },
+  { group: 'Mon profil', items: [{ id: 'identity', icon: 'id-card', label: 'Identité' }, { id: 'pro', icon: 'briefcase', label: 'Fiche professionnelle' }] },
+  { group: 'Application', items: [{ id: 'notif', icon: 'bell', label: 'Notifications' }] },
+  { group: 'Compte', items: [{ id: 'account', icon: 'lock', label: 'Sécurité & compte' }] },
 ];
 
 /** Réglages : profil, fiche pro (+ CV), notifications, compte — en menus. */
@@ -99,7 +100,7 @@ export default function SettingsModal({ onClose }) {
     setAccountMsg('');
     try {
       await api('/users/me/password', { method: 'PATCH', body: { old_password: oldPw, new_password: newPw } });
-      setAccountMsg('Mot de passe modifié ✅');
+      setAccountMsg('Mot de passe modifié.');
       setOldPw(''); setNewPw('');
     } catch (e) { setAccountMsg(e.message); }
   }
@@ -123,7 +124,7 @@ export default function SettingsModal({ onClose }) {
             <div key={g.group} className="settings-menu-group">
               <div className="settings-menu-label">{g.group}</div>
               {g.items.map((it) => (
-                <button key={it.id} className={menu === it.id ? 'active' : ''} onClick={() => setMenu(it.id)}>{it.label}</button>
+                <button key={it.id} className={menu === it.id ? 'active' : ''} onClick={() => setMenu(it.id)}><Icon name={it.icon} /> {it.label}</button>
               ))}
             </div>
           ))}
@@ -218,7 +219,7 @@ export default function SettingsModal({ onClose }) {
                 <input type="file" accept=".pdf,image/*" onChange={onPickCv} />
                 {cvUrl && (
                   <div className="cv-chip">
-                    <a href={mediaUrl(cvUrl)} target="_blank" rel="noreferrer">📄 {cvName || 'Voir le CV'}</a>
+                    <a href={mediaUrl(cvUrl)} target="_blank" rel="noreferrer"><Icon name="file-lines" /> {cvName || 'Voir le CV'}</a>
                     <button type="button" onClick={() => { setCvUrl(''); setCvName(''); }}>Retirer</button>
                   </div>
                 )}

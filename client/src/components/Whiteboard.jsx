@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { getSocket } from '../socket.js';
+import Icon from './Icon.jsx';
 
 const W = 1000, H = 600;
 const BG = '#1b1e27';
@@ -63,7 +64,7 @@ export default function Whiteboard({ channelId, onClose }) {
     <div className="board-overlay">
       <div className="board-window">
         <div className="board-toolbar">
-          <span className="board-title">🎨 Tableau blanc partagé</span>
+          <span className="board-title"><Icon name="palette" /> Tableau blanc partagé</span>
           <div className="board-colors">
             {COLORS.map((c) => (
               <button key={c} className={`board-color ${!eraser && c === color ? 'active' : ''}`} style={{ background: c }} onClick={() => { setColor(c); setEraser(false); }} />
@@ -74,9 +75,9 @@ export default function Whiteboard({ channelId, onClose }) {
               <button key={s} className={size === s ? 'active' : ''} onClick={() => setSize(s)}>{s}</button>
             ))}
           </div>
-          <button className={`board-tool ${eraser ? 'active' : ''}`} onClick={() => setEraser((v) => !v)} title="Gomme">🧽</button>
-          <button className="board-tool" onClick={clear} title="Tout effacer">🗑️</button>
-          <button className="board-close" onClick={onClose} title="Fermer">✕</button>
+          <button className={`board-tool ${eraser ? 'active' : ''}`} onClick={() => setEraser((v) => !v)} title="Gomme"><Icon name="eraser" /></button>
+          <button className="board-tool" onClick={clear} title="Tout effacer"><Icon name="trash" /></button>
+          <button className="board-close" onClick={onClose} title="Fermer"><Icon name="xmark" /></button>
         </div>
         <canvas
           ref={canvasRef}

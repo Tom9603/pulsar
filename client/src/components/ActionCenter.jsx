@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import Icon from './Icon.jsx';
 import TasksPanel from './TasksPanel.jsx';
 import SavedPanel from './SavedPanel.jsx';
 
@@ -10,7 +11,7 @@ export default function ActionCenter({ currentUser, tasks, taskFilter, onTaskFil
   return (
     <div className="main-content">
       <div className="content-header">
-        <span>✅ À faire</span>
+        <span><Icon name="circle-check" /> À faire</span>
         <div className="ac-tabs">
           <button className={tab === 'tasks' ? 'active' : ''} onClick={() => setTab('tasks')}>
             Tâches{openTasks ? <span className="ac-badge">{openTasks}</span> : null}

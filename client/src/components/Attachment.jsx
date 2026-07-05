@@ -1,4 +1,5 @@
 import { mediaUrl, isAudio } from '../api.js';
+import Icon from './Icon.jsx';
 
 const isImage = (u) => /\.(png|jpe?g|gif|webp)$/i.test(u || '');
 
@@ -14,9 +15,9 @@ export default function Attachment({ url, name }) {
   }
   return (
     <a className="msg-file" href={full} target="_blank" rel="noopener noreferrer">
-      <span className="file-icon">📄</span>
+      <span className="file-icon"><Icon name="file-lines" /></span>
       <span className="file-name">{name || 'fichier'}</span>
-      <span className="file-dl">⬇</span>
+      <span className="file-dl"><Icon name="download" /></span>
     </a>
   );
 }

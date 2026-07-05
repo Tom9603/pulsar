@@ -2,17 +2,18 @@ import { useEffect, useState, useCallback } from 'react';
 import { api, mediaUrl, isAudio } from '../api.js';
 import { getSocket } from '../socket.js';
 import { renderRich } from '../richtext.jsx';
+import Icon from './Icon.jsx';
 
 function reminderLabel(item) {
   if (!item.remind_at) return null;
   const diff = item.remind_at * 1000 - Date.now();
   const when = new Date(item.remind_at * 1000).toLocaleString('fr-FR', { weekday: 'short', day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
-  if (item.notified || diff <= 0) return `🔔 Rappel passé (${when})`;
+  if (item.notified || diff <= 0) return { icon: 'bell', text: `Rappel passé (${when})`, past: true };
   const h = Math.floor(diff / 3600000);
   const m = Math.floor((diff % 3600000) / 60000);
   const d = Math.floor(h / 24);
   const rel = d > 0 ? `dans ${d} j` : h > 0 ? `dans ${h} h ${m} min` : `dans ${m} min`;
-  return `⏰ Rappel ${rel} (${when})`;
+  return { icon: 'clock', text: `Rappel ${rel} (${when})`, past: false };
 }
 
 const untilTomorrow9 = () => {
@@ -48,7 +49,7 @@ export default function SavedPanel({ currentUser, embedded }) {
     <div className="saved-body">
       {items.length === 0 && (
         <p className="saved-empty">
-          Aucun rappel pour l’instant. Sur n’importe quel message, cliquez sur 🔖 pour l’enregistrer ici — et vous le faire rappeler à la date de votre choix.
+          Aucun rappel pour l’instant. Sur n’importe quel message, cliquez sur l’icône <Icon name="bookmark" /> pour l’enregistrer ici — et vous le faire rappeler à la date de votre choix.
         </p>
       )}
       {items.map((it) => (
@@ -62,11 +63,11 @@ export default function SavedPanel({ currentUser, embedded }) {
             {it.attachment_url && (isAudio(it.attachment_url)
               ? <audio className="msg-audio" controls src={mediaUrl(it.attachment_url)} />
               : <img className="saved-img" src={mediaUrl(it.attachment_url)} alt="" onClick={() => window.open(mediaUrl(it.attachment_url), '_blank')} />)}
-            {reminderLabel(it) && <div className="saved-reminder">{reminderLabel(it)}</div>}
+            {(() => { const r = reminderLabel(it); return r && <div className="saved-reminder"><Icon name={r.icon} /> {r.text}</div>; })()}
           </div>
           <div className="saved-actions">
-            <button title="Programmer un rappel" onClick={() => { setMenuFor(menuFor === it.id ? null : it.id); setCustom(''); }}>⏰</button>
-            <button title="Supprimer" onClick={() => remove(it.id)}>🗑️</button>
+            <button title="Programmer un rappel" onClick={() => { setMenuFor(menuFor === it.id ? null : it.id); setCustom(''); }}><Icon name="clock" /></button>
+            <button title="Supprimer" onClick={() => remove(it.id)}><Icon name="trash" /></button>
             {menuFor === it.id && (
               <div className="save-pop">
                 <button onClick={() => setSecs(it.id, 3600)}>Dans 1 heure</button>
@@ -90,7 +91,7 @@ export default function SavedPanel({ currentUser, embedded }) {
 
   return (
     <div className="main-content">
-      <div className="content-header"><span>🔖 Rappels</span></div>
+      <div className="content-header"><span><Icon name="bookmark" /> Rappels</span></div>
       {body}
     </div>
   );

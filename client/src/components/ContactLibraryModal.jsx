@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import Modal from './Modal.jsx';
 import Avatar from './Avatar.jsx';
+import Icon from './Icon.jsx';
 
 /** Bibliothèque de contacts : recherche + accès rapide à la conversation. */
 export default function ContactLibraryModal({ contacts, onlineIds, onOpenDm, onClose }) {
@@ -26,7 +27,7 @@ export default function ContactLibraryModal({ contacts, onlineIds, onOpenDm, onC
               <div className="contact-name">{c.display_name}</div>
               <div className="contact-sub">@{c.username}</div>
             </div>
-            <button className="btn" style={{ width: 'auto', padding: '6px 14px', fontSize: 13 }} onClick={() => onOpenDm(c)}>💬 Message</button>
+            <button className="btn" style={{ width: 'auto', padding: '6px 14px', fontSize: 13 }} onClick={() => onOpenDm(c)}><Icon name="message" /> Message</button>
           </div>
         ))}
       </div>

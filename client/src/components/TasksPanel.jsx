@@ -1,9 +1,10 @@
 import Avatar from './Avatar.jsx';
+import Icon from './Icon.jsx';
 
 const GROUPS = [
-  { key: 'todo', label: '🗂 À faire' },
-  { key: 'doing', label: '⏳ En cours' },
-  { key: 'done', label: '✓ Terminé' },
+  { key: 'todo', label: 'À faire', icon: 'list-check' },
+  { key: 'doing', label: 'En cours', icon: 'hourglass-half' },
+  { key: 'done', label: 'Terminé', icon: 'circle-check' },
 ];
 const PRIO = { high: { dot: '#ef4444', label: 'Haute' }, normal: { dot: '#3b82f6', label: 'Normale' }, low: { dot: '#6b7280', label: 'Basse' } };
 
@@ -12,7 +13,7 @@ function dueLabel(epoch) {
   const d = new Date(epoch * 1000);
   const overdue = epoch * 1000 < Date.now();
   const txt = d.toLocaleString('fr-FR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
-  return { txt: `${overdue ? '⚠ ' : '📅 '}${txt}`, overdue };
+  return { txt, overdue };
 }
 
 /** Liste des tâches (assignées à moi ou créées par moi), regroupées par statut. */
@@ -27,28 +28,28 @@ export default function TasksPanel({ tasks, currentUser, filter, onFilter, onTog
           <button className={filter === 'mine' ? 'active' : ''} onClick={() => onFilter('mine')}>Qui m’est assigné{openCount ? ` · ${openCount}` : ''}</button>
           <button className={filter === 'all' ? 'active' : ''} onClick={() => onFilter('all')}>Tout</button>
         </div>
-        <button className="btn" style={{ width: 'auto', padding: '7px 14px', fontSize: 13 }} onClick={onNew}>＋ Nouvelle tâche</button>
+        <button className="btn" style={{ width: 'auto', padding: '7px 14px', fontSize: 13 }} onClick={onNew}><Icon name="plus" /> Nouvelle tâche</button>
       </div>
 
       {shown.length === 0 && (
         <p className="tasks-empty">
-          Aucune tâche ici. Créez-en une, ou transformez un message en tâche via l’icône ✔️.
+          Aucune tâche ici. Créez-en une, ou transformez un message en tâche via l’icône <Icon name="square-check" />.
         </p>
       )}
 
-      {GROUPS.map(({ key, label }) => {
+      {GROUPS.map(({ key, label, icon }) => {
         const group = shown.filter((t) => t.status === key);
         if (group.length === 0) return null;
         return (
           <section className="tasks-group" key={key}>
-            <h3>{label} <span className="tasks-count">{group.length}</span></h3>
+            <h3><Icon name={icon} /> {label} <span className="tasks-count">{group.length}</span></h3>
             {group.map((t) => {
               const due = dueLabel(t.due_at);
               const prio = PRIO[t.priority] || PRIO.normal;
               return (
                 <div className={`task-item ${t.status === 'done' ? 'is-done' : ''}`} key={t.id}>
                   <button className={`task-check ${t.status === 'done' ? 'on' : ''}`} title="Terminer" onClick={() => onToggle(t)}>
-                    {t.status === 'done' ? '✓' : ''}
+                    {t.status === 'done' ? <Icon name="check" /> : null}
                   </button>
                   <div className="task-main">
                     <div className="task-title">
@@ -62,7 +63,7 @@ export default function TasksPanel({ tasks, currentUser, filter, onFilter, onTog
                           {t.assignee_name}
                         </span>
                       ) : <span className="task-unassigned">Sans responsable</span>}
-                      {due && <span className={`task-due ${due.overdue && t.status !== 'done' ? 'overdue' : ''}`}>{due.txt}</span>}
+                      {due && <span className={`task-due ${due.overdue && t.status !== 'done' ? 'overdue' : ''}`}><Icon name={due.overdue && t.status !== 'done' ? 'triangle-exclamation' : 'calendar'} /> {due.txt}</span>}
                       {t.server_name && <span className="task-src">{t.channel_name ? `#${t.channel_name}` : t.server_name}</span>}
                     </div>
                   </div>
@@ -72,8 +73,8 @@ export default function TasksPanel({ tasks, currentUser, filter, onFilter, onTog
                       <option value="doing">En cours</option>
                       <option value="done">Terminé</option>
                     </select>
-                    <button title="Modifier" onClick={() => onEdit(t)}>✏️</button>
-                    <button title="Supprimer" onClick={() => onDelete(t)}>🗑️</button>
+                    <button title="Modifier" onClick={() => onEdit(t)}><Icon name="pen" /></button>
+                    <button title="Supprimer" onClick={() => onDelete(t)}><Icon name="trash" /></button>
                   </div>
                 </div>
               );

@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { api } from '../api.js';
 import { getSocket } from '../socket.js';
 import Avatar from './Avatar.jsx';
+import Icon from './Icon.jsx';
 
 /** Écran « Amis » : liste, demandes reçues/envoyées, ajout, blocage. */
 export default function FriendsPanel({ onlineIds, onOpenDm }) {
@@ -24,7 +25,7 @@ export default function FriendsPanel({ onlineIds, onOpenDm }) {
     setMsg('');
     try {
       const r = await api('/friends/request', { method: 'POST', body: { username: username.trim() } });
-      setMsg(r.status === 'accepted' ? 'Vous êtes maintenant en contact !' : 'Invitation envoyée ✅');
+      setMsg(r.status === 'accepted' ? 'Vous êtes maintenant en contact !' : 'Invitation envoyée.');
       setUsername('');
       load();
     } catch (err) { setMsg(err.message); }
@@ -45,7 +46,7 @@ export default function FriendsPanel({ onlineIds, onOpenDm }) {
 
   return (
     <div className="main-content">
-      <div className="content-header"><span>👥 Contacts</span></div>
+      <div className="content-header"><span><Icon name="user-group" /> Contacts</span></div>
       <div className="friends-body">
         <form className="add-friend" onSubmit={addFriend}>
           <input value={username} onChange={(e) => setUsername(e.target.value)} placeholder="Ajouter un contact par nom d’utilisateur…" />
@@ -70,7 +71,7 @@ export default function FriendsPanel({ onlineIds, onOpenDm }) {
           {data.friends.length === 0 && <p className="friends-empty">Aucun contact pour l’instant. Ajoutez-en un ci-dessus !</p>}
           {data.friends.map((u) => (
             <Row key={u.id} u={u}>
-              <button className="btn" style={{ width: 'auto', padding: '4px 12px', fontSize: 13 }} onClick={() => onOpenDm(u)}>💬 Message</button>
+              <button className="btn" style={{ width: 'auto', padding: '4px 12px', fontSize: 13 }} onClick={() => onOpenDm(u)}><Icon name="message" /> Message</button>
               <button className="btn btn-ghost" style={{ width: 'auto', padding: '4px 12px', fontSize: 13 }} onClick={() => act(`/friends/${u.id}`, 'DELETE')}>Retirer</button>
               <button className="btn btn-danger" style={{ width: 'auto', padding: '4px 12px', fontSize: 13 }} onClick={() => act(`/friends/${u.id}/block`)}>Bloquer</button>
             </Row>

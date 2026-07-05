@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react';
 import { uploadImage } from '../api.js';
+import Icon from './Icon.jsx';
 
 const blobToDataURL = (blob) =>
   new Promise((resolve, reject) => {
@@ -67,10 +68,10 @@ export default function VoiceRecorder({ onSend, disabled }) {
   const stopSend = () => { if (recorder.current && recording) { cancelled.current = false; recorder.current.stop(); } };
   const cancel = () => { if (recorder.current && recording) { cancelled.current = true; recorder.current.stop(); } };
 
-  if (busy) return <span className="composer-attach" title="Envoi…">⏳</span>;
+  if (busy) return <span className="composer-attach" title="Envoi…"><Icon name="spinner" className="fa-spin" /></span>;
   if (!recording) {
     return (
-      <button type="button" className="composer-attach" title="Message vocal" onClick={start} disabled={disabled}>🎤</button>
+      <button type="button" className="composer-attach" title="Message vocal" onClick={start} disabled={disabled}><Icon name="microphone" /></button>
     );
   }
   const mm = String(Math.floor(seconds / 60)).padStart(2, '0');
@@ -79,8 +80,8 @@ export default function VoiceRecorder({ onSend, disabled }) {
     <div className="voice-recorder">
       <span className="rec-dot" />
       <span className="rec-time">{mm}:{ss}</span>
-      <button type="button" title="Annuler" onClick={cancel}>✕</button>
-      <button type="button" className="rec-send" title="Envoyer" onClick={stopSend}>➤</button>
+      <button type="button" title="Annuler" onClick={cancel}><Icon name="xmark" /></button>
+      <button type="button" className="rec-send" title="Envoyer" onClick={stopSend}><Icon name="paper-plane" /></button>
     </div>
   );
 }
