@@ -18,14 +18,20 @@ function dueLabel(epoch) {
 
 /** Liste des tâches (assignées à moi ou créées par moi), regroupées par statut. */
 export default function TasksPanel({ tasks, currentUser, filter, onFilter, onToggle, onSetStatus, onEdit, onDelete, onNew }) {
-  const shown = filter === 'mine' ? tasks.filter((t) => t.assignee_id === currentUser.id) : tasks;
+  const shown = filter === 'mine'
+    ? tasks.filter((t) => t.assignee_id === currentUser.id)
+    : filter === 'assigned'
+      ? tasks.filter((t) => t.creator_id === currentUser.id && t.assignee_id && t.assignee_id !== currentUser.id)
+      : tasks;
   const openCount = tasks.filter((t) => t.status !== 'done' && t.assignee_id === currentUser.id).length;
+  const assignedCount = tasks.filter((t) => t.creator_id === currentUser.id && t.assignee_id && t.assignee_id !== currentUser.id).length;
 
   return (
     <div className="tasks-panel">
       <div className="tasks-bar">
         <div className="seg">
           <button className={filter === 'mine' ? 'active' : ''} onClick={() => onFilter('mine')}>Qui m’est assigné{openCount ? ` · ${openCount}` : ''}</button>
+          {assignedCount > 0 && <button className={filter === 'assigned' ? 'active' : ''} onClick={() => onFilter('assigned')}>Attribuées par moi · {assignedCount}</button>}
           <button className={filter === 'all' ? 'active' : ''} onClick={() => onFilter('all')}>Tout</button>
         </div>
         <button className="btn" style={{ width: 'auto', padding: '7px 14px', fontSize: 13 }} onClick={onNew}><Icon name="plus" /> Nouvelle tâche</button>

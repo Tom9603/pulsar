@@ -34,16 +34,30 @@ export default function TaskModal({ task, prefill, servers = [], members: initia
   const [priority, setPriority] = useState(base.priority || 'normal');
   const [due, setDue] = useState(toLocalInput(base.due_at));
   const [members, setMembers] = useState(initialMembers || []);
+  const [canAssign, setCanAssign] = useState(false); // droit de déléguer à quelqu'un d'autre
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  const peer = base.peer || null; // contexte message privé
 
-  // Charge les membres du serveur choisi (pour désigner un responsable).
+  // Serveur choisi : charge ses membres et détermine si j'ai le droit d'attribuer.
   useEffect(() => {
     if (!serverId) { setMembers([]); return; }
     let cancelled = false;
-    api(`/servers/${serverId}`).then(({ members }) => { if (!cancelled) setMembers(members); }).catch(() => {});
+    api(`/servers/${serverId}`).then((data) => {
+      if (cancelled) return;
+      setMembers(data.members || []);
+      setCanAssign(data.is_owner || (data.my_permissions || []).includes('ASSIGN_TASKS'));
+    }).catch(() => {});
     return () => { cancelled = true; };
   }, [serverId]);
+
+  // Contexte message privé : ai-je le droit d'attribuer une tâche à mon interlocuteur ?
+  useEffect(() => {
+    if (serverId || !peer) return;
+    let cancelled = false;
+    api(`/tasks/can-assign/${peer.id}`).then(({ can_assign }) => { if (!cancelled) setCanAssign(!!can_assign); }).catch(() => {});
+    return () => { cancelled = true; };
+  }, [serverId, peer]);
 
   async function submit() {
     const t = title.trim();
@@ -70,9 +84,10 @@ export default function TaskModal({ task, prefill, servers = [], members: initia
     } catch (e) { setError(e.message); setBusy(false); }
   }
 
+  const meOption = { id: currentUser.id, display_name: currentUser.display_name + ' (moi)' };
   const assigneeOptions = serverId
-    ? members
-    : [{ id: currentUser.id, display_name: currentUser.display_name + ' (moi)' }];
+    ? (canAssign ? members : [meOption])
+    : (peer && canAssign ? [meOption, { id: peer.id, display_name: peer.display_name }] : [meOption]);
 
   return (
     <Modal onClose={onClose}>

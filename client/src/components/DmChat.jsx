@@ -172,6 +172,7 @@ export default function DmChat({ peer, currentUser, onlineIds, onCall, onOpenPro
                           title: (m.content || '').replace(/\s+/g, ' ').trim().slice(0, 140),
                           description: m.content && m.content.length > 140 ? m.content : '',
                           source_message_id: m.id, source_label: `@${peer.username}`,
+                          peer: { id: peer.id, display_name: peer.display_name },
                         })}><Icon name="square-check" /></button>
                       )}
                       <SaveButton content={m.content} attachmentUrl={m.attachment_url} authorName={m.display_name} source={`@${peer.username}`} sourceMessageId={m.id} dropUp={nearBottom} />

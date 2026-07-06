@@ -4,6 +4,7 @@ export const PERMISSIONS = {
   MANAGE_ROLES: 'Gérer les rôles',
   KICK_MEMBERS: 'Expulser des membres',
   MANAGE_SERVER: 'Modifier le serveur',
+  ASSIGN_TASKS: 'Attribuer des tâches',
 };
 
 export const PERMISSION_KEYS = Object.keys(PERMISSIONS);

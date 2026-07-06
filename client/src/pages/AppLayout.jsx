@@ -28,6 +28,7 @@ import RolesModal from '../components/RolesModal.jsx';
 import MemberModal from '../components/MemberModal.jsx';
 import ServerSettingsModal from '../components/ServerSettingsModal.jsx';
 import ChannelAccessModal from '../components/ChannelAccessModal.jsx';
+import ServerTasksModal from '../components/ServerTasksModal.jsx';
 import ProfileModal from '../components/ProfileModal.jsx';
 import EditProfileModal from '../components/EditProfileModal.jsx';
 import SearchModal from '../components/SearchModal.jsx';
@@ -58,6 +59,7 @@ export default function AppLayout() {
   const [modal, setModal] = useState(null);
   const [searchOpen, setSearchOpen] = useState(false);
   const [whiteboardOpen, setWhiteboardOpen] = useState(false);
+  const [serverTasksOpen, setServerTasksOpen] = useState(false);
   const [memberTarget, setMemberTarget] = useState(null);
   const [accessChannel, setAccessChannel] = useState(null);
   const [profileTarget, setProfileTarget] = useState(null); // id d'utilisateur
@@ -409,6 +411,7 @@ export default function AppLayout() {
                   {activeChannel.client_label && <span className="topic topic-client"><Icon name="folder-open" /> {activeChannel.client_label}</span>}
                   {activeChannel.type === 'text' && !activeChannel.client_label && <span className="topic">Salon textuel</span>}
                   <span className="spacer" />
+                  <button className="header-btn" title="Tâches du serveur" onClick={() => setServerTasksOpen(true)}><Icon name="list-check" /></button>
                   <button className="header-btn" title="Tableau blanc partagé" onClick={() => setWhiteboardOpen(true)}><Icon name="palette" /></button>
                   <button className="header-btn" title="Rechercher" onClick={() => setSearchOpen(true)}><Icon name="magnifying-glass" /></button>
                   <button className={`header-btn ${showMembers ? 'active' : ''}`} title="Membres" onClick={() => setShowMembers((v) => !v)}><Icon name="users" /></button>
@@ -442,6 +445,10 @@ export default function AppLayout() {
 
       <CallOverlay call={call} />
       {whiteboardOpen && activeChannel && <Whiteboard channelId={activeChannel.id} onClose={() => setWhiteboardOpen(false)} />}
+      {serverTasksOpen && detail && (
+        <ServerTasksModal serverId={detail.server.id} serverName={detail.server.name}
+          onOpenTask={(t) => { setServerTasksOpen(false); editTask(t); }} onClose={() => setServerTasksOpen(false)} />
+      )}
 
       {taskModal && (
         <TaskModal

@@ -31,6 +31,24 @@ function taskRow(id) {
 const isMember = (serverId, userId) =>
   !!db.prepare('SELECT 1 FROM server_members WHERE server_id = ? AND user_id = ?').get(serverId, userId);
 
+/** Le créateur peut-il attribuer une tâche à `targetId` ? (soi-même toujours ; sinon rôle « Attribuer des tâches »). */
+function canAssignTo(creatorId, targetId, serverId) {
+  if (!targetId || targetId === creatorId) return true;
+  if (serverId) {
+    return isMember(serverId, targetId) && (isOwner(serverId, creatorId) || hasPermission(serverId, creatorId, 'ASSIGN_TASKS'));
+  }
+  // Tâche hors serveur (ex. depuis un message privé) : autorisé si on partage un serveur où j'ai le droit d'attribuer.
+  const shared = db.prepare(`
+    SELECT a.server_id FROM server_members a
+    JOIN server_members b ON a.server_id = b.server_id
+    WHERE a.user_id = ? AND b.user_id = ?
+  `).all(creatorId, targetId);
+  return shared.some((r) => isOwner(r.server_id, creatorId) || hasPermission(r.server_id, creatorId, 'ASSIGN_TASKS'));
+}
+
+/** Puis-je attribuer une tâche à cet utilisateur (contexte hors serveur, ex. DM) ? */
+const canAssignRoute = (req, res) => res.json({ can_assign: canAssignTo(req.userId, Number(req.params.userId), null) });
+
 /** Peut-on voir / toucher cette tâche ? Créateur, responsable, ou gestionnaire du serveur. */
 function canTouch(task, userId) {
   if (task.creator_id === userId || task.assignee_id === userId) return true;
@@ -88,6 +106,8 @@ router.get('/server/:serverId', (req, res) => {
   res.json({ tasks });
 });
 
+router.get('/can-assign/:userId', canAssignRoute);
+
 /** Créer une tâche (éventuellement depuis un message). */
 router.post('/', (req, res) => {
   const b = req.body || {};
@@ -112,9 +132,8 @@ router.post('/', (req, res) => {
   let assigneeId = null;
   if (b.assignee_id) {
     const target = Number(b.assignee_id);
-    // Sur un serveur, le responsable doit en être membre ; sinon on ne s'assigne qu'à soi.
-    if (serverId ? isMember(serverId, target) : target === req.userId) assigneeId = target;
-    else if (serverId) return res.status(400).json({ error: 'Le responsable doit être membre du serveur' });
+    if (canAssignTo(req.userId, target, serverId)) assigneeId = target;
+    else return res.status(403).json({ error: 'Vous n’avez pas le droit d’attribuer une tâche à cette personne (rôle « Attribuer des tâches » requis).' });
   }
 
   const info = db.prepare(`
@@ -146,7 +165,8 @@ router.patch('/:id', (req, res) => {
     if (!b.assignee_id) assigneeId = null;
     else {
       const target = Number(b.assignee_id);
-      if (task.server_id ? isMember(task.server_id, target) : target === req.userId) assigneeId = target;
+      if (canAssignTo(req.userId, target, task.server_id)) assigneeId = target;
+      else return res.status(403).json({ error: 'Vous n’avez pas le droit d’attribuer cette tâche à cette personne.' });
     }
   }
 
