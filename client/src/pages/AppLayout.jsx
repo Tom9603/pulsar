@@ -35,6 +35,8 @@ import SearchModal from '../components/SearchModal.jsx';
 import CallOverlay from '../components/CallOverlay.jsx';
 import Whiteboard from '../components/Whiteboard.jsx';
 import RemoteAudio from '../components/RemoteAudio.jsx';
+import ContextMenu from '../components/ContextMenu.jsx';
+import { openMenu } from '../contextmenu.js';
 
 export default function AppLayout() {
   const { user, logout } = useAuth();
@@ -221,6 +223,19 @@ export default function AppLayout() {
   const markAllRead = () => setNotifications((l) => l.map((n) => ({ ...n, read: true })));
   const clearNotifs = () => setNotifications([]);
 
+  // Menu clic droit global (repli) : sauf dans les champs de saisie et les médias.
+  function onAppContextMenu(e) {
+    const t = e.target;
+    if (['INPUT', 'TEXTAREA', 'SELECT', 'AUDIO', 'VIDEO', 'IMG', 'A'].includes(t.tagName) || t.isContentEditable) return;
+    e.preventDefault();
+    openMenu(e.clientX, e.clientY, [
+      { label: 'Accueil', icon: 'house', onClick: goHome },
+      { label: 'Mon profil', icon: 'user', onClick: () => setProfileTarget(user.id) },
+      { sep: true },
+      { label: 'Réglages', icon: 'gear', onClick: () => setModal('settings') },
+    ]);
+  }
+
   // ---- Temps réel ----
   useEffect(() => {
     const socket = getSocket();
@@ -338,7 +353,7 @@ export default function AppLayout() {
   const activeChannel = detail?.channels.find((c) => c.id === activeChannelId) || null;
 
   return (
-    <div className="pulsar-app">
+    <div className="pulsar-app" onContextMenu={onAppContextMenu}>
       <TopBar
         user={user}
         onHome={goHome}
@@ -445,6 +460,7 @@ export default function AppLayout() {
       </div>
 
       <CallOverlay call={call} />
+      <ContextMenu />
       {whiteboardOpen && activeChannel && <Whiteboard channelId={activeChannel.id} onClose={() => setWhiteboardOpen(false)} />}
       {serverTasksOpen && detail && (
         <ServerTasksModal serverId={detail.server.id} serverName={detail.server.name}

@@ -10,6 +10,7 @@ import EmojiPicker from './EmojiPicker.jsx';
 import SaveButton from './SaveButton.jsx';
 import WatchTogether from './WatchTogether.jsx';
 import ConfirmModal from './ConfirmModal.jsx';
+import { ctx } from '../contextmenu.js';
 
 const QUICK_EMOJIS = ['👍', '❤️', '😂', '😮', '😢', '🎉'];
 
@@ -113,6 +114,19 @@ export default function ChatView({ channel, currentUser, canManage, onCreateTask
 
   const react = (messageId, emoji) => { getSocket().emit('reaction:toggle', { messageId, emoji }); setPickerFor(null); setPickerFull(false); };
   const del = (m) => setConfirmDel(m);
+  const quickSave = (m) => api('/saved', { method: 'POST', body: { content: m.content, attachment_url: m.attachment_url, author_name: m.display_name, source: channel.name, source_message_id: m.id } })
+    .then(() => window.dispatchEvent(new Event('pulsar:saved-changed'))).catch(() => {});
+  const taskFromMsg = (m) => onCreateTask?.({ title: (m.content || '').replace(/\s+/g, ' ').trim().slice(0, 140), description: m.content && m.content.length > 140 ? m.content : '', server_id: channel.server_id, channel_id: channel.id, source_message_id: m.id, source_label: channel.name });
+  const msgMenu = (m, isOwn) => ctx(() => m.deleted ? [] : [
+    { label: 'Répondre', icon: 'reply', onClick: () => setReplyingTo(m) },
+    onCreateTask && { label: 'Créer une tâche', icon: 'square-check', onClick: () => taskFromMsg(m) },
+    { label: 'Enregistrer le message', icon: 'bookmark', onClick: () => quickSave(m) },
+    canManage && { label: m.pinned ? 'Détacher' : 'Épingler', icon: 'thumbtack', onClick: () => pin(m) },
+    m.content && { label: 'Copier le texte', icon: 'copy', onClick: () => navigator.clipboard?.writeText(m.content) },
+    (isOwn || canManage) && { sep: true },
+    isOwn && { label: 'Modifier', icon: 'pen', onClick: () => startEdit(m) },
+    (isOwn || canManage) && { label: 'Supprimer', icon: 'trash', danger: true, onClick: () => del(m) },
+  ]);
   const pin = (m) => getSocket().emit('message:pin', { messageId: m.id, pinned: !m.pinned });
   const startEdit = (m) => { setEditingId(m.id); setEditText(m.content); };
   function submitEdit(m) {
@@ -162,7 +176,7 @@ export default function ChatView({ channel, currentUser, canManage, onCreateTask
           const isTaskMsg = !m.deleted && taskMsgIds?.has(m.id);
           const isReminderMsg = !m.deleted && !isTaskMsg && reminderMsgIds?.has(m.id);
           return (
-            <div className={`message ${grouped ? 'grouped' : ''} ${m.pinned ? 'pinned' : ''} ${m.reply_to && !m.deleted ? 'is-reply' : ''} ${m.deleted ? 'is-deleted' : ''} ${isTaskMsg ? 'is-task' : ''} ${isReminderMsg ? 'is-reminder' : ''}`} key={m.id}>
+            <div className={`message ${grouped ? 'grouped' : ''} ${m.pinned ? 'pinned' : ''} ${m.reply_to && !m.deleted ? 'is-reply' : ''} ${m.deleted ? 'is-deleted' : ''} ${isTaskMsg ? 'is-task' : ''} ${isReminderMsg ? 'is-reminder' : ''}`} key={m.id} onContextMenu={msgMenu(m, isOwn)}>
               {(isTaskMsg || isReminderMsg) && (
                 <span className={`msg-mark ${isTaskMsg ? 'task' : 'reminder'}`} title={isTaskMsg ? 'Vous avez créé une tâche depuis ce message' : 'Vous avez enregistré ce message'}>
                   <Icon name={isTaskMsg ? 'square-check' : 'bookmark'} />
@@ -182,7 +196,11 @@ export default function ChatView({ channel, currentUser, canManage, onCreateTask
                 )}
                 {!grouped && (
                   <div className="msg-head">
-                    <span className="msg-author clickable" onClick={() => onOpenProfile?.(m.user_id)}>{m.display_name}</span>
+                    <span className="msg-author clickable" onClick={() => onOpenProfile?.(m.user_id)}
+                      onContextMenu={ctx([
+                        { label: 'Voir le profil', icon: 'user', onClick: () => onOpenProfile?.(m.user_id) },
+                        { label: 'Copier le nom', icon: 'copy', onClick: () => navigator.clipboard?.writeText(m.display_name) },
+                      ])}>{m.display_name}</span>
                     <span className="msg-time">{formatTime(m.created_at)}</span>
                     {m.pinned ? <span className="msg-pin-tag" title="Épinglé"><Icon name="thumbtack" /></span> : null}
                   </div>

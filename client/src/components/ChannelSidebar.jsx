@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import Icon from './Icon.jsx';
+import { ctx } from '../contextmenu.js';
 
 /** Liste des salons du serveur actif (textuels + vocaux, par catégorie) + menu du serveur. */
 export default function ChannelSidebar({
@@ -180,7 +181,14 @@ export default function ChannelSidebar({
 function ChannelRow({ channel, active, connected, canManage, canDelete, onSelect, onDelete, onManageAccess }) {
   const unread = channel.type === 'text' && channel.unread && !active;
   return (
-    <div className={`channel-item ${active ? 'active' : ''} ${unread ? 'unread' : ''}`} onClick={onSelect}>
+    <div className={`channel-item ${active ? 'active' : ''} ${unread ? 'unread' : ''}`} onClick={onSelect}
+      onContextMenu={ctx([
+        { label: 'Ouvrir', icon: 'arrow-right', onClick: onSelect },
+        canManage && channel.private && onManageAccess && { label: 'Gérer l’accès', icon: 'user-gear', onClick: onManageAccess },
+        { label: 'Copier le nom', icon: 'copy', onClick: () => navigator.clipboard?.writeText(channel.name) },
+        canDelete && { sep: true },
+        canDelete && { label: 'Supprimer le salon', icon: 'trash', danger: true, onClick: onDelete },
+      ])}>
       <span className="hash"><Icon name={channel.type === 'voice' ? 'volume-high' : channel.private ? 'lock' : 'align-left'} /></span>
       <span className="name">{channel.name}</span>
       {channel.client_label && <span className="channel-tag" title={`Projet / client : ${channel.client_label}`}>{channel.client_label}</span>}
