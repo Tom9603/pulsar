@@ -1,5 +1,6 @@
 import Avatar from './Avatar.jsx';
 import Icon from './Icon.jsx';
+import RemoteAudio from './RemoteAudio.jsx';
 
 /** Affiche l'état d'un appel privé (entrant / sortant / en cours) + joue l'audio distant. */
 export default function CallOverlay({ call }) {
@@ -8,12 +9,7 @@ export default function CallOverlay({ call }) {
 
   return (
     <>
-      {remoteStream && (
-        <audio
-          autoPlay
-          ref={(el) => { if (el && el.srcObject !== remoteStream) { el.srcObject = remoteStream; el.play?.().catch(() => {}); } }}
-        />
-      )}
+      {remoteStream && <RemoteAudio stream={remoteStream} />}
 
       {status === 'incoming' && (
         <div className="call-modal-backdrop">

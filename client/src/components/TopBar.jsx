@@ -2,6 +2,7 @@ import Avatar from './Avatar.jsx';
 import Logo from './Logo.jsx';
 import Icon from './Icon.jsx';
 import NotificationBell from './NotificationBell.jsx';
+import AudioControls from './AudioControls.jsx';
 
 /** Barre du haut : retour, logo (→ accueil), barre vocale, notifications, profil et réglages. */
 export default function TopBar({
@@ -45,6 +46,7 @@ export default function TopBar({
         <Avatar user={user} size={30} status={user.status} />
         <span className="tu-name">{user.display_name}</span>
       </div>
+      <AudioControls />
     </header>
   );
 }

@@ -1,11 +1,18 @@
 import { mediaUrl } from './api.js';
+import { getAudio, applyOutput } from './audio.js';
 
 let ctx = null;
+let master = null;
 function actx() {
-  ctx = ctx || new (window.AudioContext || window.webkitAudioContext)();
+  if (!ctx) {
+    ctx = new (window.AudioContext || window.webkitAudioContext)();
+    master = ctx.createGain();
+    master.connect(ctx.destination);
+  }
   if (ctx.state === 'suspended') ctx.resume();
   return ctx;
 }
+const out = (c) => master || c.destination;
 
 function tone(c, { freq, type = 'sine', dur = 0.2, gain = 0.25, freqEnd, delay = 0 }) {
   const t = c.currentTime + delay;
@@ -17,7 +24,7 @@ function tone(c, { freq, type = 'sine', dur = 0.2, gain = 0.25, freqEnd, delay =
   g.gain.setValueAtTime(0.0001, t);
   g.gain.exponentialRampToValueAtTime(gain, t + 0.01);
   g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-  o.connect(g); g.connect(c.destination);
+  o.connect(g); g.connect(out(c));
   o.start(t); o.stop(t + dur + 0.03);
 }
 
@@ -32,7 +39,7 @@ function noise(c, { dur = 0.15, gain = 0.3, delay = 0, cutoff = 1200 }) {
   g.gain.setValueAtTime(gain, t);
   g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
   const f = c.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = cutoff;
-  src.connect(f); f.connect(g); g.connect(c.destination);
+  src.connect(f); f.connect(g); g.connect(out(c));
   src.start(t); src.stop(t + dur);
 }
 
@@ -50,6 +57,8 @@ export const BUILTIN_SOUNDS = [
 
 export function playBuiltin(id) {
   const c = actx();
+  const a = getAudio();
+  if (master) master.gain.value = a.deafened ? 0 : a.sbVol;
   switch (id) {
     case 'ding': tone(c, { freq: 880, type: 'sine', dur: 0.5, gain: 0.3 }); break;
     case 'beep': tone(c, { freq: 660, type: 'square', dur: 0.15, gain: 0.2 }); break;
@@ -65,7 +74,7 @@ export function playBuiltin(id) {
 
 /** Joue un son du soundboard (son de base par id, ou fichier par url). */
 export function playSound(sound) {
-  if (!sound) return;
+  if (!sound || getAudio().deafened) return;
   if (sound.id) playBuiltin(sound.id);
-  else if (sound.url) { const a = new Audio(mediaUrl(sound.url)); a.volume = 0.8; a.play().catch(() => {}); }
+  else if (sound.url) { const el = new Audio(mediaUrl(sound.url)); applyOutput(el, { base: 'sb' }); el.play().catch(() => {}); }
 }

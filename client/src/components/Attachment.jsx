@@ -1,5 +1,6 @@
 import { mediaUrl, isAudio } from '../api.js';
 import Icon from './Icon.jsx';
+import VoiceMessage from './VoiceMessage.jsx';
 
 const isImage = (u) => /\.(png|jpe?g|gif|webp)$/i.test(u || '');
 
@@ -11,7 +12,7 @@ export default function Attachment({ url, name }) {
     return <img className="msg-image" src={full} alt={name || 'image'} onClick={() => window.open(full, '_blank')} />;
   }
   if (isAudio(url)) {
-    return <audio className="msg-audio" controls src={full} />;
+    return <VoiceMessage src={full} />;
   }
   return (
     <a className="msg-file" href={full} target="_blank" rel="noopener noreferrer">

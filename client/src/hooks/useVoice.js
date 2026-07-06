@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { getSocket } from '../socket.js';
 import { api } from '../api.js';
+import { getAudio, setAudio, subscribeAudio } from '../audio.js';
 
 // Config par défaut (STUN seul) ; la vraie config (avec TURN) est récupérée depuis le serveur.
 const DEFAULT_ICE = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
@@ -12,18 +13,36 @@ const DEFAULT_ICE = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
  */
 export function useVoice() {
   const [connectedChannelId, setConnectedChannelId] = useState(null);
-  const [muted, setMuted] = useState(false);
+  const [muted, setMuted] = useState(getAudio().micMuted);
   const [remoteStreams, setRemoteStreams] = useState({}); // socketId -> MediaStream
 
   const pcs = useRef(new Map()); // socketId -> RTCPeerConnection
   const localStream = useRef(null);
-  const mutedRef = useRef(false);
+  const rawStream = useRef(null);   // flux micro brut (avant gain)
+  const gainRef = useRef(null);     // gain du micro (volume d'entrée)
+  const gainCtx = useRef(null);     // contexte audio pour le gain d'entrée
+  const mutedRef = useRef(getAudio().micMuted);
   const speakingRef = useRef(false);
   const audioCtx = useRef(null);
   const rafId = useRef(null);
   const iceConfig = useRef(DEFAULT_ICE);
 
   const socket = getSocket();
+
+  // Applique l'état du micro (couper / volume d'entrée) à la piste sortante.
+  const applyMic = useCallback((next) => {
+    mutedRef.current = next;
+    setMuted(next);
+    localStream.current?.getAudioTracks().forEach((t) => (t.enabled = !next));
+    if (connectedChannelId != null) socket.emit('voice:mute', { muted: next });
+    if (next && speakingRef.current) { speakingRef.current = false; socket.emit('voice:speaking', { speaking: false }); }
+  }, [connectedChannelId, socket]);
+
+  // Réagit aux changements globaux (bouton mute de partout, volume d'entrée).
+  useEffect(() => subscribeAudio((a) => {
+    if (a.micMuted !== mutedRef.current) applyMic(a.micMuted);
+    if (gainRef.current) gainRef.current.gain.value = a.inVol;
+  }), [applyMic]);
 
   // Récupère la config ICE/TURN du serveur au montage.
   useEffect(() => {
@@ -119,23 +138,37 @@ export function useVoice() {
     if (rafId.current) cancelAnimationFrame(rafId.current);
     rafId.current = null;
     if (audioCtx.current) { audioCtx.current.close().catch(() => {}); audioCtx.current = null; }
-    if (localStream.current) {
-      localStream.current.getTracks().forEach((t) => t.stop());
-      localStream.current = null;
-    }
+    if (gainCtx.current) { gainCtx.current.close().catch(() => {}); gainCtx.current = null; }
+    gainRef.current = null;
+    if (localStream.current) { localStream.current.getTracks().forEach((t) => t.stop()); localStream.current = null; }
+    if (rawStream.current) { rawStream.current.getTracks().forEach((t) => t.stop()); rawStream.current = null; }
     speakingRef.current = false;
   }, [removePeer]);
 
   const join = useCallback(async (channelId) => {
     if (connectedChannelId === channelId) return;
     teardown(); // quitter une éventuelle connexion précédente
-    let stream;
+    const a = getAudio();
+    let raw;
     try {
-      stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    } catch (err) {
-      alert('Micro inaccessible : autorisez le microphone dans votre navigateur pour parler.');
-      return;
+      raw = await navigator.mediaDevices.getUserMedia({ audio: a.inDevice ? { deviceId: { exact: a.inDevice } } : true });
+    } catch {
+      try { raw = await navigator.mediaDevices.getUserMedia({ audio: true }); }
+      catch { alert('Micro inaccessible : autorisez le microphone dans votre navigateur pour parler.'); return; }
     }
+    rawStream.current = raw;
+    // Volume d'entrée : on route le micro dans un GainNode (repli sur le flux brut en cas d'échec).
+    let stream = raw;
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const src = ctx.createMediaStreamSource(raw);
+      const gain = ctx.createGain();
+      gain.gain.value = a.inVol;
+      const dest = ctx.createMediaStreamDestination();
+      src.connect(gain); gain.connect(dest);
+      gainRef.current = gain; gainCtx.current = ctx;
+      stream = dest.stream;
+    } catch { stream = raw; gainRef.current = null; }
     localStream.current = stream;
     stream.getAudioTracks().forEach((t) => (t.enabled = !mutedRef.current));
     startSpeakingDetection(stream);
@@ -151,18 +184,8 @@ export function useVoice() {
   }, [socket, teardown]);
 
   const toggleMute = useCallback(() => {
-    setMuted((prev) => {
-      const next = !prev;
-      mutedRef.current = next;
-      localStream.current?.getAudioTracks().forEach((t) => (t.enabled = !next));
-      socket.emit('voice:mute', { muted: next });
-      if (next && speakingRef.current) {
-        speakingRef.current = false;
-        socket.emit('voice:speaking', { speaking: false });
-      }
-      return next;
-    });
-  }, [socket]);
+    setAudio({ micMuted: !getAudio().micMuted });
+  }, []);
 
   // Écoute des évènements de signalisation (montés une seule fois)
   useEffect(() => {

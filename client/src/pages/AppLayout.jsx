@@ -34,6 +34,7 @@ import EditProfileModal from '../components/EditProfileModal.jsx';
 import SearchModal from '../components/SearchModal.jsx';
 import CallOverlay from '../components/CallOverlay.jsx';
 import Whiteboard from '../components/Whiteboard.jsx';
+import RemoteAudio from '../components/RemoteAudio.jsx';
 
 export default function AppLayout() {
   const { user, logout } = useAuth();
@@ -439,7 +440,7 @@ export default function AppLayout() {
 
       <div style={{ display: 'none' }}>
         {Object.entries(voice.remoteStreams).map(([sid, stream]) => (
-          <audio key={sid} autoPlay ref={(el) => { if (el && el.srcObject !== stream) { el.srcObject = stream; el.play?.().catch(() => {}); } }} />
+          <RemoteAudio key={sid} stream={stream} />
         ))}
       </div>
 

@@ -1,4 +1,5 @@
 // Notifications bureau + petit son (nouveaux DM, mentions).
+import { getAudio } from './audio.js';
 
 let audioCtx = null;
 
@@ -17,7 +18,7 @@ export function initNotifications() {
 
 /** Petit « ping » sonore (généré, aucun fichier requis). */
 export function playPing() {
-  if (!isSoundEnabled()) return;
+  if (!isSoundEnabled() || getAudio().deafened) return;
   try {
     audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
     if (audioCtx.state === 'suspended') audioCtx.resume();
