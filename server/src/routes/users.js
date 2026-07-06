@@ -5,7 +5,7 @@ import { authMiddleware, publicUser, hashPassword, verifyPassword } from '../aut
 const router = Router();
 router.use(authMiddleware);
 
-const STATUSES = ['online', 'idle', 'dnd', 'invisible'];
+const STATUSES = ['online', 'idle', 'dnd', 'meeting', 'invisible'];
 
 /** Met à jour le profil de l'utilisateur connecté (personnalisation). */
 router.patch('/me', (req, res) => {
@@ -33,15 +33,18 @@ router.patch('/me', (req, res) => {
   const nextCvUrl = b.cv_url === undefined ? current.cv_url : (b.cv_url || null);
   const nextCvName = b.cv_name === undefined ? current.cv_name : (b.cv_name ? String(b.cv_name).slice(0, 160) : null);
   const nextCvSummary = txt('cv_summary', 800);
+  const nextPronouns = txt('pronouns', 40);
+  const nextBannerColor = b.banner_color === undefined ? current.banner_color : (/^#[0-9a-fA-F]{6}$/.test(b.banner_color || '') ? b.banner_color : null);
+  const nextBannerUrl = b.banner_url === undefined ? current.banner_url : (b.banner_url || null);
 
   db.prepare(`
     UPDATE users SET display_name = ?, avatar_color = ?, avatar_url = ?, about = ?, status = ?,
       headline = ?, company = ?, location = ?, website = ?, email_pro = ?, phone = ?, skills = ?,
-      cv_url = ?, cv_name = ?, cv_summary = ?
+      cv_url = ?, cv_name = ?, cv_summary = ?, pronouns = ?, banner_color = ?, banner_url = ?
     WHERE id = ?
   `).run(nextName, nextColor, nextAvatar, nextAbout, nextStatus,
     nextHeadline, nextCompany, nextLocation, nextWebsite, nextEmailPro, nextPhone, nextSkills,
-    nextCvUrl, nextCvName, nextCvSummary, req.userId);
+    nextCvUrl, nextCvName, nextCvSummary, nextPronouns, nextBannerColor, nextBannerUrl, req.userId);
 
   const user = db.prepare('SELECT * FROM users WHERE id = ?').get(req.userId);
   res.json({ user: publicUser(user) });

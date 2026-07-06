@@ -11,6 +11,7 @@ const STATUSES = [
   { value: 'online', label: 'En ligne' },
   { value: 'idle', label: 'Absent' },
   { value: 'dnd', label: 'Ne pas déranger' },
+  { value: 'meeting', label: 'En réunion' },
   { value: 'invisible', label: 'Invisible' },
 ];
 

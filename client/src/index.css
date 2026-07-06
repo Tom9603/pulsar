@@ -397,6 +397,7 @@ textarea { resize: none; }
 .status-dot.online { background: var(--online); }
 .status-dot.idle { background: var(--idle); }
 .status-dot.dnd { background: var(--dnd); }
+.status-dot.meeting { background: #a855f7; }
 .status-dot.invisible, .status-dot.offline { background: var(--offline); }
 
 /* Zone centrale */

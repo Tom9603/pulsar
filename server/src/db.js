@@ -219,6 +219,9 @@ ensure('users', 'skills', 'TEXT');        // compétences (séparées par des vi
 ensure('users', 'cv_url', 'TEXT');        // CV joint (fichier)
 ensure('users', 'cv_name', 'TEXT');       // nom du fichier CV
 ensure('users', 'cv_summary', 'TEXT');    // résumé du CV en bref
+ensure('users', 'pronouns', 'TEXT');      // pronoms (inclusivité)
+ensure('users', 'banner_url', 'TEXT');    // bannière (image/gif) derrière l'avatar
+ensure('users', 'banner_color', 'TEXT');  // bannière (couleur unie) si pas d'image
 
 /** Exécute une fonction dans une transaction (node:sqlite n'a pas de wrapper natif). */
 export function transaction(fn) {
