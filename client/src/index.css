@@ -1416,6 +1416,58 @@ textarea { resize: none; }
   .settings-menu { width: 150px; }
 }
 
+/* Curseur « main » sur les éléments cliquables (noms, avatars) */
+.clickable { cursor: pointer; }
+.msg-author.clickable:hover { text-decoration: underline; }
+.avatar-wrap.clickable:hover { filter: brightness(1.12); }
+
+/* Modale de profil */
+.modal-profile { width: 440px; max-width: 94vw; padding: 0; }
+.profile-banner { position: relative; height: 118px; border-radius: 18px 18px 0 0; }
+.profile-avatar-wrap { position: absolute; left: 22px; bottom: -34px; border-radius: 50%; border: 4px solid var(--bg-content-alt); }
+.profile-dots-wrap { position: absolute; top: 12px; right: 12px; }
+.profile-dots {
+  width: 34px; height: 34px; border-radius: 50%; background: rgba(0, 0, 0, 0.45); color: #fff;
+  display: flex; align-items: center; justify-content: center; font-size: 15px;
+}
+.profile-dots:hover { background: rgba(0, 0, 0, 0.65); }
+.profile-menu {
+  position: absolute; top: 42px; right: 0; min-width: 190px; background: var(--bg-content-alt);
+  border: 1px solid var(--border); border-radius: 12px; padding: 6px; z-index: 5;
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.5); display: flex; flex-direction: column;
+}
+.profile-menu button { background: none; text-align: left; color: var(--text); font-size: 13px; padding: 8px 10px; border-radius: 8px; }
+.profile-menu button:hover { background: var(--bg-hover); }
+.profile-menu button.danger { color: var(--danger); }
+.profile-body { padding: 44px 24px 6px; }
+.profile-idline { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.profile-idline h2 { margin: 0; font-size: 20px; }
+.profile-pronouns { font-size: 12px; color: var(--text-muted); background: var(--bg-input); padding: 1px 8px; border-radius: 999px; }
+.profile-sub { color: var(--text-muted); font-size: 13px; }
+.profile-headline { color: var(--accent); font-size: 13px; margin-top: 3px; }
+.profile-status { display: flex; align-items: center; gap: 8px; margin: 12px 0; font-size: 14px; }
+.profile-status .status-dot { position: static; width: 10px; height: 10px; }
+.profile-status select { background: var(--bg-input); border: 1px solid var(--border); color: var(--text); border-radius: 8px; padding: 5px 8px; font-size: 13px; }
+.profile-meta { font-size: 13px; color: var(--text-muted); display: flex; align-items: center; gap: 7px; margin-bottom: 8px; }
+.profile-link-btn { background: var(--bg-content-alt); border: 1px solid var(--border); color: var(--text-muted); font-size: 13px; padding: 6px 12px; border-radius: 10px; display: inline-flex; align-items: center; gap: 7px; }
+.profile-link-btn:hover { color: var(--text); }
+.profile-pending { font-size: 13px; color: var(--accent); margin: 8px 0; }
+.profile-mutual { margin-top: 14px; }
+.profile-mutual label { display: block; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-faint); margin-bottom: 8px; }
+.mutual-servers, .mutual-contacts { display: flex; flex-wrap: wrap; gap: 8px; }
+.mutual-server { width: 32px; height: 32px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 13px; color: #fff; overflow: hidden; }
+.mutual-server img { width: 100%; height: 100%; object-fit: cover; }
+.mutual-contact { background: none; padding: 0; border-radius: 50%; }
+.profile-flash { margin-top: 12px; font-size: 13px; color: var(--accent); }
+.profile-report, .profile-invite { margin-top: 14px; background: var(--bg-content-alt); border: 1px solid var(--border); border-radius: 12px; padding: 12px; }
+.profile-report label, .profile-invite label { display: block; font-size: 12px; color: var(--text-muted); margin-bottom: 6px; }
+.profile-report textarea { width: 100%; background: var(--bg-input); border: 1px solid var(--border); color: var(--text); border-radius: 8px; padding: 8px; }
+.profile-report-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 8px; }
+.invite-server-row { display: flex; align-items: center; gap: 10px; width: 100%; text-align: left; background: none; color: var(--text); font-size: 14px; padding: 7px 8px; border-radius: 9px; }
+.invite-server-row:hover { background: var(--bg-hover); }
+.profile-actions { flex-wrap: wrap; padding: 14px 24px; border-top: 1px solid var(--border); margin-top: 8px; }
+.edit-banner-preview { height: 92px; border-radius: 12px; display: flex; align-items: flex-end; padding: 12px; margin-bottom: 16px; }
+
 /* Cloche de notifications */
 .notif-wrap { position: relative; }
 .notif-btn { position: relative; }

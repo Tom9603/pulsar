@@ -45,7 +45,6 @@ export default function TopBar({
         <Avatar user={user} size={30} status={user.status} />
         <span className="tu-name">{user.display_name}</span>
       </div>
-      <button className="topbar-icon" title="Se déconnecter" onClick={onLogout}><Icon name="power-off" /></button>
     </header>
   );
 }

@@ -65,7 +65,8 @@ router.post('/request', (req, res) => {
     return res.status(409).json({ error: 'Demande déjà envoyée' });
   }
 
-  db.prepare("INSERT INTO friendships (requester_id, addressee_id, status) VALUES (?, ?, 'pending')").run(me, target.id);
+  const message = (req.body?.message || '').toString().slice(0, 300) || null;
+  db.prepare("INSERT INTO friendships (requester_id, addressee_id, status, message) VALUES (?, ?, 'pending', ?)").run(me, target.id, message);
   notify(target.id);
   res.json({ ok: true, status: 'pending' });
 });

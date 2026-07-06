@@ -29,6 +29,7 @@ import MemberModal from '../components/MemberModal.jsx';
 import ServerSettingsModal from '../components/ServerSettingsModal.jsx';
 import ChannelAccessModal from '../components/ChannelAccessModal.jsx';
 import ProfileModal from '../components/ProfileModal.jsx';
+import EditProfileModal from '../components/EditProfileModal.jsx';
 import SearchModal from '../components/SearchModal.jsx';
 import CallOverlay from '../components/CallOverlay.jsx';
 import Whiteboard from '../components/Whiteboard.jsx';
@@ -245,6 +246,11 @@ export default function AppLayout() {
       setActiveServerId((cur) => (cur === serverId ? null : cur));
       setSection((s) => (s === 'server' ? 'home' : s));
     };
+    const onServerAdded = ({ serverId, name }) => {
+      refreshServers();
+      getSocket().emit('server:subscribe', { serverId });
+      pushNotif({ icon: 'server', tone: 'purple', title: 'Ajouté à un serveur', body: name || '', nav: { type: 'channel', serverId } });
+    };
     const onReminder = ({ item }) => {
       playPing();
       const title = 'Rappel : ' + (item.author_name || 'votre message');
@@ -267,6 +273,7 @@ export default function AppLayout() {
     socket.on('dm:new', onDmNew);
     socket.on('message:new', onMessageNew);
     socket.on('server:kicked', onKicked);
+    socket.on('server:added', onServerAdded);
     socket.on('reminder:due', onReminder);
     socket.on('sound:play', onSound);
     socket.on('task:changed', onTaskChanged);
@@ -274,6 +281,7 @@ export default function AppLayout() {
       socket.off('presence', onPresence); socket.off('voice:state', onVoice);
       socket.off('server:updated', onServerUpdated); socket.off('dm:new', onDmNew);
       socket.off('message:new', onMessageNew); socket.off('server:kicked', onKicked);
+      socket.off('server:added', onServerAdded);
       socket.off('reminder:due', onReminder); socket.off('sound:play', onSound);
       socket.off('task:changed', onTaskChanged);
     };
@@ -450,9 +458,12 @@ export default function AppLayout() {
           onClose={() => setAccessChannel(null)} onChanged={() => refreshDetail(activeServerId, true)} />
       )}
       {profileTarget && (
-        <ProfileModal userId={profileTarget} currentUserId={user.id}
-          onClose={() => setProfileTarget(null)} onMessage={openDm} onEditProfile={() => setModal('settings')} />
+        <ProfileModal userId={profileTarget} servers={servers}
+          onClose={() => setProfileTarget(null)} onMessage={openDm}
+          onEditProfile={() => setModal('editProfile')} onLogout={logout}
+          onOpenProfile={(id) => setProfileTarget(id)} />
       )}
+      {modal === 'editProfile' && <EditProfileModal onClose={() => setModal(null)} />}
     </div>
   );
 }

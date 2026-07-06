@@ -178,6 +178,14 @@ db.exec(`
     PRIMARY KEY (channel_id, user_id)
   );
 
+  CREATE TABLE IF NOT EXISTS reports (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    reporter_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    target_id   INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    reason      TEXT,
+    created_at  TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+
   CREATE INDEX IF NOT EXISTS idx_messages_channel ON messages(channel_id, id);
   CREATE INDEX IF NOT EXISTS idx_members_user ON server_members(user_id);
   CREATE INDEX IF NOT EXISTS idx_member_roles ON member_roles(server_id, user_id);
@@ -219,6 +227,7 @@ ensure('users', 'skills', 'TEXT');        // compétences (séparées par des vi
 ensure('users', 'cv_url', 'TEXT');        // CV joint (fichier)
 ensure('users', 'cv_name', 'TEXT');       // nom du fichier CV
 ensure('users', 'cv_summary', 'TEXT');    // résumé du CV en bref
+ensure('friendships', 'message', 'TEXT'); // message d'accompagnement d'une demande de contact
 ensure('users', 'pronouns', 'TEXT');      // pronoms (inclusivité)
 ensure('users', 'banner_url', 'TEXT');    // bannière (image/gif) derrière l'avatar
 ensure('users', 'banner_color', 'TEXT');  // bannière (couleur unie) si pas d'image

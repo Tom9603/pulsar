@@ -74,11 +74,77 @@ router.delete('/me', (req, res) => {
   res.json({ ok: true });
 });
 
-/** Profil public d'un autre utilisateur. */
+/** Ids des amis acceptés d'un utilisateur. */
+function acceptedFriendIds(uid) {
+  return db.prepare(`
+    SELECT CASE WHEN requester_id = @u THEN addressee_id ELSE requester_id END AS id
+    FROM friendships WHERE (requester_id = @u OR addressee_id = @u) AND status = 'accepted'
+  `).all({ u: uid }).map((r) => r.id);
+}
+
+/** Relation entre l'utilisateur courant et une cible. */
+function relationshipWith(me, targetId) {
+  if (me === targetId) return 'self';
+  if (db.prepare('SELECT 1 FROM blocks WHERE blocker_id = ? AND blocked_id = ?').get(me, targetId)) return 'blocked';
+  const f = db.prepare(
+    'SELECT * FROM friendships WHERE (requester_id = ? AND addressee_id = ?) OR (requester_id = ? AND addressee_id = ?)'
+  ).get(me, targetId, targetId, me);
+  if (!f) return 'none';
+  if (f.status === 'accepted') return 'friends';
+  return f.requester_id === me ? 'pending_out' : 'pending_in';
+}
+
+/** Profil public d'un autre utilisateur (+ relation, mutuels, nb de contacts). */
 router.get('/:id', (req, res) => {
   const user = db.prepare('SELECT * FROM users WHERE id = ?').get(req.params.id);
   if (!user) return res.status(404).json({ error: 'Utilisateur introuvable' });
-  res.json({ user: publicUser(user) });
+  const targetId = user.id;
+  const me = req.userId;
+
+  const relationship = relationshipWith(me, targetId);
+
+  const mutualServers = me === targetId ? [] : db.prepare(`
+    SELECT s.id, s.name, s.icon_color, s.icon_url FROM servers s
+    JOIN server_members a ON a.server_id = s.id AND a.user_id = ?
+    JOIN server_members b ON b.server_id = s.id AND b.user_id = ?
+  `).all(me, targetId);
+
+  const targetFriends = acceptedFriendIds(targetId);
+  const myFriends = new Set(acceptedFriendIds(me));
+  const mutualIds = me === targetId ? [] : targetFriends.filter((id) => myFriends.has(id));
+  const mutualContacts = mutualIds.length
+    ? db.prepare(`SELECT * FROM users WHERE id IN (${mutualIds.map(() => '?').join(',')})`).all(...mutualIds).map(publicUser)
+    : [];
+
+  res.json({
+    user: publicUser(user),
+    relationship,
+    friends_count: targetFriends.length,
+    mutual_servers: mutualServers,
+    mutual_contacts: mutualContacts,
+  });
+});
+
+/** Liste des contacts (amis acceptés) d'un utilisateur, avec l'info « déjà dans mes contacts ». */
+router.get('/:id/contacts', (req, res) => {
+  const targetId = Number(req.params.id);
+  const ids = acceptedFriendIds(targetId);
+  const mine = new Set(acceptedFriendIds(req.userId));
+  const contacts = ids.length
+    ? db.prepare(`SELECT * FROM users WHERE id IN (${ids.map(() => '?').join(',')}) ORDER BY display_name COLLATE NOCASE`).all(...ids)
+      .map((u) => ({ ...publicUser(u), is_mine: mine.has(u.id) || u.id === req.userId }))
+    : [];
+  res.json({ contacts });
+});
+
+/** Signaler un utilisateur. */
+router.post('/:id/report', (req, res) => {
+  const targetId = Number(req.params.id);
+  if (targetId === req.userId) return res.status(400).json({ error: 'Impossible' });
+  if (!db.prepare('SELECT 1 FROM users WHERE id = ?').get(targetId)) return res.status(404).json({ error: 'Utilisateur introuvable' });
+  db.prepare('INSERT INTO reports (reporter_id, target_id, reason) VALUES (?, ?, ?)')
+    .run(req.userId, targetId, (req.body?.reason || '').toString().slice(0, 1000));
+  res.json({ ok: true });
 });
 
 export default router;

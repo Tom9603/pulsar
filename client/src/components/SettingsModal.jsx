@@ -16,7 +16,6 @@ const STATUSES = [
 ];
 
 const MENU = [
-  { group: 'Mon profil', items: [{ id: 'identity', icon: 'id-card', label: 'Identité' }, { id: 'pro', icon: 'briefcase', label: 'Fiche professionnelle' }] },
   { group: 'Application', items: [{ id: 'notif', icon: 'bell', label: 'Notifications' }] },
   { group: 'Compte', items: [{ id: 'account', icon: 'lock', label: 'Sécurité et compte' }] },
 ];
@@ -24,7 +23,7 @@ const MENU = [
 /** Réglages : profil, fiche pro (+ CV), notifications, compte · en menus. */
 export default function SettingsModal({ onClose }) {
   const { user, updateUser, logout } = useAuth();
-  const [menu, setMenu] = useState('identity');
+  const [menu, setMenu] = useState('notif');
 
   // Profil
   const [displayName, setDisplayName] = useState(user.display_name);

@@ -84,6 +84,20 @@ router.post('/join', (req, res) => {
   res.json({ server });
 });
 
+/** Inviter un contact sur un serveur dont je suis membre (l'ajoute directement). */
+router.post('/:id/invite-user', (req, res) => {
+  const server = db.prepare('SELECT * FROM servers WHERE id = ?').get(req.params.id);
+  if (!server) return res.status(404).json({ error: 'Serveur introuvable' });
+  if (!isMember(server.id, req.userId)) return res.status(403).json({ error: 'Vous n’êtes pas membre de ce serveur' });
+  const targetId = Number(req.body?.userId);
+  if (!db.prepare('SELECT 1 FROM users WHERE id = ?').get(targetId)) return res.status(404).json({ error: 'Utilisateur introuvable' });
+  if (isMember(server.id, targetId)) return res.status(409).json({ error: 'Cette personne est déjà membre' });
+  db.prepare('INSERT INTO server_members (server_id, user_id) VALUES (?, ?)').run(server.id, targetId);
+  notifyServerUpdate(server.id);
+  getIO()?.to('user:' + targetId).emit('server:added', { serverId: server.id, name: server.name });
+  res.json({ ok: true });
+});
+
 /** Détail d'un serveur : infos + salons + membres (avec rôles) + rôles + mes permissions. */
 router.get('/:id', (req, res) => {
   const server = db.prepare('SELECT * FROM servers WHERE id = ?').get(req.params.id);
