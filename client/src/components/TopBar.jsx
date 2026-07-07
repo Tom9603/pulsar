@@ -3,6 +3,7 @@ import Logo from './Logo.jsx';
 import Icon from './Icon.jsx';
 import NotificationBell from './NotificationBell.jsx';
 import AudioControls from './AudioControls.jsx';
+import { useUpdate, openUpdate } from '../update.js';
 
 /** Barre du haut : retour, logo (→ accueil), barre vocale, notifications, profil et réglages. */
 export default function TopBar({
@@ -10,6 +11,8 @@ export default function TopBar({
   voice, voiceName, onLeaveVoice,
   notifications, onOpenNotif, onMarkAllRead, onClearNotifs,
 }) {
+  const upd = useUpdate();
+  const showUpdateReminder = upd.available && !upd.open && (upd.phase === 'idle' || upd.phase === 'available');
   return (
     <header className="topbar">
       <div className="topbar-left">
@@ -32,6 +35,12 @@ export default function TopBar({
           </button>
           <button title="Quitter le vocal" onClick={onLeaveVoice}><Icon name="right-from-bracket" /></button>
         </div>
+      )}
+
+      {showUpdateReminder && (
+        <button className="topbar-update" onClick={openUpdate} title="Une nouvelle version est disponible">
+          <Icon name="arrows-rotate" /> Mettre à jour
+        </button>
       )}
 
       <NotificationBell

@@ -57,12 +57,18 @@ app.whenReady().then(() => {
   setupMediaPermissions();
   createWindow();
 
-  // Mises à jour automatiques (uniquement en version installée).
+  // Mises à jour (uniquement en version installée). L'interface pilote le moment
+  // du téléchargement : on désactive donc le téléchargement automatique.
   if (!isDev) {
-    autoUpdater.checkForUpdatesAndNotify().catch(() => {});
-    autoUpdater.on('update-downloaded', () => {
-      mainWindow?.webContents.send('update-downloaded');
-    });
+    autoUpdater.autoDownload = false;
+    const send = (channel, payload) => mainWindow?.webContents.send(channel, payload);
+
+    autoUpdater.on('update-available', (info) => send('update:available', { version: info?.version }));
+    autoUpdater.on('download-progress', (p) => send('update:progress', { percent: p?.percent || 0 }));
+    autoUpdater.on('update-downloaded', (info) => send('update:downloaded', { version: info?.version }));
+    autoUpdater.on('error', () => { /* réseau indisponible, dépôt injoignable : on ignore */ });
+
+    autoUpdater.checkForUpdates().catch(() => {});
   }
 
   app.on('activate', () => {
@@ -74,6 +80,7 @@ app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit();
 });
 
-// Le client peut demander la version de l'app et déclencher l'installation d'une maj.
+// Le client demande la version, déclenche le téléchargement puis l'installation d'une maj.
 ipcMain.handle('app:version', () => app.getVersion());
+ipcMain.handle('app:download-update', () => autoUpdater.downloadUpdate().catch(() => {}));
 ipcMain.handle('app:install-update', () => autoUpdater.quitAndInstall());

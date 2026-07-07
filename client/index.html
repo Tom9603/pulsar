@@ -4,9 +4,92 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Pulsar</title>
+    <style>
+      /* Écran de chargement affiché immédiatement, avant même React (web et desktop). */
+      #pulsar-splash {
+        position: fixed;
+        inset: 0;
+        z-index: 99999;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background:
+          radial-gradient(900px 600px at 50% 32%, rgba(139, 92, 246, 0.14), transparent 60%),
+          #060609;
+        transition: opacity 0.45s ease;
+      }
+      #pulsar-splash.is-hiding { opacity: 0; pointer-events: none; }
+      .psl { display: flex; flex-direction: column; align-items: center; gap: 22px; }
+      .psl svg { width: 92px; height: 84px; overflow: visible; }
+      .psl .psl-arc { transform-origin: 60px 86px; animation: psl-pulse 1.6s ease-in-out infinite; }
+      .psl .psl-arc2 { animation-delay: 0.16s; }
+      .psl .psl-arc3 { animation-delay: 0.32s; }
+      .psl .psl-dot { transform-origin: 60px 86px; animation: psl-dot 1.6s ease-in-out infinite; }
+      @keyframes psl-pulse { 0%, 100% { opacity: 0.22; } 45% { opacity: 1; } }
+      @keyframes psl-dot { 0%, 100% { opacity: 0.5; } 45% { opacity: 1; } }
+      .psl .psl-word {
+        font-family: "Space Grotesk", system-ui, -apple-system, sans-serif;
+        letter-spacing: 0.34em;
+        font-size: 14px;
+        font-weight: 600;
+        color: #cbd2e0;
+        padding-left: 0.34em;
+      }
+      .psl .psl-bar {
+        width: 132px;
+        height: 3px;
+        border-radius: 3px;
+        background: rgba(255, 255, 255, 0.08);
+        overflow: hidden;
+      }
+      .psl .psl-bar i {
+        display: block;
+        height: 100%;
+        width: 42%;
+        border-radius: 3px;
+        background: linear-gradient(135deg, #8b5cf6, #3b82f6);
+        animation: psl-slide 1.25s ease-in-out infinite;
+      }
+      @keyframes psl-slide { 0% { transform: translateX(-120%); } 100% { transform: translateX(340%); } }
+      @media (prefers-reduced-motion: reduce) {
+        .psl .psl-arc, .psl .psl-dot, .psl .psl-bar i { animation: none; }
+        .psl .psl-arc { opacity: 1; }
+      }
+    </style>
   </head>
   <body>
     <div id="root"></div>
+
+    <div id="pulsar-splash">
+      <div class="psl">
+        <svg viewBox="0 0 120 110" aria-hidden="true">
+          <defs>
+            <linearGradient id="psl-grad" x1="0" y1="1" x2="1" y2="0">
+              <stop offset="0%" stop-color="#8B5CF6" />
+              <stop offset="100%" stop-color="#3B82F6" />
+            </linearGradient>
+          </defs>
+          <g fill="none" stroke="url(#psl-grad)" stroke-width="9" stroke-linecap="round">
+            <path class="psl-arc psl-arc1" d="M25.3 56.9 A44 44 0 0 1 94.7 56.9" />
+            <path class="psl-arc psl-arc2" d="M36.4 65.5 A30 30 0 0 1 83.6 65.5" />
+            <path class="psl-arc psl-arc3" d="M47.4 74.1 A16 16 0 0 1 72.6 74.1" />
+          </g>
+          <circle class="psl-dot" cx="60" cy="86" r="6.5" fill="url(#psl-grad)" />
+        </svg>
+        <span class="psl-word">PULSAR</span>
+        <span class="psl-bar"><i></i></span>
+      </div>
+    </div>
+
+    <script>
+      // Retire le splash une fois l'application prête (appelé depuis React).
+      window.__hidePulsarSplash = function () {
+        var el = document.getElementById('pulsar-splash');
+        if (!el || el.classList.contains('is-hiding')) return;
+        el.classList.add('is-hiding');
+        setTimeout(function () { el.remove(); }, 500);
+      };
+    </script>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>

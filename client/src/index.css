@@ -1627,3 +1627,98 @@ textarea { resize: none; }
 ::-webkit-scrollbar { width: 8px; height: 8px; }
 ::-webkit-scrollbar-thumb { background: #0a0b0e; border-radius: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }
+
+/* ---------- Mise à jour ---------- */
+/* Rappel dans la barre du haut (après « Plus tard »). */
+.topbar-update {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 34px;
+  padding: 0 13px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #fff;
+  background: var(--grad);
+  border: none;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.topbar-update:hover { filter: brightness(1.06); }
+.topbar-update .fa-solid { font-size: 12px; }
+
+/* Modale d'invitation. */
+.update-modal { width: 420px; text-align: center; }
+.update-modal .um-badge {
+  width: 62px;
+  height: 62px;
+  margin: 2px auto 16px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  color: #fff;
+  background: var(--grad);
+  box-shadow: 0 10px 30px rgba(139, 92, 246, 0.35);
+}
+.update-modal h2 { font-size: 20px; margin-bottom: 8px; }
+.update-modal .um-ver { color: var(--text); font-weight: 600; font-size: 15px; margin-bottom: 6px; }
+.update-modal .um-desc { color: var(--text-muted); font-size: 14px; line-height: 1.5; margin-bottom: 22px; }
+.update-modal .um-actions { display: flex; justify-content: center; gap: 12px; }
+.update-modal .um-actions .btn-ghost,
+.update-modal .um-actions .btn { width: auto; padding: 10px 18px; }
+.update-modal .um-go { display: inline-flex; align-items: center; gap: 8px; }
+
+/* Fenêtre de téléchargement plein écran (desktop). */
+.update-takeover {
+  position: fixed;
+  inset: 0;
+  z-index: 4000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background:
+    radial-gradient(900px 600px at 50% 30%, rgba(139, 92, 246, 0.16), transparent 60%),
+    var(--bg-app);
+}
+.update-takeover .ut-card {
+  width: 380px;
+  max-width: 90vw;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 12px;
+}
+.update-takeover .ut-mark { margin-bottom: 16px; animation: ut-throb 1.6s ease-in-out infinite; }
+@keyframes ut-throb { 0%, 100% { opacity: 0.75; } 50% { opacity: 1; } }
+.update-takeover h2 { font-size: 21px; margin-bottom: 6px; }
+.update-takeover .ut-sub { color: var(--text-muted); font-size: 14px; line-height: 1.5; margin-bottom: 22px; max-width: 320px; }
+.update-takeover .ut-bar {
+  width: 100%;
+  height: 8px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+}
+.update-takeover .ut-bar i {
+  display: block;
+  height: 100%;
+  border-radius: 6px;
+  background: var(--grad);
+  transition: width 0.3s ease;
+}
+.update-takeover .ut-meta {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  margin-top: 10px;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+@media (prefers-reduced-motion: reduce) {
+  .update-takeover .ut-mark { animation: none; }
+}

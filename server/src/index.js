@@ -30,7 +30,15 @@ const app = express();
 app.use(cors());
 app.use(express.json({ limit: '12mb' })); // marge pour avatars + images + messages vocaux en base64
 
+// Version applicative (racine du dépôt) : le client web l'interroge pour repérer les mises à jour.
+let APP_VERSION = '0.0.0';
+try {
+  const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, '..', '..', 'package.json'), 'utf8'));
+  APP_VERSION = pkg.version || APP_VERSION;
+} catch { /* repli défensif */ }
+
 app.get('/api/health', (req, res) => res.json({ ok: true }));
+app.get('/api/version', (req, res) => res.json({ version: APP_VERSION }));
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/servers', serverRoutes);
