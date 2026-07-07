@@ -18,8 +18,9 @@ function loadYT() {
 
 const isAudioUrl = (u) => /\.(mp3|m4a|wav|ogg)(\?|#|$)/i.test(u || '');
 
-/** Lecture synchronisée (« watch party ») par salon : YouTube ou fichier vidéo/audio. */
-export default function WatchTogether({ channelId }) {
+/** Lecture synchronisée (« watch party ») en salon (channelId) ou en message privé (dmUserId). */
+export default function WatchTogether({ channelId, dmUserId }) {
+  const isDm = dmUserId != null;
   const [session, setSession] = useState(null);
   const [url, setUrl] = useState('');
   const [open, setOpen] = useState(false);
@@ -29,19 +30,28 @@ export default function WatchTogether({ channelId }) {
   const mediaRef = useRef(null);
   const containerRef = useRef(null);
 
+  // Émetteurs (mêmes fonctionnalités, contexte serveur ou privé).
+  const emitGet = () => (isDm ? socket.emit('watch:dm:get', { toUserId: dmUserId }) : socket.emit('watch:get', { channelId }));
+  const emitStart = (u) => (isDm ? socket.emit('watch:dm:start', { toUserId: dmUserId, url: u }) : socket.emit('watch:start', { channelId, url: u }));
+  const emitStop = () => (isDm ? socket.emit('watch:dm:stop', { toUserId: dmUserId }) : socket.emit('watch:stop', { channelId }));
+  const emitControl = (playing, time) => (isDm ? socket.emit('watch:dm:control', { toUserId: dmUserId, playing, time }) : socket.emit('watch:control', { channelId, playing, time }));
+
   useEffect(() => {
     setSession(null);
     setOpen(false);
-    socket.emit('watch:get', { channelId });
-    const onState = ({ channelId: cid, session: s }) => { if (cid === channelId) { setSession(s); if (s) setOpen(true); } };
-    const onSync = ({ channelId: cid, playing, time }) => { if (cid === channelId) applySync(playing, time); };
+    emitGet();
+    const stateEvent = isDm ? 'watch:dm:state' : 'watch:state';
+    const syncEvent = isDm ? 'watch:dm:sync' : 'watch:sync';
+    const match = (e) => (isDm ? e.peerId === dmUserId : e.channelId === channelId);
+    const onState = (e) => { if (match(e)) { setSession(e.session); if (e.session) setOpen(true); } };
+    const onSync = (e) => { if (match(e)) applySync(e.playing, e.time); };
     const onErr = ({ message }) => alert(message);
-    socket.on('watch:state', onState);
-    socket.on('watch:sync', onSync);
+    socket.on(stateEvent, onState);
+    socket.on(syncEvent, onSync);
     socket.on('watch:error', onErr);
-    return () => { socket.off('watch:state', onState); socket.off('watch:sync', onSync); socket.off('watch:error', onErr); };
+    return () => { socket.off(stateEvent, onState); socket.off(syncEvent, onSync); socket.off('watch:error', onErr); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [channelId]);
+  }, [channelId, dmUserId]);
 
   function applySync(playing, time) {
     suppress.current = true;
@@ -56,7 +66,7 @@ export default function WatchTogether({ channelId }) {
     }
     setTimeout(() => { suppress.current = false; }, 500);
   }
-  const broadcast = (playing, time) => { if (!suppress.current) socket.emit('watch:control', { channelId, playing, time }); };
+  const broadcast = (playing, time) => { if (!suppress.current) emitControl(playing, time); };
 
   // Lecteur YouTube
   useEffect(() => {
@@ -81,8 +91,8 @@ export default function WatchTogether({ channelId }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session?.kind, session?.mediaId]);
 
-  const start = () => { if (url.trim()) { socket.emit('watch:start', { channelId, url: url.trim() }); setUrl(''); } };
-  const stop = () => socket.emit('watch:stop', { channelId });
+  const start = () => { if (url.trim()) { emitStart(url.trim()); setUrl(''); } };
+  const stop = () => emitStop();
 
   if (!session && !open) {
     return <div className="watch-bar"><button className="watch-open-btn" onClick={() => setOpen(true)}><Icon name="tv" /> Regarder / écouter ensemble</button></div>;
@@ -103,7 +113,7 @@ export default function WatchTogether({ channelId }) {
           <input
             value={url}
             onChange={(e) => setUrl(e.target.value)}
-            placeholder="Collez un lien YouTube ou un fichier .mp4 / .mp3…"
+            placeholder="Collez un lien à regarder ou écouter ensemble…"
             onKeyDown={(e) => e.key === 'Enter' && start()}
           />
           <button className="btn" style={{ width: 'auto', padding: '0 18px' }} onClick={start}>Lancer</button>

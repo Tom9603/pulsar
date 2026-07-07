@@ -9,6 +9,7 @@ import Attachment from './Attachment.jsx';
 import EmojiPicker from './EmojiPicker.jsx';
 import SaveButton from './SaveButton.jsx';
 import ConfirmModal from './ConfirmModal.jsx';
+import WatchTogether from './WatchTogether.jsx';
 import { ctx } from '../contextmenu.js';
 
 const QUICK_EMOJIS = ['👍', '❤️', '😂', '😮', '😢', '🎉'];
@@ -104,6 +105,7 @@ export default function DmChat({ peer, currentUser, onlineIds, onCall, onOpenPro
 
       <div className="content-body">
         <div className="chat-area">
+          <WatchTogether dmUserId={peer.id} />
           <button className="chat-pins-btn" title="Messages épinglés" onClick={togglePins}><Icon name="thumbtack" /></button>
           {showPins && (
             <div className="pins-panel">

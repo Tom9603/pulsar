@@ -12,6 +12,15 @@ const activeCalls = new Map();
 const watchSessions = new Map();
 // Tableau blanc : channelId -> [ strokes ] (historique en mémoire, plafonné)
 const boards = new Map();
+// « Regarder ensemble » en message privé : clé paire triée -> session
+const dmWatchSessions = new Map();
+const dmKey = (a, b) => (a < b ? `${a}-${b}` : `${b}-${a}`);
+function dmWatchState(key) {
+  const s = dmWatchSessions.get(key);
+  if (!s) return null;
+  const time = s.playing ? s.time + (Date.now() - s.ts) / 1000 : s.time;
+  return { url: s.url, kind: s.kind, mediaId: s.mediaId, playing: s.playing, time };
+}
 
 function parseMedia(url) {
   if (typeof url !== 'string' || !/^https?:\/\//i.test(url)) return null;
@@ -501,6 +510,44 @@ export function setupSocket(io) {
       if (!channel) return;
       watchSessions.delete(channelId);
       io.to('server:' + channel.server_id).emit('watch:state', { channelId: Number(channelId), session: null });
+    });
+
+    // « Regarder ensemble » en message privé (1-à-1).
+    socket.on('watch:dm:start', ({ toUserId, url }) => {
+      const other = Number(toUserId);
+      if (!other || other === userId) return;
+      const media = parseMedia(url);
+      if (!media) { socket.emit('watch:error', { message: 'Lien non supporté (collez un lien YouTube).' }); return; }
+      const key = dmKey(userId, other);
+      dmWatchSessions.set(key, { url, kind: media.kind, mediaId: media.id, playing: true, time: 0, ts: Date.now() });
+      const s = dmWatchState(key);
+      io.to('user:' + userId).emit('watch:dm:state', { peerId: other, session: s, by: user.display_name });
+      io.to('user:' + other).emit('watch:dm:state', { peerId: userId, session: s, by: user.display_name });
+    });
+
+    socket.on('watch:dm:control', ({ toUserId, playing, time }) => {
+      const other = Number(toUserId);
+      const key = dmKey(userId, other);
+      const s = dmWatchSessions.get(key);
+      if (!s) return;
+      s.playing = !!playing;
+      s.time = Math.max(0, Number(time) || 0);
+      s.ts = Date.now();
+      io.to('user:' + other).emit('watch:dm:sync', { peerId: userId, playing: s.playing, time: s.time });
+    });
+
+    socket.on('watch:dm:get', ({ toUserId }) => {
+      const other = Number(toUserId);
+      if (!other) return;
+      socket.emit('watch:dm:state', { peerId: other, session: dmWatchState(dmKey(userId, other)) });
+    });
+
+    socket.on('watch:dm:stop', ({ toUserId }) => {
+      const other = Number(toUserId);
+      const key = dmKey(userId, other);
+      dmWatchSessions.delete(key);
+      io.to('user:' + userId).emit('watch:dm:state', { peerId: other, session: null });
+      io.to('user:' + other).emit('watch:dm:state', { peerId: userId, session: null });
     });
 
     // ------------------------------------------------------------------

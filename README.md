@@ -40,7 +40,7 @@ Aucune dépendance native à compiler : SQLite et le chiffrement utilisent des m
 
 ### Fonctionnalités signature
 
-- **Regarder / écouter ensemble** : un lien YouTube ou un fichier vidéo/audio → lecture **synchronisée** pour tout le salon
+- **Regarder / écouter ensemble** : collez un lien → lecture **synchronisée**, en salon comme en message privé
 - **Messages express** : bibliothèque de messages tout prêts, envoi en 1 clic
 - **Soundboard** : sons de base + sons téléchargeables, joués pour tout le salon vocal
 - **Tableau blanc partagé** : dessiner / écrire à plusieurs en temps réel
