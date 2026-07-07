@@ -1,15 +1,16 @@
 // Logo Pulsar : le « P » (barre claire en avant + bol dégradé) entouré de ses ondes
-// qui pulsent, en dégradé violet vers bleu. Mot-symbole optionnel.
+// concentriques qui s'estompent aux extrémités, en dégradé violet vers bleu.
 
 const WAVE_CX = 61;
-const WAVE_CY = 55;
+const WAVE_CY = 52;
+// Ondes : mêmes rayons à gauche et à droite (concentriques), estompées aux pointes.
 const WAVES = [
-  { key: 'r1', r: 34, a1: -56, a2: 58, o: 0.85, w: 2.4 },
-  { key: 'r2', r: 41, a1: -52, a2: 54, o: 0.5, w: 2.2 },
-  { key: 'r3', r: 48, a1: -46, a2: 46, o: 0.28, w: 2.0 },
-  { key: 'l1', r: 31, a1: 120, a2: 210, o: 0.8, w: 2.4 },
-  { key: 'l2', r: 38, a1: 124, a2: 212, o: 0.46, w: 2.2 },
-  { key: 'l3', r: 45, a1: 130, a2: 206, o: 0.26, w: 2.0 },
+  { key: 'r1', r: 29, a1: -50, a2: 68, o: 1, w: 1.7 },
+  { key: 'r2', r: 35, a1: -50, a2: 68, o: 0.72, w: 1.7 },
+  { key: 'r3', r: 41, a1: -50, a2: 68, o: 0.48, w: 1.6 },
+  { key: 'l1', r: 29, a1: 150, a2: 254, o: 1, w: 1.7 },
+  { key: 'l2', r: 35, a1: 150, a2: 254, o: 0.72, w: 1.7 },
+  { key: 'l3', r: 41, a1: 150, a2: 254, o: 0.48, w: 1.6 },
 ];
 
 function arcPath(cx, cy, r, a1, a2) {
@@ -35,9 +36,11 @@ export default function Logo({ size = 62, wordmark = true, row = false }) {
             <stop offset="55%" stopColor="#9a8bf3" />
             <stop offset="100%" stopColor="#6f92f7" />
           </linearGradient>
-          <linearGradient id="pulsar-wave" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0%" stopColor="#caa8f7" />
-            <stop offset="100%" stopColor="#9db4f7" />
+          <linearGradient id="pulsar-wave" gradientUnits="userSpaceOnUse" x1="0" y1="18" x2="0" y2="96">
+            <stop offset="0" stopColor="#c4a5f5" stopOpacity="0" />
+            <stop offset="0.28" stopColor="#c4a5f5" stopOpacity="1" />
+            <stop offset="0.72" stopColor="#9db4f7" stopOpacity="1" />
+            <stop offset="1" stopColor="#9db4f7" stopOpacity="0" />
           </linearGradient>
           <filter id="pulsar-stem-shadow" x="-40%" y="-40%" width="190%" height="190%">
             <feDropShadow dx="1.7" dy="1.3" stdDeviation="1.5" floodColor="#170e2c" floodOpacity="0.5" />

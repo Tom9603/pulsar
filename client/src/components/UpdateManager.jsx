@@ -16,18 +16,20 @@ function PulseMark({ size = 66 }) {
           <stop offset="55%" stopColor="#9a8bf3" />
           <stop offset="100%" stopColor="#6f92f7" />
         </linearGradient>
-        <linearGradient id="ut-wave" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stopColor="#caa8f7" />
-          <stop offset="100%" stopColor="#9db4f7" />
+        <linearGradient id="ut-wave" gradientUnits="userSpaceOnUse" x1="0" y1="18" x2="0" y2="96">
+          <stop offset="0" stopColor="#c4a5f5" stopOpacity="0" />
+          <stop offset="0.28" stopColor="#c4a5f5" stopOpacity="1" />
+          <stop offset="0.72" stopColor="#9db4f7" stopOpacity="1" />
+          <stop offset="1" stopColor="#9db4f7" stopOpacity="0" />
         </linearGradient>
       </defs>
       <g fill="none" stroke="url(#ut-wave)" strokeLinecap="round">
-        <path strokeWidth="2.4" opacity="0.85" d="M 80.01 26.81 A 34 34 0 0 1 79.02 83.83" />
-        <path strokeWidth="2.2" opacity="0.5" d="M 86.24 22.69 A 41 41 0 0 1 85.10 88.17" />
-        <path strokeWidth="2" opacity="0.28" d="M 94.34 20.47 A 48 48 0 0 1 94.34 89.53" />
-        <path strokeWidth="2.4" opacity="0.8" d="M 45.50 81.85 A 31 31 0 0 1 34.15 39.50" />
-        <path strokeWidth="2.2" opacity="0.46" d="M 39.75 86.50 A 38 38 0 0 1 28.77 34.86" />
-        <path strokeWidth="2" opacity="0.26" d="M 32.07 89.47 A 45 45 0 0 1 20.55 35.27" />
+        <path strokeWidth="1.7" opacity="1" d="M 79.64 29.78 A 29 29 0 0 1 71.86 78.89" />
+        <path strokeWidth="1.7" opacity="0.72" d="M 83.50 25.19 A 35 35 0 0 1 74.11 84.45" />
+        <path strokeWidth="1.6" opacity="0.48" d="M 87.35 20.59 A 41 41 0 0 1 76.36 90.01" />
+        <path strokeWidth="1.7" opacity="1" d="M 35.89 66.50 A 29 29 0 0 1 53.01 24.12" />
+        <path strokeWidth="1.7" opacity="0.72" d="M 30.69 69.50 A 35 35 0 0 1 51.35 18.36" />
+        <path strokeWidth="1.6" opacity="0.48" d="M 25.49 72.50 A 41 41 0 0 1 49.70 12.59" />
       </g>
       <path d="M 50 31 L 71 31 A 18.5 18.5 0 0 1 71 68 L 50 68 Z" fill="url(#ut-bowl)" />
       <rect x="44" y="31" width="15" height="58" rx="7.5" fill="url(#ut-stem)" />
