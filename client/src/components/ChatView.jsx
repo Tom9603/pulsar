@@ -23,7 +23,7 @@ function shouldGroup(prev, cur) {
   return gap < 5 * 60 * 1000;
 }
 
-export default function ChatView({ channel, currentUser, canManage, onCreateTask, onOpenProfile, reminderMsgIds, taskMsgIds, savedMsgIds, savedByMsg }) {
+export default function ChatView({ channel, currentUser, canManage, members, onCreateTask, onOpenProfile, reminderMsgIds, taskMsgIds, savedMsgIds, savedByMsg }) {
   const [messages, setMessages] = useState([]);
   const [typing, setTyping] = useState({});
   const [editingId, setEditingId] = useState(null);
@@ -302,6 +302,7 @@ export default function ChatView({ channel, currentUser, canManage, onCreateTask
         onSendAttachment={(url, text, name) => send({ content: text || '', attachmentUrl: url, attachmentName: name })}
         onTyping={onTyping}
         onWatch={() => setWatchOpen((v) => !v)}
+        mentionables={members}
       />
 
       {confirmDel && (
