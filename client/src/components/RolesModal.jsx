@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import Modal from './Modal.jsx';
+import ConfirmModal from './ConfirmModal.jsx';
 import { api } from '../api.js';
 import { PERMISSIONS, PERMISSION_KEYS } from '../permissions.js';
 
@@ -11,6 +12,7 @@ export default function RolesModal({ serverId, roles, onClose, onChanged }) {
   const [form, setForm] = useState(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const [confirmDel, setConfirmDel] = useState(false);
 
   const selected = roles.find((r) => r.id === selectedId) || null;
 
@@ -39,8 +41,7 @@ export default function RolesModal({ serverId, roles, onClose, onChanged }) {
     } catch (e) { setError(e.message); } finally { setBusy(false); }
   }
 
-  async function remove() {
-    if (!confirm(`Supprimer le rôle « ${selected.name} » ?`)) return;
+  async function doRemove() {
     setBusy(true); setError('');
     try {
       await api(`/servers/${serverId}/roles/${selectedId}`, { method: 'DELETE' });
@@ -112,7 +113,7 @@ export default function RolesModal({ serverId, roles, onClose, onChanged }) {
                 ))}
               </div>
               <div className="modal-actions" style={{ marginTop: 12 }}>
-                <button className="btn btn-danger" style={{ width: 'auto', padding: '8px 16px' }} onClick={remove} disabled={busy}>Supprimer</button>
+                <button className="btn btn-danger" style={{ width: 'auto', padding: '8px 16px' }} onClick={() => setConfirmDel(true)} disabled={busy}>Supprimer</button>
                 <button className="btn" style={{ width: 'auto', padding: '8px 16px' }} onClick={save} disabled={busy}>Enregistrer</button>
               </div>
             </>
@@ -125,6 +126,16 @@ export default function RolesModal({ serverId, roles, onClose, onChanged }) {
       <div className="modal-actions">
         <button className="btn btn-ghost" onClick={onClose}>Fermer</button>
       </div>
+
+      {confirmDel && selected && (
+        <ConfirmModal
+          title="Supprimer le rôle"
+          message={`Le rôle « ${selected.name} » sera retiré de tous les membres qui le portent.`}
+          confirmLabel="Supprimer" danger
+          onConfirm={doRemove}
+          onClose={() => setConfirmDel(false)}
+        />
+      )}
     </Modal>
   );
 }

@@ -157,20 +157,22 @@ export default function ProfileModal({ userId, servers = [], onClose, onMessage,
         </div>
 
         <div className="modal-actions profile-actions">
+          <div className="pm-action-group">
+            {self ? (
+              <>
+                <button className="btn" onClick={() => { onEditProfile(); onClose(); }}><Icon name="pen" /> Modifier le profil</button>
+                <button className="btn btn-ghost" onClick={onLogout}><Icon name="right-from-bracket" /> Se déconnecter</button>
+              </>
+            ) : (
+              <>
+                <button className="btn" onClick={() => { onMessage(u); onClose(); }}><Icon name="message" /> Message privé</button>
+                {rel === 'none' && <button className="btn btn-ghost" onClick={addContact}><Icon name="user-plus" /> Ajouter en contact</button>}
+                {rel === 'pending_in' && <button className="btn btn-ghost" onClick={acceptContact}><Icon name="check" /> Accepter la demande</button>}
+                <button className="btn btn-ghost" onClick={() => setInvite((v) => !v)}><Icon name="paper-plane" /> Inviter à ›</button>
+              </>
+            )}
+          </div>
           <button className="btn btn-ghost" onClick={onClose}>Fermer</button>
-          {self ? (
-            <>
-              <button className="btn btn-ghost" onClick={onLogout}><Icon name="right-from-bracket" /> Se déconnecter</button>
-              <button className="btn" onClick={() => { onEditProfile(); onClose(); }}><Icon name="pen" /> Modifier le profil</button>
-            </>
-          ) : (
-            <>
-              {rel === 'none' && <button className="btn btn-ghost" onClick={addContact}><Icon name="user-plus" /> Ajouter</button>}
-              {rel === 'pending_in' && <button className="btn btn-ghost" onClick={acceptContact}><Icon name="check" /> Accepter</button>}
-              <button className="btn btn-ghost" onClick={() => setInvite((v) => !v)}><Icon name="paper-plane" /> Inviter à ›</button>
-              <button className="btn" onClick={() => { onMessage(u); onClose(); }}><Icon name="message" /> Message privé</button>
-            </>
-          )}
         </div>
       </Modal>
 

@@ -94,7 +94,8 @@ export default function FeedbackModal({ onClose }) {
           ))}
           {shots.length < 6 && (
             <label className="fb-shot-add" title="Ajouter une capture">
-              <Icon name="plus" />
+              <Icon name="image" />
+              <span>Ajouter une capture</span>
               <input type="file" accept="image/*" multiple hidden onChange={onPickShots} />
             </label>
           )}

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import Modal from './Modal.jsx';
+import ConfirmModal from './ConfirmModal.jsx';
 import Avatar from './Avatar.jsx';
 import Icon from './Icon.jsx';
 import { api, uploadFile, mediaUrl } from '../api.js';
@@ -57,6 +58,7 @@ export default function SettingsModal({ onClose }) {
 
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  const [confirmDelAccount, setConfirmDelAccount] = useState(false);
 
   const preview = { display_name: displayName, avatar_color: avatarColor, avatar_url: avatarUrl, username: user.username };
 
@@ -110,7 +112,6 @@ export default function SettingsModal({ onClose }) {
   }
 
   async function deleteAccount() {
-    if (!confirm('Supprimer définitivement votre compte ? Cette action est irréversible.')) return;
     try {
       await api('/users/me', { method: 'DELETE', body: { password: delPw } });
       logout();
@@ -269,7 +270,7 @@ export default function SettingsModal({ onClose }) {
                 <label style={{ color: 'var(--danger)' }}>Suppression de compte</label>
                 <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 8 }}>Supprimer votre compte efface tout définitivement.</p>
                 <input type="password" placeholder="Confirmez votre mot de passe" value={delPw} onChange={(e) => setDelPw(e.target.value)} />
-                <button className="btn btn-danger" style={{ width: 'auto', padding: '8px 16px', marginTop: 8 }} onClick={deleteAccount}>Supprimer mon compte</button>
+                <button className="btn btn-danger" style={{ width: 'auto', padding: '8px 16px', marginTop: 8 }} onClick={() => setConfirmDelAccount(true)}>Supprimer mon compte</button>
               </div>
             </>
           )}
@@ -281,6 +282,16 @@ export default function SettingsModal({ onClose }) {
           </div>
         </div>
       </div>
+
+      {confirmDelAccount && (
+        <ConfirmModal
+          title="Supprimer le compte"
+          message="Votre compte et toutes vos données seront effacés définitivement. Cette action est irréversible."
+          confirmLabel="Supprimer mon compte" danger
+          onConfirm={deleteAccount}
+          onClose={() => setConfirmDelAccount(false)}
+        />
+      )}
     </Modal>
   );
 }

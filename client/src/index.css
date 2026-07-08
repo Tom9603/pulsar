@@ -437,7 +437,7 @@ textarea { resize: none; }
 .message:hover { background: rgba(0, 0, 0, 0.12); }
 .message.grouped { padding-top: 1px; padding-bottom: 1px; }
 .message .msg-body { flex: 1; min-width: 0; }
-.message .msg-head { display: flex; align-items: baseline; gap: 8px; }
+.message .msg-head { display: flex; align-items: baseline; gap: 8px; margin-bottom: 3px; }
 .message .msg-author { font-weight: 600; font-size: 15px; color: #fff; }
 .message .msg-time { font-size: 11px; color: var(--text-faint); }
 .message .msg-text { font-size: 15px; line-height: 1.4; color: var(--text); word-wrap: break-word; white-space: pre-wrap; }
@@ -538,7 +538,9 @@ textarea { resize: none; }
 .modal-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.6);
+  background: rgba(4, 4, 8, 0.55);
+  backdrop-filter: blur(7px);
+  -webkit-backdrop-filter: blur(7px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1342,7 +1344,7 @@ textarea { resize: none; }
 }
 .task-item:hover { border-color: rgba(139, 92, 246, 0.4); }
 .task-item.is-done { opacity: 0.55; }
-.task-item.is-done .task-title { text-decoration: line-through; }
+.task-item.is-done .task-title { color: var(--text-muted); }
 .task-check {
   flex-shrink: 0; width: 22px; height: 22px; margin-top: 1px; border-radius: 50%;
   border: 2px solid var(--text-faint); background: none; color: #fff; font-size: 13px; line-height: 1;
@@ -1486,7 +1488,9 @@ textarea { resize: none; }
 .profile-report-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 8px; }
 .invite-server-row { display: flex; align-items: center; gap: 10px; width: 100%; text-align: left; background: none; color: var(--text); font-size: 14px; padding: 7px 8px; border-radius: 9px; }
 .invite-server-row:hover { background: var(--bg-hover); }
-.profile-actions { flex-wrap: wrap; padding: 14px 24px; border-top: 1px solid var(--border); margin-top: 8px; }
+.profile-actions { flex-direction: column; align-items: stretch; gap: 8px; padding: 16px 20px; border-top: 1px solid var(--border); margin-top: 8px; }
+.pm-action-group { display: flex; flex-direction: column; gap: 8px; }
+.profile-actions .btn { width: 100%; justify-content: center; }
 .edit-banner-preview { height: 92px; border-radius: 12px; display: flex; align-items: flex-end; padding: 12px; margin-bottom: 16px; }
 
 /* Cloche de notifications */
@@ -1548,7 +1552,7 @@ textarea { resize: none; }
 .server-task-row { display: flex; align-items: center; gap: 12px; width: 100%; text-align: left; background: var(--bg-content-alt); border: 1px solid var(--border); border-radius: 12px; padding: 10px 12px; margin-bottom: 8px; }
 .server-task-row:hover { border-color: rgba(139, 92, 246, 0.4); }
 .server-task-row.is-done { opacity: 0.6; }
-.server-task-row.is-done .st-title { text-decoration: line-through; }
+.server-task-row.is-done .st-title { color: var(--text-muted); }
 .st-status { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
 .st-main { flex: 1; min-width: 0; }
 .st-title { font-weight: 600; font-size: 14px; }
@@ -1571,8 +1575,9 @@ textarea { resize: none; }
 .fb-shot { position: relative; width: 72px; height: 72px; border-radius: 10px; overflow: hidden; border: 1px solid var(--border); }
 .fb-shot img { width: 100%; height: 100%; object-fit: cover; }
 .fb-shot button { position: absolute; top: 2px; right: 2px; width: 20px; height: 20px; border-radius: 50%; background: rgba(0, 0, 0, 0.6); color: #fff; font-size: 10px; display: flex; align-items: center; justify-content: center; }
-.fb-shot-add { width: 72px; height: 72px; border-radius: 10px; border: 1px dashed var(--border); display: flex; align-items: center; justify-content: center; color: var(--text-muted); cursor: pointer; }
-.fb-shot-add:hover { color: var(--text); border-color: rgba(139, 92, 246, 0.5); }
+.fb-shot-add { flex: 1 0 100%; height: 76px; border-radius: 12px; border: 1.5px dashed var(--border); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px; color: var(--text-muted); cursor: pointer; font-size: 13px; }
+.fb-shot-add .fa-solid, .fb-shot-add .fa-regular { font-size: 22px; }
+.fb-shot-add:hover { color: var(--text); border-color: rgba(139, 92, 246, 0.55); background: rgba(139, 92, 246, 0.05); }
 .feedback-done { text-align: center; padding: 20px 10px; }
 .feedback-done-ico { display: inline-flex; width: 56px; height: 56px; border-radius: 50%; background: var(--grad-soft); color: var(--accent); align-items: center; justify-content: center; font-size: 22px; margin-bottom: 12px; }
 

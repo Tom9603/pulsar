@@ -385,7 +385,7 @@ export default function AppLayout() {
   const editTask = (task) => setTaskModal({ task });
   const toggleTask = async (task) => { await api(`/tasks/${task.id}`, { method: 'PATCH', body: { status: task.status === 'done' ? 'todo' : 'done' } }); refreshTasks(); };
   const setTaskStatus = async (task, status) => { await api(`/tasks/${task.id}`, { method: 'PATCH', body: { status } }); refreshTasks(); };
-  const deleteTask = async (task) => { if (confirm(`Supprimer la tâche « ${task.title} » ?`)) { await api(`/tasks/${task.id}`, { method: 'DELETE' }); refreshTasks(); } };
+  const deleteTask = (task) => askConfirm({ title: 'Supprimer la tâche', message: `« ${task.title} » sera supprimée définitivement.`, confirmLabel: 'Supprimer', danger: true, onConfirm: async () => { await api(`/tasks/${task.id}`, { method: 'DELETE' }); refreshTasks(); } });
 
   function joinVoice(channel) { setVoiceInfo({ id: channel.id, name: channel.name }); voice.join(channel.id); }
   function leaveVoice() { voice.leave(); setVoiceInfo(null); }

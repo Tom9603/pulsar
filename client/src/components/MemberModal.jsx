@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import Modal from './Modal.jsx';
+import ConfirmModal from './ConfirmModal.jsx';
 import Avatar from './Avatar.jsx';
 import Icon from './Icon.jsx';
 import { api, mediaUrl } from '../api.js';
@@ -41,6 +42,7 @@ export function ProCard({ u }) {
 export default function MemberModal({ member, roles, server, canManageRoles, canKick, currentUserId, onClose, onChanged, onMessage }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const [confirmKick, setConfirmKick] = useState(false);
   const roleIds = new Set(member.role_ids || []);
   const isTargetOwner = member.id === server.owner_id;
 
@@ -56,8 +58,7 @@ export default function MemberModal({ member, roles, server, canManageRoles, can
     } catch (e) { setError(e.message); } finally { setBusy(false); }
   }
 
-  async function kick() {
-    if (!confirm(`Expulser ${member.display_name} du serveur ?`)) return;
+  async function doKick() {
     setBusy(true); setError('');
     try {
       await api(`/servers/${server.id}/members/${member.id}`, { method: 'DELETE' });
@@ -112,12 +113,22 @@ export default function MemberModal({ member, roles, server, canManageRoles, can
           </button>
         )}
         {canKick && !isTargetOwner && member.id !== currentUserId && (
-          <button className="btn btn-danger" style={{ width: 'auto', padding: '8px 16px' }} onClick={kick} disabled={busy}>
+          <button className="btn btn-danger" style={{ width: 'auto', padding: '8px 16px' }} onClick={() => setConfirmKick(true)} disabled={busy}>
             Expulser
           </button>
         )}
         <button className="btn" style={{ width: 'auto', padding: '8px 16px' }} onClick={onClose}>Fermer</button>
       </div>
+
+      {confirmKick && (
+        <ConfirmModal
+          title="Expulser le membre"
+          message={`${member.display_name} sera retiré du serveur. Il pourra le rejoindre à nouveau avec une invitation.`}
+          confirmLabel="Expulser" danger
+          onConfirm={doKick}
+          onClose={() => setConfirmKick(false)}
+        />
+      )}
     </Modal>
   );
 }
