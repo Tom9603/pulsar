@@ -20,6 +20,7 @@ export default function ChannelSidebar({
   onServerSettings,
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [copied, setCopied] = useState(false);
   const [adding, setAdding] = useState(null); // 'text' | 'voice' | null
   const [newName, setNewName] = useState('');
   const [isPrivate, setIsPrivate] = useState(false);
@@ -61,33 +62,42 @@ export default function ChannelSidebar({
 
   return (
     <div className="channel-sidebar">
-      <div className="sidebar-header" onClick={() => setMenuOpen((v) => !v)}>
-        <span>{detail.server.name}</span>
-        <span className="chevron"><Icon name={menuOpen ? 'xmark' : 'chevron-down'} /></span>
+      <div className={`sidebar-header ${menuOpen ? 'open' : ''}`} onClick={() => setMenuOpen((v) => !v)}>
+        <span className="sh-name">{detail.server.name}</span>
+        <span className="chevron"><Icon name={menuOpen ? 'chevron-up' : 'chevron-down'} /></span>
       </div>
 
       {menuOpen && (
-        <div style={{ padding: '8px', borderBottom: '1px solid #10121750' }}>
-          <div className="invite-box">
-            <code>{detail.server.invite_code}</code>
-            <button onClick={() => navigator.clipboard?.writeText(detail.server.invite_code)}>Copier</button>
+        <div className="server-menu">
+          <div className="sm-invite">
+            <div className="sm-label">Code d’invitation</div>
+            <div className="sm-invite-row">
+              <code>{detail.server.invite_code}</code>
+              <button className={copied ? 'ok' : ''} onClick={() => { navigator.clipboard?.writeText(detail.server.invite_code); setCopied(true); setTimeout(() => setCopied(false), 1600); }}>
+                <Icon name={copied ? 'check' : 'copy'} /> {copied ? 'Copié' : 'Copier'}
+              </button>
+            </div>
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 8 }}>
-            {can('MANAGE_SERVER') && (
-              <button className="btn btn-ghost" style={{ padding: '6px 12px', fontSize: 13 }} onClick={() => { setMenuOpen(false); onServerSettings(); }}>
-                <Icon name="gear" /> Paramètres du serveur
-              </button>
-            )}
-            {can('MANAGE_ROLES') && (
-              <button className="btn btn-ghost" style={{ padding: '6px 12px', fontSize: 13 }} onClick={() => { setMenuOpen(false); onManageRoles(); }}>
-                <Icon name="shield-halved" /> Gérer les rôles
-              </button>
-            )}
-            {isOwner ? (
-              <button className="btn btn-danger" style={{ padding: '6px 12px', fontSize: 13 }} onClick={onDeleteServer}>Supprimer le serveur</button>
-            ) : (
-              <button className="btn btn-danger" style={{ padding: '6px 12px', fontSize: 13 }} onClick={onLeaveServer}>Quitter le serveur</button>
-            )}
+
+          {(can('MANAGE_SERVER') || can('MANAGE_ROLES')) && (
+            <div className="sm-items">
+              {can('MANAGE_SERVER') && (
+                <button className="sm-item" onClick={() => { setMenuOpen(false); onServerSettings(); }}>
+                  <Icon name="gear" /> <span>Paramètres du serveur</span> <Icon name="chevron-right" />
+                </button>
+              )}
+              {can('MANAGE_ROLES') && (
+                <button className="sm-item" onClick={() => { setMenuOpen(false); onManageRoles(); }}>
+                  <Icon name="shield-halved" /> <span>Gérer les rôles</span> <Icon name="chevron-right" />
+                </button>
+              )}
+            </div>
+          )}
+
+          <div className="sm-items sm-danger">
+            <button className="sm-item danger" onClick={() => { setMenuOpen(false); (isOwner ? onDeleteServer : onLeaveServer)(); }}>
+              <Icon name={isOwner ? 'trash' : 'right-from-bracket'} /> <span>{isOwner ? 'Supprimer le serveur' : 'Quitter le serveur'}</span>
+            </button>
           </div>
         </div>
       )}

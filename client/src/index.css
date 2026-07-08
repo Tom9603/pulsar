@@ -317,7 +317,27 @@ input[type="file"]::file-selector-button:hover {
   cursor: pointer;
 }
 .sidebar-header:hover { background: var(--bg-hover); }
+.sidebar-header.open { background: var(--bg-hover); }
 .sidebar-header .chevron { color: var(--text-muted); font-size: 12px; }
+
+/* Menu du serveur — propre, rangé, action destructrice à l'écart */
+.server-menu { border-bottom: 1px solid var(--border); padding: 12px; display: flex; flex-direction: column; gap: 12px; }
+.sm-label { font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; color: var(--text-faint); margin-bottom: 6px; }
+.sm-invite-row { display: flex; align-items: center; gap: 8px; background: var(--bg-input); border: 1px solid var(--border); border-radius: 10px; padding: 4px 4px 4px 12px; }
+.sm-invite-row code { flex: 1; font-family: monospace; font-size: 14px; color: var(--accent); letter-spacing: 1px; }
+.sm-invite-row button { display: inline-flex; align-items: center; gap: 6px; background: var(--accent); color: #fff; padding: 7px 12px; border-radius: 8px; font-size: 12.5px; font-weight: 600; border: none; cursor: pointer; }
+.sm-invite-row button:hover { background: var(--accent-hover); }
+.sm-invite-row button.ok { background: var(--online); }
+.sm-items { display: flex; flex-direction: column; gap: 2px; }
+.sm-item { display: flex; align-items: center; gap: 11px; width: 100%; text-align: left; background: none; border: none; cursor: pointer; padding: 9px 10px; border-radius: 9px; color: var(--text); font-size: 13.5px; }
+.sm-item > span { flex: 1; }
+.sm-item .fa-solid:first-child { width: 16px; text-align: center; color: var(--text-muted); }
+.sm-item .fa-solid:last-child { font-size: 11px; color: var(--text-faint); }
+.sm-item:hover { background: var(--bg-hover); }
+.sm-danger { border-top: 1px solid var(--border); padding-top: 10px; }
+.sm-item.danger { color: var(--danger); }
+.sm-item.danger .fa-solid:first-child { color: var(--danger); }
+.sm-item.danger:hover { background: rgba(244, 63, 94, 0.1); }
 
 .channel-list { flex: 1; overflow-y: auto; padding: 12px 8px; }
 .channel-category {
