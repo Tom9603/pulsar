@@ -21,13 +21,19 @@ const untilTomorrow9 = () => {
   return Math.floor((d.getTime() - Date.now()) / 1000);
 };
 
-/** Espace personnel : messages enregistrés + rappels. `embedded` : sans en-tête (intégré au centre d'actions). */
-export default function SavedPanel({ currentUser, embedded }) {
-  const [items, setItems] = useState([]);
+/** Espace personnel : messages enregistrés et/ou rappels.
+ *  `filter` : 'all' (défaut) · 'saved' (marque-pages sans rappel) · 'reminders' (avec rappel).
+ *  `embedded` : sans en-tête (intégré au centre d'actions ou à une modale). */
+export default function SavedPanel({ currentUser, embedded, filter = 'all' }) {
+  const [all, setAll] = useState([]);
   const [menuFor, setMenuFor] = useState(null);
   const [custom, setCustom] = useState('');
 
-  const load = useCallback(() => { api('/saved').then(({ items }) => setItems(items)).catch(() => {}); }, []);
+  const items = all.filter((it) => (
+    filter === 'saved' ? !it.remind_at : filter === 'reminders' ? !!it.remind_at : true
+  ));
+
+  const load = useCallback(() => { api('/saved').then(({ items }) => setAll(items)).catch(() => {}); }, []);
 
   useEffect(() => {
     load();
@@ -49,7 +55,9 @@ export default function SavedPanel({ currentUser, embedded }) {
     <div className="saved-body">
       {items.length === 0 && (
         <p className="saved-empty">
-          Aucun rappel pour l’instant. Sur n’importe quel message, cliquez sur l’icône <Icon name="bookmark" /> pour l’enregistrer ici, et vous le faire rappeler à la date de votre choix.
+          {filter === 'reminders'
+            ? <>Aucun rappel pour l’instant. Sur un message, cliquez sur l’icône <Icon name="clock" /> pour vous le faire rappeler à la date de votre choix.</>
+            : <>Aucun message enregistré. Sur un message, cliquez sur l’icône <Icon name="bookmark" /> pour l’enregistrer ici et le retrouver plus tard.</>}
         </p>
       )}
       {items.map((it) => (

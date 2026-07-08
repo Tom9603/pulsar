@@ -7,7 +7,8 @@ import Icon from './Icon.jsx';
 import Composer from './Composer.jsx';
 import Attachment from './Attachment.jsx';
 import EmojiPicker from './EmojiPicker.jsx';
-import SaveButton from './SaveButton.jsx';
+import BookmarkButton from './BookmarkButton.jsx';
+import ReminderButton from './ReminderButton.jsx';
 import WatchTogether from './WatchTogether.jsx';
 import ConfirmModal from './ConfirmModal.jsx';
 import { ctx } from '../contextmenu.js';
@@ -22,7 +23,7 @@ function shouldGroup(prev, cur) {
   return gap < 5 * 60 * 1000;
 }
 
-export default function ChatView({ channel, currentUser, canManage, onCreateTask, onOpenProfile, reminderMsgIds, taskMsgIds }) {
+export default function ChatView({ channel, currentUser, canManage, onCreateTask, onOpenProfile, reminderMsgIds, taskMsgIds, savedMsgIds, savedByMsg }) {
   const [messages, setMessages] = useState([]);
   const [typing, setTyping] = useState({});
   const [editingId, setEditingId] = useState(null);
@@ -113,13 +114,19 @@ export default function ChatView({ channel, currentUser, canManage, onCreateTask
 
   const react = (messageId, emoji) => { getSocket().emit('reaction:toggle', { messageId, emoji }); setPickerFor(null); setPickerFull(false); };
   const del = (m) => setConfirmDel(m);
-  const quickSave = (m) => api('/saved', { method: 'POST', body: { content: m.content, attachment_url: m.attachment_url, author_name: m.display_name, source: channel.name, source_message_id: m.id } })
-    .then(() => window.dispatchEvent(new Event('pulsar:saved-changed'))).catch(() => {});
+  const toggleSave = async (m) => {
+    const it = savedByMsg?.get(m.id);
+    try {
+      if (it) await api(`/saved/${it.id}`, { method: 'DELETE' });
+      else await api('/saved', { method: 'POST', body: { content: m.content, attachment_url: m.attachment_url, author_name: m.display_name, source: channel.name, source_message_id: m.id } });
+      window.dispatchEvent(new Event('pulsar:saved-changed'));
+    } catch { /* ignore */ }
+  };
   const taskFromMsg = (m) => onCreateTask?.({ title: (m.content || '').replace(/\s+/g, ' ').trim().slice(0, 140), description: m.content && m.content.length > 140 ? m.content : '', server_id: channel.server_id, channel_id: channel.id, source_message_id: m.id, source_label: channel.name });
   const msgMenu = (m, isOwn) => ctx(() => m.deleted ? [] : [
     { label: 'Répondre', icon: 'reply', onClick: () => setReplyingTo(m) },
     onCreateTask && { label: 'Créer une tâche', icon: 'square-check', onClick: () => taskFromMsg(m) },
-    { label: 'Enregistrer le message', icon: 'bookmark', onClick: () => quickSave(m) },
+    { label: savedByMsg?.get(m.id) ? 'Retirer des enregistrés' : 'Enregistrer le message', icon: 'bookmark', onClick: () => toggleSave(m) },
     canManage && { label: m.pinned ? 'Détacher' : 'Épingler', icon: 'thumbtack', onClick: () => pin(m) },
     m.content && { label: 'Copier le texte', icon: 'copy', onClick: () => navigator.clipboard?.writeText(m.content) },
     (isOwn || canManage) && { sep: true },
@@ -174,11 +181,12 @@ export default function ChatView({ channel, currentUser, canManage, onCreateTask
           const nearBottom = i >= messages.length - 3;
           const isTaskMsg = !m.deleted && taskMsgIds?.has(m.id);
           const isReminderMsg = !m.deleted && !isTaskMsg && reminderMsgIds?.has(m.id);
+          const isSavedMsg = !m.deleted && !isTaskMsg && !isReminderMsg && savedMsgIds?.has(m.id);
           return (
-            <div className={`message ${grouped ? 'grouped' : ''} ${m.pinned ? 'pinned' : ''} ${m.reply_to && !m.deleted ? 'is-reply' : ''} ${m.deleted ? 'is-deleted' : ''} ${isTaskMsg ? 'is-task' : ''} ${isReminderMsg ? 'is-reminder' : ''}`} key={m.id} onContextMenu={msgMenu(m, isOwn)}>
-              {(isTaskMsg || isReminderMsg) && (
-                <span className={`msg-mark ${isTaskMsg ? 'task' : 'reminder'}`} title={isTaskMsg ? 'Vous avez créé une tâche depuis ce message' : 'Vous avez enregistré ce message'}>
-                  <Icon name={isTaskMsg ? 'square-check' : 'bookmark'} />
+            <div className={`message ${grouped ? 'grouped' : ''} ${m.pinned ? 'pinned' : ''} ${m.reply_to && !m.deleted ? 'is-reply' : ''} ${m.deleted ? 'is-deleted' : ''} ${isTaskMsg ? 'is-task' : ''} ${isReminderMsg ? 'is-reminder' : ''} ${isSavedMsg ? 'is-saved' : ''}`} key={m.id} onContextMenu={msgMenu(m, isOwn)}>
+              {(isTaskMsg || isReminderMsg || isSavedMsg) && (
+                <span className={`msg-mark ${isTaskMsg ? 'task' : isReminderMsg ? 'reminder' : 'saved'}`} title={isTaskMsg ? 'Vous avez créé une tâche depuis ce message' : isReminderMsg ? 'Vous vous êtes fait un rappel sur ce message' : 'Vous avez enregistré ce message'}>
+                  <Icon name={isTaskMsg ? 'square-check' : isReminderMsg ? 'clock' : 'bookmark'} />
                 </span>
               )}
               {grouped ? (
@@ -256,7 +264,8 @@ export default function ChatView({ channel, currentUser, canManage, onCreateTask
                       source_label: channel.name,
                     })}><Icon name="square-check" /></button>
                   )}
-                  <SaveButton content={m.content} attachmentUrl={m.attachment_url} authorName={m.display_name} source={channel.name} sourceMessageId={m.id} dropUp={nearBottom} />
+                  <BookmarkButton content={m.content} attachmentUrl={m.attachment_url} authorName={m.display_name} source={channel.name} sourceMessageId={m.id} existing={savedByMsg?.get(m.id)} />
+                  <ReminderButton content={m.content} attachmentUrl={m.attachment_url} authorName={m.display_name} source={channel.name} sourceMessageId={m.id} existing={savedByMsg?.get(m.id)} dropUp={nearBottom} />
                   {canManage && <button title={m.pinned ? 'Détacher' : 'Épingler'} onClick={() => pin(m)}><Icon name="thumbtack" /></button>}
                   {isOwn && <button title="Modifier" onClick={() => startEdit(m)}><Icon name="pen" /></button>}
                   {(isOwn || canManage) && <button title="Supprimer" onClick={() => del(m)}><Icon name="trash" /></button>}

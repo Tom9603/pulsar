@@ -21,6 +21,7 @@ import DmSidebar from '../components/DmSidebar.jsx';
 import DmChat from '../components/DmChat.jsx';
 import FriendsPanel from '../components/FriendsPanel.jsx';
 import ActionCenter from '../components/ActionCenter.jsx';
+import SavedListModal from '../components/SavedListModal.jsx';
 import TaskModal from '../components/TaskModal.jsx';
 import CreateServerModal from '../components/CreateServerModal.jsx';
 import SettingsModal from '../components/SettingsModal.jsx';
@@ -89,12 +90,16 @@ export default function AppLayout() {
   const [taskModal, setTaskModal] = useState(null); // { task } | { prefill, members }
   const todoCount = tasks.filter((t) => t.status !== 'done' && t.assignee_id === user.id).length;
 
-  // Surlignage personnel des messages transformés en tâche / rappel (visible de moi seul).
-  const [reminderMsgIds, setReminderMsgIds] = useState(() => new Set());
+  // Enregistrements personnels (marque-pages sans rappel + rappels datés), visibles de moi seul.
+  const [savedItems, setSavedItems] = useState([]);
+  const [savedModal, setSavedModal] = useState(null); // 'saved' | 'reminders' | null
   const taskMsgIds = new Set(tasks.map((t) => t.source_message_id).filter(Boolean));
-  const refreshReminderIds = useCallback(() => {
-    api('/saved').then(({ items }) => setReminderMsgIds(new Set(items.map((i) => i.source_message_id).filter(Boolean)))).catch(() => {});
+  const refreshSaved = useCallback(() => {
+    api('/saved').then(({ items }) => setSavedItems(items)).catch(() => {});
   }, []);
+  const savedByMsg = new Map(savedItems.filter((i) => i.source_message_id).map((i) => [i.source_message_id, i]));
+  const savedMsgIds = new Set(savedItems.filter((i) => !i.remind_at && i.source_message_id).map((i) => i.source_message_id));
+  const reminderMsgIds = new Set(savedItems.filter((i) => i.remind_at && i.source_message_id).map((i) => i.source_message_id));
 
   const can = makeCan(detail?.is_owner, detail?.my_permissions);
 
@@ -143,8 +148,8 @@ export default function AppLayout() {
     refreshServers();
     refreshConversations();
     refreshTasks();
-    refreshReminderIds();
-    const onSavedChanged = () => refreshReminderIds();
+    refreshSaved();
+    const onSavedChanged = () => refreshSaved();
     window.addEventListener('pulsar:saved-changed', onSavedChanged);
     return () => window.removeEventListener('pulsar:saved-changed', onSavedChanged);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -411,6 +416,8 @@ export default function AppLayout() {
         onOpenNotif={openNotif}
         onMarkAllRead={markAllRead}
         onClearNotifs={clearNotifs}
+        onOpenSaved={() => setSavedModal('saved')}
+        onOpenReminders={() => setSavedModal('reminders')}
       />
 
       <div className="pulsar-body">
@@ -458,7 +465,7 @@ export default function AppLayout() {
           )}
           {section === 'dm' && (
             activeDm
-              ? <DmChat peer={activeDm} currentUser={user} onlineIds={onlineIds} onCall={call.startCall} onOpenProfile={setProfileTarget} onCreateTask={openTaskFromMessage} reminderMsgIds={reminderMsgIds} taskMsgIds={taskMsgIds} />
+              ? <DmChat peer={activeDm} currentUser={user} onlineIds={onlineIds} onCall={call.startCall} onOpenProfile={setProfileTarget} onCreateTask={openTaskFromMessage} reminderMsgIds={reminderMsgIds} taskMsgIds={taskMsgIds} savedMsgIds={savedMsgIds} savedByMsg={savedByMsg} />
               : <div className="main-content"><div className="empty-hero"><h2><Icon name="comment" /> Messages</h2><p>Choisissez une conversation à gauche, ou ajoutez un contact.</p></div></div>
           )}
           {section === 'server' && (
@@ -481,7 +488,7 @@ export default function AppLayout() {
                       connected={voice.connectedChannelId === activeChannel.id} muted={voice.muted}
                       onJoin={() => joinVoice(activeChannel)} onLeave={leaveVoice} onToggleMute={voice.toggleMute} />
                   ) : (
-                    <ChatView channel={activeChannel} currentUser={user} canManage={can('MANAGE_CHANNELS')} onCreateTask={openTaskFromMessage} onOpenProfile={setProfileTarget} reminderMsgIds={reminderMsgIds} taskMsgIds={taskMsgIds} />
+                    <ChatView channel={activeChannel} currentUser={user} canManage={can('MANAGE_CHANNELS')} onCreateTask={openTaskFromMessage} onOpenProfile={setProfileTarget} reminderMsgIds={reminderMsgIds} taskMsgIds={taskMsgIds} savedMsgIds={savedMsgIds} savedByMsg={savedByMsg} />
                   )}
                 </div>
               </div>
@@ -543,6 +550,7 @@ export default function AppLayout() {
       )}
       {modal === 'editProfile' && <EditProfileModal onClose={() => setModal(null)} />}
       {modal === 'feedback' && <FeedbackModal onClose={() => setModal(null)} />}
+      {savedModal && <SavedListModal mode={savedModal} currentUser={user} onClose={() => setSavedModal(null)} />}
       {confirmState && (
         <ConfirmModal
           title={confirmState.title}

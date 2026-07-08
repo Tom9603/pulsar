@@ -7,7 +7,8 @@ import Icon from './Icon.jsx';
 import Composer from './Composer.jsx';
 import Attachment from './Attachment.jsx';
 import EmojiPicker from './EmojiPicker.jsx';
-import SaveButton from './SaveButton.jsx';
+import BookmarkButton from './BookmarkButton.jsx';
+import ReminderButton from './ReminderButton.jsx';
 import ConfirmModal from './ConfirmModal.jsx';
 import WatchTogether from './WatchTogether.jsx';
 import { ctx } from '../contextmenu.js';
@@ -17,7 +18,7 @@ import { formatTime, formatTimeDate } from '../datetime.js';
 const QUICK_EMOJIS = ['👍', '❤️', '😂', '😮', '😢', '🎉'];
 
 /** Conversation privée : mêmes options qu'un salon (réponse, réactions, tâche, rappel, édition…). */
-export default function DmChat({ peer, currentUser, onlineIds, onCall, onOpenProfile, onCreateTask, reminderMsgIds, taskMsgIds }) {
+export default function DmChat({ peer, currentUser, onlineIds, onCall, onOpenProfile, onCreateTask, reminderMsgIds, taskMsgIds, savedMsgIds, savedByMsg }) {
   const [messages, setMessages] = useState([]);
   const [peerTyping, setPeerTyping] = useState(false);
   const [editingId, setEditingId] = useState(null);
@@ -79,12 +80,18 @@ export default function DmChat({ peer, currentUser, onlineIds, onCall, onOpenPro
   const startEdit = (m) => { setEditingId(m.id); setEditText(m.content); };
   function submitEdit(m) { const t = editText.trim(); if (t && t !== m.content) getSocket().emit('dm:edit', { messageId: m.id, content: t }); setEditingId(null); }
   const send = (extra) => getSocket().emit('dm:send', { toUserId: peer.id, replyTo: replyingTo?.id, ...extra });
-  const quickSave = (m) => api('/saved', { method: 'POST', body: { content: m.content, attachment_url: m.attachment_url, author_name: m.display_name, source: `@${peer.username}`, source_message_id: m.id } })
-    .then(() => window.dispatchEvent(new Event('pulsar:saved-changed'))).catch(() => {});
+  const toggleSave = async (m) => {
+    const it = savedByMsg?.get(m.id);
+    try {
+      if (it) await api(`/saved/${it.id}`, { method: 'DELETE' });
+      else await api('/saved', { method: 'POST', body: { content: m.content, attachment_url: m.attachment_url, author_name: m.display_name, source: `@${peer.username}`, source_message_id: m.id } });
+      window.dispatchEvent(new Event('pulsar:saved-changed'));
+    } catch { /* ignore */ }
+  };
   const msgMenu = (m, isOwn) => ctx(() => m.deleted ? [] : [
     { label: 'Répondre', icon: 'reply', onClick: () => setReplyingTo(m) },
     onCreateTask && { label: 'Créer une tâche', icon: 'square-check', onClick: () => onCreateTask({ title: (m.content || '').replace(/\s+/g, ' ').trim().slice(0, 140), description: m.content && m.content.length > 140 ? m.content : '', source_message_id: m.id, source_label: `@${peer.username}`, peer: { id: peer.id, display_name: peer.display_name } }) },
-    { label: 'Enregistrer le message', icon: 'bookmark', onClick: () => quickSave(m) },
+    { label: savedByMsg?.get(m.id) ? 'Retirer des enregistrés' : 'Enregistrer le message', icon: 'bookmark', onClick: () => toggleSave(m) },
     { label: m.pinned ? 'Détacher' : 'Épingler', icon: 'thumbtack', onClick: () => pin(m) },
     m.content && { label: 'Copier le texte', icon: 'copy', onClick: () => navigator.clipboard?.writeText(m.content) },
     isOwn && { sep: true },
@@ -138,11 +145,12 @@ export default function DmChat({ peer, currentUser, onlineIds, onCall, onOpenPro
               const nearBottom = i >= messages.length - 3;
               const isTaskMsg = !m.deleted && taskMsgIds?.has(m.id);
               const isReminderMsg = !m.deleted && !isTaskMsg && reminderMsgIds?.has(m.id);
+              const isSavedMsg = !m.deleted && !isTaskMsg && !isReminderMsg && savedMsgIds?.has(m.id);
               return (
-                <div className={`message ${grouped ? 'grouped' : ''} ${m.pinned && !m.deleted ? 'pinned' : ''} ${m.reply_to && !m.deleted ? 'is-reply' : ''} ${m.deleted ? 'is-deleted' : ''} ${isTaskMsg ? 'is-task' : ''} ${isReminderMsg ? 'is-reminder' : ''}`} key={m.id} onContextMenu={msgMenu(m, isOwn)}>
-                  {(isTaskMsg || isReminderMsg) && (
-                    <span className={`msg-mark ${isTaskMsg ? 'task' : 'reminder'}`} title={isTaskMsg ? 'Vous avez créé une tâche depuis ce message' : 'Vous avez enregistré ce message'}>
-                      <Icon name={isTaskMsg ? 'square-check' : 'bookmark'} />
+                <div className={`message ${grouped ? 'grouped' : ''} ${m.pinned && !m.deleted ? 'pinned' : ''} ${m.reply_to && !m.deleted ? 'is-reply' : ''} ${m.deleted ? 'is-deleted' : ''} ${isTaskMsg ? 'is-task' : ''} ${isReminderMsg ? 'is-reminder' : ''} ${isSavedMsg ? 'is-saved' : ''}`} key={m.id} onContextMenu={msgMenu(m, isOwn)}>
+                  {(isTaskMsg || isReminderMsg || isSavedMsg) && (
+                    <span className={`msg-mark ${isTaskMsg ? 'task' : isReminderMsg ? 'reminder' : 'saved'}`} title={isTaskMsg ? 'Vous avez créé une tâche depuis ce message' : isReminderMsg ? 'Vous vous êtes fait un rappel sur ce message' : 'Vous avez enregistré ce message'}>
+                      <Icon name={isTaskMsg ? 'square-check' : isReminderMsg ? 'clock' : 'bookmark'} />
                     </span>
                   )}
                   {grouped ? <div className="gutter gutter-time">{m.deleted ? '' : formatTime(m.created_at)}</div> : <Avatar user={m} size={40} onClick={() => onOpenProfile?.(m.sender_id)} />}
@@ -189,7 +197,8 @@ export default function DmChat({ peer, currentUser, onlineIds, onCall, onOpenPro
                           peer: { id: peer.id, display_name: peer.display_name },
                         })}><Icon name="square-check" /></button>
                       )}
-                      <SaveButton content={m.content} attachmentUrl={m.attachment_url} authorName={m.display_name} source={`@${peer.username}`} sourceMessageId={m.id} dropUp={nearBottom} />
+                      <BookmarkButton content={m.content} attachmentUrl={m.attachment_url} authorName={m.display_name} source={`@${peer.username}`} sourceMessageId={m.id} existing={savedByMsg?.get(m.id)} />
+                      <ReminderButton content={m.content} attachmentUrl={m.attachment_url} authorName={m.display_name} source={`@${peer.username}`} sourceMessageId={m.id} existing={savedByMsg?.get(m.id)} dropUp={nearBottom} />
                       <button title={m.pinned ? 'Détacher' : 'Épingler'} onClick={() => pin(m)}><Icon name="thumbtack" /></button>
                       {isOwn && <button title="Modifier" onClick={() => startEdit(m)}><Icon name="pen" /></button>}
                       {isOwn && <button title="Supprimer" onClick={() => setConfirmDel(m)}><Icon name="trash" /></button>}
