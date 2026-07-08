@@ -15,14 +15,13 @@ export default function TopBar({
   const showUpdateReminder = upd.available && !upd.open && (upd.phase === 'idle' || upd.phase === 'available');
   return (
     <header className="topbar">
-      <div className="topbar-left">
-        <button className="topbar-brand" onClick={onHome} title="Accueil">
-          <Logo size={44} wordmark={false} row />
-        </button>
-        <div className="topbar-nav">
-          {canGoBack && <button className="topbar-arrow" title="Retour" onClick={onBack}><Icon name="arrow-left" /></button>}
-          {canGoForward && <button className="topbar-arrow" title="Avancer" onClick={onForward}><Icon name="arrow-right" /></button>}
-        </div>
+      <button className="topbar-brand" onClick={onHome} title="Accueil">
+        <Logo size={50} wordmark={false} row />
+      </button>
+
+      <div className="topbar-nav">
+        {canGoBack && <button className="topbar-arrow" title="Retour" onClick={onBack}><Icon name="arrow-left" /></button>}
+        {canGoForward && <button className="topbar-arrow" title="Avancer" onClick={onForward}><Icon name="arrow-right" /></button>}
       </div>
 
       <div className="topbar-spacer" />
