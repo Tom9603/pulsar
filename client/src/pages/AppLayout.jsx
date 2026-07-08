@@ -37,7 +37,8 @@ import CallOverlay from '../components/CallOverlay.jsx';
 import Whiteboard from '../components/Whiteboard.jsx';
 import RemoteAudio from '../components/RemoteAudio.jsx';
 import ContextMenu from '../components/ContextMenu.jsx';
-import { openMenu } from '../contextmenu.js';
+import ConfirmModal from '../components/ConfirmModal.jsx';
+import { openMenu, ctx } from '../contextmenu.js';
 
 export default function AppLayout() {
   const { user, logout } = useAuth();
@@ -67,6 +68,7 @@ export default function AppLayout() {
   const [memberTarget, setMemberTarget] = useState(null);
   const [accessChannel, setAccessChannel] = useState(null);
   const [profileTarget, setProfileTarget] = useState(null); // id d'utilisateur
+  const [confirmState, setConfirmState] = useState(null); // confirmation clic droit { title, message, ... }
 
   // Navigation « retour » / « avancer »
   const [history, setHistory] = useState([]);
@@ -224,6 +226,42 @@ export default function AppLayout() {
   const markAllRead = () => setNotifications((l) => l.map((n) => ({ ...n, read: true })));
   const clearNotifs = () => setNotifications([]);
 
+  // ---- Menus clic droit adaptés au contexte ----
+  const askConfirm = (opts) => setConfirmState(opts);
+  const copyText = (t) => { navigator.clipboard?.writeText(t).catch(() => {}); };
+
+  async function leaveServerId(sv) {
+    await api(`/servers/${sv.id}/leave`, { method: 'POST' });
+    const list = await refreshServers();
+    if (activeServerId === sv.id) { setActiveServerId(list[0]?.id ?? null); setSection('home'); }
+  }
+  async function deleteServerId(sv) {
+    await api(`/servers/${sv.id}`, { method: 'DELETE' });
+    const list = await refreshServers();
+    if (activeServerId === sv.id) { setActiveServerId(list[0]?.id ?? null); setSection('home'); }
+  }
+
+  // Menu d'un serveur (icône du rail ou carte d'accueil).
+  const serverMenu = (sv) => ctx(() => {
+    const owner = sv.owner_id === user.id;
+    return [
+      { label: 'Ouvrir le serveur', icon: 'right-to-bracket', onClick: () => openServer(sv.id) },
+      sv.invite_code && { label: 'Copier le code d’invitation', icon: 'link', onClick: () => copyText(sv.invite_code) },
+      owner && { label: 'Paramètres du serveur', icon: 'gear', onClick: () => { openServer(sv.id); setModal('serverSettings'); } },
+      { sep: true },
+      owner
+        ? { label: 'Supprimer le serveur', icon: 'trash', danger: true, onClick: () => askConfirm({ title: 'Supprimer le serveur', message: `« ${sv.name} » sera définitivement supprimé pour tout le monde.`, confirmLabel: 'Supprimer', danger: true, onConfirm: () => deleteServerId(sv) }) }
+        : { label: 'Quitter le serveur', icon: 'right-from-bracket', danger: true, onClick: () => askConfirm({ title: 'Quitter le serveur', message: `Quitter « ${sv.name} » ?`, confirmLabel: 'Quitter', danger: true, onConfirm: () => leaveServerId(sv) }) },
+    ];
+  });
+
+  // Menu d'une conversation privée (liste des messages ou carte d'accueil).
+  const dmMenu = (peer) => ctx([
+    { label: 'Ouvrir la conversation', icon: 'comment', onClick: () => openDm(peer) },
+    { label: 'Appel vocal', icon: 'phone', onClick: () => call.startCall(peer) },
+    { label: 'Voir le profil', icon: 'user', onClick: () => setProfileTarget(peer.id) },
+  ]);
+
   // Menu clic droit global (repli) : sauf dans les champs de saisie et les médias.
   function onAppContextMenu(e) {
     const t = e.target;
@@ -231,6 +269,7 @@ export default function AppLayout() {
     e.preventDefault();
     openMenu(e.clientX, e.clientY, [
       { label: 'Accueil', icon: 'house', onClick: goHome },
+      { label: 'Messages', icon: 'comment', onClick: openMessages },
       { label: 'Mon profil', icon: 'user', onClick: () => setProfileTarget(user.id) },
       { sep: true },
       { label: 'Réglages', icon: 'gear', onClick: () => setModal('settings') },
@@ -385,6 +424,7 @@ export default function AppLayout() {
           onSelectServer={openServer}
           onAddServer={() => setModal('create')}
           onFeedback={() => setModal('feedback')}
+          serverMenu={serverMenu}
         />
 
         {section === 'server' && detail && (
@@ -399,15 +439,16 @@ export default function AppLayout() {
           />
         )}
         {section === 'dm' && (
-          <DmSidebar conversations={dmConversations} activeUserId={activeDm?.id} onlineIds={onlineIds} onSelect={openDm} onStartDm={startDm} />
+          <DmSidebar conversations={dmConversations} activeUserId={activeDm?.id} onlineIds={onlineIds} onSelect={openDm} onStartDm={startDm} convMenu={dmMenu} />
         )}
 
         <div className="pulsar-main">
           {section === 'home' && (
             <HomeView user={user} servers={servers} dmConversations={dmConversations} onlineIds={onlineIds}
-              onOpenServer={openServer} onOpenDm={openDm} onOpenFriends={openFriends} onOpenSaved={openSaved} onAddServer={() => setModal('create')} />
+              onOpenServer={openServer} onOpenDm={openDm} onOpenFriends={openFriends} onOpenSaved={openSaved} onAddServer={() => setModal('create')}
+              serverMenu={serverMenu} dmMenu={dmMenu} />
           )}
-          {section === 'friends' && <FriendsPanel onlineIds={onlineIds} onOpenDm={openDm} />}
+          {section === 'friends' && <FriendsPanel onlineIds={onlineIds} onOpenDm={openDm} onOpenProfile={setProfileTarget} />}
           {section === 'saved' && (
             <ActionCenter
               currentUser={user} tasks={tasks} taskFilter={taskFilter} onTaskFilter={setTaskFilter}
@@ -502,6 +543,16 @@ export default function AppLayout() {
       )}
       {modal === 'editProfile' && <EditProfileModal onClose={() => setModal(null)} />}
       {modal === 'feedback' && <FeedbackModal onClose={() => setModal(null)} />}
+      {confirmState && (
+        <ConfirmModal
+          title={confirmState.title}
+          message={confirmState.message}
+          confirmLabel={confirmState.confirmLabel}
+          danger={confirmState.danger}
+          onConfirm={confirmState.onConfirm}
+          onClose={() => setConfirmState(null)}
+        />
+      )}
     </div>
   );
 }

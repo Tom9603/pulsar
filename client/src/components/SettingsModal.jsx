@@ -5,6 +5,7 @@ import Icon from './Icon.jsx';
 import { api, uploadFile, mediaUrl } from '../api.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import { isSoundEnabled, setSoundEnabled, isDesktopEnabled, setDesktopEnabled } from '../notify.js';
+import AudioSettingsPanel from './AudioSettingsPanel.jsx';
 
 const COLORS = ['#5865F2', '#EB459E', '#57F287', '#FAA61A', '#ED4245', '#3498DB', '#9B59B6', '#14b8a6', '#e67e22'];
 const STATUSES = [
@@ -16,7 +17,10 @@ const STATUSES = [
 ];
 
 const MENU = [
-  { group: 'Application', items: [{ id: 'notif', icon: 'bell', label: 'Notifications' }] },
+  { group: 'Application', items: [
+    { id: 'notif', icon: 'bell', label: 'Notifications' },
+    { id: 'audio', icon: 'sliders', label: 'Audio et vocal' },
+  ] },
   { group: 'Compte', items: [{ id: 'account', icon: 'lock', label: 'Sécurité et compte' }] },
 ];
 
@@ -243,9 +247,17 @@ export default function SettingsModal({ onClose }) {
             </>
           )}
 
+          {menu === 'audio' && (
+            <>
+              <h2>Audio et vocal</h2>
+              <p className="modal-sub">Micro, sortie, volumes et tests. Réglages enregistrés sur cet appareil.</p>
+              <AudioSettingsPanel />
+            </>
+          )}
+
           {menu === 'account' && (
             <>
-              <h2>Sécurité &amp; compte</h2>
+              <h2>Sécurité et compte</h2>
               {accountMsg && <div className="error-msg">{accountMsg}</div>}
               <div className="field">
                 <label>Changer le mot de passe</label>

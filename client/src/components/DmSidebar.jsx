@@ -3,7 +3,7 @@ import Avatar from './Avatar.jsx';
 import Icon from './Icon.jsx';
 
 /** Barre latérale des messages privés : bouton Amis + liste des conversations. */
-export default function DmSidebar({ conversations, activeUserId, onlineIds, onSelect, onStartDm, onOpenFriends, friendsActive, onOpenSaved, savedActive }) {
+export default function DmSidebar({ conversations, activeUserId, onlineIds, onSelect, onStartDm, onOpenFriends, friendsActive, onOpenSaved, savedActive, convMenu }) {
   const [username, setUsername] = useState('');
   const [error, setError] = useState('');
   const online = new Set(onlineIds);
@@ -54,6 +54,7 @@ export default function DmSidebar({ conversations, activeUserId, onlineIds, onSe
             key={c.id}
             className={`dm-conv ${c.id === activeUserId ? 'active' : ''}`}
             onClick={() => onSelect(c)}
+            onContextMenu={convMenu?.(c)}
           >
             <Avatar user={c} size={38} status={online.has(c.id) ? c.status : 'offline'} />
             <div className="dm-conv-info">

@@ -5,7 +5,7 @@ import { api, mediaUrl } from '../api.js';
 import ContactLibraryModal from './ContactLibraryModal.jsx';
 
 /** Écran d'accueil : tableau de bord (serveurs, messages récents, contacts). */
-export default function HomeView({ user, servers, dmConversations, onlineIds, onOpenServer, onOpenDm, onOpenFriends, onOpenSaved, onAddServer }) {
+export default function HomeView({ user, servers, dmConversations, onlineIds, onOpenServer, onOpenDm, onOpenFriends, onOpenSaved, onAddServer, serverMenu, dmMenu }) {
   const [contacts, setContacts] = useState([]);
   const [library, setLibrary] = useState(false);
   const online = new Set(onlineIds);
@@ -35,7 +35,7 @@ export default function HomeView({ user, servers, dmConversations, onlineIds, on
           ) : (
             <div className="home-grid">
               {servers.map((s) => (
-                <button key={s.id} className="server-card" onClick={() => onOpenServer(s.id)}>
+                <button key={s.id} className="server-card" onClick={() => onOpenServer(s.id)} onContextMenu={serverMenu?.(s)}>
                   <span className="sc-icon" style={{ background: s.icon_url ? undefined : s.icon_color }}>
                     {s.icon_url ? <img src={mediaUrl(s.icon_url)} alt="" /> : s.name.charAt(0).toUpperCase()}
                   </span>
@@ -53,7 +53,7 @@ export default function HomeView({ user, servers, dmConversations, onlineIds, on
           ) : (
             <div className="home-dms">
               {dmConversations.slice(0, 20).map((c) => (
-                <button key={c.id} className="dm-card" onClick={() => onOpenDm(c)}>
+                <button key={c.id} className="dm-card" onClick={() => onOpenDm(c)} onContextMenu={dmMenu?.(c)}>
                   <Avatar user={c} size={40} status={online.has(c.id) ? c.status : 'offline'} />
                   <div className="dm-card-info">
                     <div className="dm-card-name">{c.display_name}</div>
@@ -77,7 +77,7 @@ export default function HomeView({ user, servers, dmConversations, onlineIds, on
           ) : (
             <div className="home-dms">
               {contacts.slice(0, 20).map((c) => (
-                <button key={c.id} className="dm-card" onClick={() => onOpenDm(c)}>
+                <button key={c.id} className="dm-card" onClick={() => onOpenDm(c)} onContextMenu={dmMenu?.(c)}>
                   <Avatar user={c} size={40} status={online.has(c.id) ? c.status : 'offline'} />
                   <div className="dm-card-info">
                     <div className="dm-card-name">{c.display_name}</div>

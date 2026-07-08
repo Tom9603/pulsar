@@ -9,7 +9,7 @@ const SECTIONS = [
 ];
 
 /** Rail de navigation : sections de l'app (Accueil, Messages, Contacts, À faire) + serveurs. */
-export default function NavRail({ section, servers, activeServerId, hasUnreadDm, todoCount = 0, onSection, onSelectServer, onAddServer, onFeedback }) {
+export default function NavRail({ section, servers, activeServerId, hasUnreadDm, todoCount = 0, onSection, onSelectServer, onAddServer, onFeedback, serverMenu }) {
   return (
     <nav className="navrail">
       {SECTIONS.map((s) => (
@@ -36,6 +36,7 @@ export default function NavRail({ section, servers, activeServerId, hasUnreadDm,
             style={{ background: sv.icon_url ? undefined : sv.icon_color }}
             title={sv.name}
             onClick={() => onSelectServer(sv.id)}
+            onContextMenu={serverMenu?.(sv)}
           >
             {sv.icon_url ? <img src={mediaUrl(sv.icon_url)} alt="" /> : sv.name.charAt(0).toUpperCase()}
           </button>
