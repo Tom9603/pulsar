@@ -11,13 +11,10 @@ import SaveButton from './SaveButton.jsx';
 import WatchTogether from './WatchTogether.jsx';
 import ConfirmModal from './ConfirmModal.jsx';
 import { ctx } from '../contextmenu.js';
+import { userColor } from '../usercolor.js';
+import { formatTime, formatTimeDate } from '../datetime.js';
 
 const QUICK_EMOJIS = ['👍', '❤️', '😂', '😮', '😢', '🎉'];
-
-function formatTime(ts) {
-  const d = new Date(ts.replace(' ', 'T') + 'Z');
-  return d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
-}
 
 function shouldGroup(prev, cur) {
   if (!prev || prev.user_id !== cur.user_id || cur.attachment_url || cur.reply_to) return false;
@@ -196,12 +193,12 @@ export default function ChatView({ channel, currentUser, canManage, onCreateTask
                 )}
                 {!grouped && (
                   <div className="msg-head">
-                    <span className="msg-author clickable" onClick={() => onOpenProfile?.(m.user_id)}
+                    <span className="msg-author clickable" style={{ color: userColor(m.user_id ?? m.username) }} onClick={() => onOpenProfile?.(m.user_id)}
                       onContextMenu={ctx([
                         { label: 'Voir le profil', icon: 'user', onClick: () => onOpenProfile?.(m.user_id) },
                         { label: 'Copier le nom', icon: 'copy', onClick: () => navigator.clipboard?.writeText(m.display_name) },
                       ])}>{m.display_name}</span>
-                    <span className="msg-time">{formatTime(m.created_at)}</span>
+                    <span className="msg-time">{formatTimeDate(m.created_at)}</span>
                     {m.pinned ? <span className="msg-pin-tag" title="Épinglé"><Icon name="thumbtack" /></span> : null}
                   </div>
                 )}

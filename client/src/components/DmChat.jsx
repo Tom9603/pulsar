@@ -11,13 +11,10 @@ import SaveButton from './SaveButton.jsx';
 import ConfirmModal from './ConfirmModal.jsx';
 import WatchTogether from './WatchTogether.jsx';
 import { ctx } from '../contextmenu.js';
+import { userColor } from '../usercolor.js';
+import { formatTime, formatTimeDate } from '../datetime.js';
 
 const QUICK_EMOJIS = ['👍', '❤️', '😂', '😮', '😢', '🎉'];
-
-function formatTime(ts) {
-  const d = new Date(ts.replace(' ', 'T') + 'Z');
-  return d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
-}
 
 /** Conversation privée : mêmes options qu'un salon (réponse, réactions, tâche, rappel, édition…). */
 export default function DmChat({ peer, currentUser, onlineIds, onCall, onOpenProfile, onCreateTask, reminderMsgIds, taskMsgIds }) {
@@ -153,8 +150,8 @@ export default function DmChat({ peer, currentUser, onlineIds, onCall, onOpenPro
                     )}
                     {!grouped && (
                       <div className="msg-head">
-                        <span className="msg-author clickable" onClick={() => onOpenProfile?.(m.sender_id)}>{m.display_name}</span>
-                        <span className="msg-time">{formatTime(m.created_at)}</span>
+                        <span className="msg-author clickable" style={{ color: userColor(m.sender_id ?? m.username) }} onClick={() => onOpenProfile?.(m.sender_id)}>{m.display_name}</span>
+                        <span className="msg-time">{formatTimeDate(m.created_at)}</span>
                       </div>
                     )}
                     {m.deleted ? (
