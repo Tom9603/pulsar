@@ -27,6 +27,11 @@ export default function NavRail({ section, servers, activeServerId, hasUnreadDm,
         </button>
       ))}
 
+      <button className="nav-item nav-feedback" title="Donner mon avis" onClick={onFeedback}>
+        <span className="nav-ico"><Icon name="comment-dots" /></span>
+        <span className="nav-label">Feedback</span>
+      </button>
+
       <div className="nav-sep" />
       <div className="nav-servers">
         {servers.map((sv) => (
@@ -43,11 +48,6 @@ export default function NavRail({ section, servers, activeServerId, hasUnreadDm,
         ))}
         <button className="nav-server nav-add" title="Ajouter un serveur" onClick={onAddServer}><Icon name="plus" /></button>
       </div>
-
-      <button className="nav-item nav-feedback" title="Donner mon avis" onClick={onFeedback}>
-        <span className="nav-ico"><Icon name="comment-dots" /></span>
-        <span className="nav-label">Feedback</span>
-      </button>
     </nav>
   );
 }

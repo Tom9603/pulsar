@@ -58,7 +58,7 @@ export default function FeedbackModal({ onClose }) {
   return (
     <Modal onClose={onClose} className="modal-feedback">
       <h2><Icon name="comment-dots" /> Votre avis compte</h2>
-      <p className="modal-sub">Un bug, une idée&nbsp;? Chaque retour est lu et pris en compte : c'est ce qui fait évoluer et progresser Pulsar en continu. Merci&nbsp;!</p>
+      <p className="modal-sub">Pulsar est encore en phase bêta&nbsp;: un bug, une idée&nbsp;? Chaque retour est lu et compte vraiment, c'est ce qui fait évoluer Pulsar au quotidien. Un grand merci&nbsp;!</p>
 
       {error && <div className="error-msg">{error}</div>}
 

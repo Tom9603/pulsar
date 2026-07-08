@@ -12,9 +12,16 @@ export default function HomeView({ user, servers, dmConversations, onlineIds, on
   ];
   const [contacts, setContacts] = useState([]);
   const [library, setLibrary] = useState(false);
+  const [showAllServers, setShowAllServers] = useState(false);
   const online = new Set(onlineIds);
-  const hour = new Date().getHours();
+  const now = new Date();
+  const hour = now.getHours();
   const greet = hour < 6 ? 'Bonne nuit' : hour < 12 ? 'Bonjour' : hour < 18 ? 'Bon après-midi' : 'Bonsoir';
+  const dayStr = now.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
+  const min = now.getMinutes();
+  const timeStr = `${hour}h${min > 0 ? String(min).padStart(2, '0') : ''}`;
+  const sortedContacts = [...contacts].sort((a, b) => (a.display_name || a.username).localeCompare(b.display_name || b.username, 'fr', { sensitivity: 'base' }));
+  const shownServers = showAllServers ? servers : servers.slice(0, 10);
 
   useEffect(() => { api('/friends').then(({ friends }) => setContacts(friends || [])).catch(() => {}); }, []);
 
@@ -22,8 +29,8 @@ export default function HomeView({ user, servers, dmConversations, onlineIds, on
     <div className="home-view">
       <div className="home-inner">
         <div className="home-hero">
-          <h1>{greet}, {user.display_name} <span className="home-spark">✦</span></h1>
-          <p>Bienvenue sur Pulsar, reprenez là où vous vous êtes arrêté.</p>
+          <h1>{greet}, {user.display_name}</h1>
+          <p className="home-today">Nous sommes le {dayStr}, il est {timeStr}</p>
         </div>
 
         <div className="home-quick">
@@ -37,16 +44,24 @@ export default function HomeView({ user, servers, dmConversations, onlineIds, on
           {servers.length === 0 ? (
             <p className="home-empty">Aucun serveur pour l’instant, créez-en un via « Nouveau serveur ».</p>
           ) : (
-            <div className="home-grid">
-              {servers.map((s) => (
-                <button key={s.id} className="server-card" onClick={() => onOpenServer(s.id)} onContextMenu={serverMenu?.(s)}>
-                  <span className="sc-icon" style={{ background: s.icon_url ? undefined : s.icon_color }}>
-                    {s.icon_url ? <img src={mediaUrl(s.icon_url)} alt="" /> : s.name.charAt(0).toUpperCase()}
-                  </span>
-                  <span className="sc-name">{s.name}</span>
+            <>
+              <div className="home-grid">
+                {shownServers.map((s) => (
+                  <button key={s.id} className="server-card" onClick={() => onOpenServer(s.id)} onContextMenu={serverMenu?.(s)}>
+                    <span className="sc-icon" style={{ background: s.icon_url ? undefined : s.icon_color }}>
+                      {s.icon_url ? <img src={mediaUrl(s.icon_url)} alt="" /> : s.name.charAt(0).toUpperCase()}
+                    </span>
+                    <span className="sc-name">{s.name}</span>
+                  </button>
+                ))}
+              </div>
+              {servers.length > 10 && (
+                <button className="home-showmore" onClick={() => setShowAllServers((v) => !v)}>
+                  <Icon name={showAllServers ? 'chevron-up' : 'chevron-down'} />
+                  {showAllServers ? 'Voir moins' : `Voir les ${servers.length - 10} autres`}
                 </button>
-              ))}
-            </div>
+              )}
+            </>
           )}
         </section>
 
@@ -80,7 +95,7 @@ export default function HomeView({ user, servers, dmConversations, onlineIds, on
             <p className="home-empty">Aucun contact. <button className="link-btn" onClick={onOpenFriends}>Ajoutez votre premier contact</button>.</p>
           ) : (
             <div className="home-dms">
-              {contacts.slice(0, 20).map((c) => (
+              {sortedContacts.slice(0, 20).map((c) => (
                 <button key={c.id} className="dm-card" onClick={() => onOpenDm(c)} onContextMenu={dmMenu?.(c)}>
                   <Avatar user={c} size={40} status={online.has(c.id) ? c.status : 'offline'} />
                   <div className="dm-card-info">
