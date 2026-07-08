@@ -7,6 +7,34 @@ import { useAuth } from '../context/AuthContext.jsx';
 
 const COLORS = ['#5865F2', '#EB459E', '#57F287', '#FAA61A', '#ED4245', '#3498DB', '#9B59B6', '#14b8a6', '#e67e22'];
 const BANNERS = ['#1e1b4b', '#0f172a', '#3b0764', '#082f49', '#4a044e', '#1a2e05', '#450a0a', '#111827'];
+
+// Photos de profil prêtes à l'emploi : dégradés sobres et modernes (aucune image enfantine).
+const PRESET_AVATARS = [
+  { id: 'violet', from: '#8b5cf6', to: '#6366f1' },
+  { id: 'ocean', from: '#3b82f6', to: '#06b6d4' },
+  { id: 'teal', from: '#14b8a6', to: '#10b981' },
+  { id: 'slate', from: '#64748b', to: '#1e293b' },
+  { id: 'rose', from: '#fb7185', to: '#ec4899' },
+  { id: 'amber', from: '#f59e0b', to: '#ea580c' },
+  { id: 'indigo', from: '#6366f1', to: '#7c3aed' },
+  { id: 'sky', from: '#0ea5e9', to: '#2563eb' },
+  { id: 'graphite', from: '#52525b', to: '#18181b' },
+  { id: 'lime', from: '#22c55e', to: '#65a30d' },
+  { id: 'fuchsia', from: '#d946ef', to: '#9333ea' },
+  { id: 'sand', from: '#a8a29e', to: '#44403c' },
+];
+const presetCss = (p) => `radial-gradient(circle at 72% 26%, rgba(255,255,255,0.28), transparent 58%), linear-gradient(135deg, ${p.from}, ${p.to})`;
+function presetToPng(p, size = 256) {
+  const c = document.createElement('canvas'); c.width = c.height = size;
+  const x = c.getContext('2d');
+  const g = x.createLinearGradient(0, 0, size, size);
+  g.addColorStop(0, p.from); g.addColorStop(1, p.to);
+  x.fillStyle = g; x.fillRect(0, 0, size, size);
+  const r = x.createRadialGradient(size * 0.72, size * 0.26, size * 0.04, size * 0.72, size * 0.26, size * 0.75);
+  r.addColorStop(0, 'rgba(255,255,255,0.30)'); r.addColorStop(1, 'rgba(255,255,255,0)');
+  x.fillStyle = r; x.fillRect(0, 0, size, size);
+  return c.toDataURL('image/png');
+}
 const STATUSES = [
   { value: 'online', label: 'En ligne' },
   { value: 'idle', label: 'Absent' },
@@ -29,12 +57,15 @@ export default function EditProfileModal({ initialTab = 'profil', onClose }) {
   });
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  const [presetId, setPresetId] = useState(null);
   const set = (k, v) => setF((s) => ({ ...s, [k]: v }));
+  const pickPreset = (p) => { setPresetId(p.id); set('avatar_url', presetToPng(p)); };
 
   function pickImage(key, maxMo, e) {
     const file = e.target.files?.[0];
     if (!file) return;
     if (file.size > maxMo * 1024 * 1024) { setError(`Image trop lourde (${maxMo} Mo max).`); return; }
+    if (key === 'avatar_url') setPresetId(null);
     const r = new FileReader();
     r.onload = () => set(key, r.result);
     r.readAsDataURL(file);
@@ -98,15 +129,24 @@ export default function EditProfileModal({ initialTab = 'profil', onClose }) {
                   </select>
                 </div>
                 <div className="field">
+                  <label>Photos de profil</label>
+                  <div className="avatar-presets">
+                    {PRESET_AVATARS.map((p) => (
+                      <button type="button" key={p.id} className={`avatar-preset ${presetId === p.id ? 'selected' : ''}`} style={{ background: presetCss(p) }} title="Choisir cette photo" onClick={() => pickPreset(p)} />
+                    ))}
+                  </div>
+                  <p className="field-hint">Des visuels sobres et modernes, en un clic.</p>
+                </div>
+                <div className="field">
                   <label>Couleur d’avatar</label>
                   <div className="color-swatches">
-                    {COLORS.map((c) => <div key={c} className={`color-swatch ${c === f.avatar_color ? 'selected' : ''}`} style={{ background: c }} onClick={() => set('avatar_color', c)} />)}
+                    {COLORS.map((c) => <div key={c} className={`color-swatch ${c === f.avatar_color && !f.avatar_url ? 'selected' : ''}`} style={{ background: c }} onClick={() => { setPresetId(null); set('avatar_url', ''); set('avatar_color', c); }} />)}
                   </div>
                 </div>
                 <div className="field">
-                  <label>Image d’avatar (optionnel)</label>
+                  <label>Votre propre image (optionnel)</label>
                   <input type="file" accept="image/*" onChange={(e) => pickImage('avatar_url', 1.5, e)} />
-                  {f.avatar_url && <button type="button" className="btn btn-ghost" style={{ width: 'auto', padding: '6px 12px', marginTop: 8, fontSize: 13 }} onClick={() => set('avatar_url', '')}>Retirer l’image</button>}
+                  {f.avatar_url && <button type="button" className="btn btn-ghost" style={{ width: 'auto', padding: '6px 12px', marginTop: 8, fontSize: 13 }} onClick={() => { setPresetId(null); set('avatar_url', ''); }}>Retirer l’image</button>}
                 </div>
                 <div className="field">
                   <label>Bannière (couleur)</label>
