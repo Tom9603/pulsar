@@ -43,7 +43,7 @@ export default function VoiceView({ channel, members, currentUser, connected, mu
         )}
       </div>
 
-      <Soundboard channelId={channel.id} serverId={channel.server_id} />
+      {connected && <Soundboard channelId={channel.id} serverId={channel.server_id} />}
 
       <p className="voice-note" style={{ fontSize: 12, opacity: 0.7 }}>
         <Icon name="headphones" /> Audio en temps réel (WebRTC). Autorisez votre micro à la première connexion.

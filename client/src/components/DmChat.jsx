@@ -30,7 +30,14 @@ export default function DmChat({ peer, currentUser, onlineIds, onCall, onOpenPro
   const [showPins, setShowPins] = useState(false);
   const [pins, setPins] = useState([]);
   const [watchOpen, setWatchOpen] = useState(false);
-  useEffect(() => { setWatchOpen(false); }, [peer.id]);
+  const [showSearch, setShowSearch] = useState(false);
+  const [searchQ, setSearchQ] = useState('');
+  useEffect(() => { setWatchOpen(false); setShowSearch(false); setSearchQ(''); }, [peer.id]);
+  const searchHits = searchQ.trim().length < 2 ? [] : messages.filter((m) => !m.deleted && (m.content || '').toLowerCase().includes(searchQ.trim().toLowerCase()));
+  function jumpToMessage(id) {
+    const el = scrollRef.current?.querySelector(`[data-mid="${id}"]`);
+    if (el) { el.scrollIntoView({ behavior: 'smooth', block: 'center' }); el.classList.add('flash'); setTimeout(() => el.classList.remove('flash'), 1600); }
+  }
   const scrollRef = useRef(null);
   const typingTimer = useRef(null);
   const lastTypingSent = useRef(0);
@@ -106,8 +113,33 @@ export default function DmChat({ peer, currentUser, onlineIds, onCall, onOpenPro
         <span className="clickable" onClick={() => onOpenProfile?.(peer.id)}>{peer.display_name}</span>
         <span className="topic">@{peer.username}</span>
         <span className="spacer" />
+        <button className={`header-btn ${showSearch ? 'active' : ''}`} title="Rechercher dans la conversation" onClick={() => setShowSearch((v) => !v)}><Icon name="magnifying-glass" /></button>
         <button className="header-btn" title="Appel vocal" onClick={() => onCall(peer)}><Icon name="phone" /></button>
       </div>
+
+      {showSearch && (
+        <div className="dm-search">
+          <div className="dm-search-bar">
+            <Icon name="magnifying-glass" />
+            <input autoFocus value={searchQ} onChange={(e) => setSearchQ(e.target.value)} placeholder={`Rechercher dans les messages avec ${peer.display_name}…`} />
+            <button title="Fermer" onClick={() => { setShowSearch(false); setSearchQ(''); }}><Icon name="xmark" /></button>
+          </div>
+          {searchQ.trim().length >= 2 && (
+            <div className="dm-search-results">
+              {searchHits.length === 0 && <div className="search-empty">Aucun message trouvé.</div>}
+              {searchHits.map((m) => (
+                <button className="dm-search-item" key={m.id} onClick={() => jumpToMessage(m.id)}>
+                  <Avatar user={m} size={26} />
+                  <div>
+                    <div className="dm-search-meta"><strong>{m.display_name}</strong> · {formatTimeDate(m.created_at)}</div>
+                    <div className="dm-search-text">{m.content}</div>
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       <div className="content-body">
         <div className="chat-area">
@@ -147,7 +179,7 @@ export default function DmChat({ peer, currentUser, onlineIds, onCall, onOpenPro
               const isReminderMsg = !m.deleted && !isTaskMsg && reminderMsgIds?.has(m.id);
               const isSavedMsg = !m.deleted && !isTaskMsg && !isReminderMsg && savedMsgIds?.has(m.id);
               return (
-                <div className={`message ${grouped ? 'grouped' : ''} ${m.pinned && !m.deleted ? 'pinned' : ''} ${m.reply_to && !m.deleted ? 'is-reply' : ''} ${m.deleted ? 'is-deleted' : ''} ${isTaskMsg ? 'is-task' : ''} ${isReminderMsg ? 'is-reminder' : ''} ${isSavedMsg ? 'is-saved' : ''}`} key={m.id} onContextMenu={msgMenu(m, isOwn)}>
+                <div className={`message ${grouped ? 'grouped' : ''} ${m.pinned && !m.deleted ? 'pinned' : ''} ${m.reply_to && !m.deleted ? 'is-reply' : ''} ${m.deleted ? 'is-deleted' : ''} ${isTaskMsg ? 'is-task' : ''} ${isReminderMsg ? 'is-reminder' : ''} ${isSavedMsg ? 'is-saved' : ''}`} key={m.id} data-mid={m.id} onContextMenu={msgMenu(m, isOwn)}>
                   {(isTaskMsg || isReminderMsg || isSavedMsg) && (
                     <span className={`msg-mark ${isTaskMsg ? 'task' : isReminderMsg ? 'reminder' : 'saved'}`} title={isTaskMsg ? 'Vous avez créé une tâche depuis ce message' : isReminderMsg ? 'Vous vous êtes fait un rappel sur ce message' : 'Vous avez enregistré ce message'}>
                       <Icon name={isTaskMsg ? 'square-check' : isReminderMsg ? 'clock' : 'bookmark'} />
