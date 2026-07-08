@@ -1,45 +1,51 @@
 import Avatar from './Avatar.jsx';
 import Icon from './Icon.jsx';
 
-/** Couleur du rôle le plus haut porté par le membre (roles est trié par position décroissante). */
-function topRoleColor(member, roles) {
+/** Rôle le plus haut porté par le membre (roles est trié par position décroissante). */
+function topRole(member, roles) {
   const ids = new Set(member.role_ids || []);
-  const role = roles.find((r) => ids.has(r.id));
-  return role ? role.color : null;
+  return roles.find((r) => ids.has(r.id)) || null;
 }
 
-/** Liste des membres du serveur, séparés en ligne / hors ligne, colorés par rôle. */
+/** Panneau des membres du serveur — présentation Pulsar : en-tête, pastilles de rôle, « Fondateur ». */
 export default function MemberList({ members, onlineIds, ownerId, roles = [], onMemberClick }) {
   const online = new Set(onlineIds);
   const onlineMembers = members.filter((m) => online.has(m.id));
   const offlineMembers = members.filter((m) => !online.has(m.id));
 
-  const renderGroup = (title, list, isOnline) =>
-    list.length === 0 ? null : (
-      <>
-        <div className="member-group-title">{title}</div>
-        {list.map((m) => {
-          const color = topRoleColor(m, roles);
-          return (
-            <div
-              className={`member-row ${isOnline ? '' : 'offline'}`}
-              key={m.id}
-              title={m.about || m.display_name}
-              onClick={() => onMemberClick?.(m)}
-            >
-              <Avatar user={m} size={32} status={isOnline ? m.status : 'offline'} />
-              <span className="m-name" style={color ? { color } : undefined}>{m.display_name}</span>
-              {m.id === ownerId && <span className="owner-crown" title="Propriétaire du serveur"><Icon name="crown" /></span>}
-            </div>
-          );
-        })}
-      </>
+  const row = (m, isOnline) => {
+    const role = topRole(m, roles);
+    return (
+      <button className={`mbr ${isOnline ? '' : 'off'}`} key={m.id} title={m.about || m.display_name} onClick={() => onMemberClick?.(m)}>
+        <Avatar user={m} size={34} status={isOnline ? m.status : 'offline'} />
+        <span className="mbr-info">
+          <span className="mbr-name">{m.display_name}</span>
+          {(m.id === ownerId || role) && (
+            <span className="mbr-tags">
+              {m.id === ownerId && <span className="mbr-tag owner"><Icon name="crown" /> Fondateur</span>}
+              {role && <span className="mbr-tag" style={{ color: role.color, borderColor: `${role.color}66` }}>{role.name}</span>}
+            </span>
+          )}
+        </span>
+      </button>
     );
+  };
 
   return (
     <div className="member-list">
-      {renderGroup(`En ligne · ${onlineMembers.length}`, onlineMembers, true)}
-      {renderGroup(`Hors ligne · ${offlineMembers.length}`, offlineMembers, false)}
+      <div className="mbr-head"><span><Icon name="users" /> Membres</span><span className="mbr-total">{members.length}</span></div>
+      {onlineMembers.length > 0 && (
+        <div className="mbr-section">
+          <div className="mbr-group">En ligne <span>{onlineMembers.length}</span></div>
+          {onlineMembers.map((m) => row(m, true))}
+        </div>
+      )}
+      {offlineMembers.length > 0 && (
+        <div className="mbr-section">
+          <div className="mbr-group">Hors ligne <span>{offlineMembers.length}</span></div>
+          {offlineMembers.map((m) => row(m, false))}
+        </div>
+      )}
     </div>
   );
 }
