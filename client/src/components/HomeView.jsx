@@ -5,7 +5,11 @@ import { api, mediaUrl } from '../api.js';
 import ContactLibraryModal from './ContactLibraryModal.jsx';
 
 /** Écran d'accueil : tableau de bord (serveurs, messages récents, contacts). */
-export default function HomeView({ user, servers, dmConversations, onlineIds, onOpenServer, onOpenDm, onOpenFriends, onOpenSaved, onAddServer, serverMenu, dmMenu }) {
+export default function HomeView({ user, servers, dmConversations, onlineIds, onOpenServer, onOpenDm, onOpenFriends, onOpenSaved, onAddServer, serverMenu, dmMenu, archivedServers = [], hiddenServers = [], onRestoreServer }) {
+  const putAway = [
+    ...archivedServers.map((s) => ({ s, tag: 'Archivé' })),
+    ...hiddenServers.map((s) => ({ s, tag: 'Caché' })),
+  ];
   const [contacts, setContacts] = useState([]);
   const [library, setLibrary] = useState(false);
   const online = new Set(onlineIds);
@@ -88,6 +92,26 @@ export default function HomeView({ user, servers, dmConversations, onlineIds, on
             </div>
           )}
         </section>
+
+        {putAway.length > 0 && (
+          <section className="home-section">
+            <h2>Serveurs rangés</h2>
+            <div className="home-archived">
+              {putAway.map(({ s, tag }) => (
+                <div key={s.id} className="archived-row" onContextMenu={serverMenu?.(s)}>
+                  <span className="ar-icon" style={{ background: s.icon_url ? undefined : s.icon_color }}>
+                    {s.icon_url ? <img src={mediaUrl(s.icon_url)} alt="" /> : s.name.charAt(0).toUpperCase()}
+                  </span>
+                  <span className="ar-name">{s.name}</span>
+                  <span className="ar-tag">{tag}</span>
+                  <button className="ar-restore" title="Réafficher dans la liste" onClick={() => onRestoreServer?.(s)}>
+                    <Icon name="rotate-left" /> Réafficher
+                  </button>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
       </div>
 
       {library && (

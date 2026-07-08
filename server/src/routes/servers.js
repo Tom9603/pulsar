@@ -42,7 +42,9 @@ function safeParse(json) {
 /** Liste des serveurs dont l'utilisateur est membre. */
 router.get('/', (req, res) => {
   const servers = db.prepare(`
-    SELECT s.* FROM servers s
+    SELECT s.*, m.archived, m.hidden,
+      (SELECT COUNT(*) FROM server_members WHERE server_id = s.id) AS member_count
+    FROM servers s
     JOIN server_members m ON m.server_id = s.id
     WHERE m.user_id = ?
     ORDER BY m.joined_at ASC
@@ -292,22 +294,61 @@ router.post('/:id/channels', (req, res) => {
   res.json({ channel });
 });
 
-/** Suppression d'un serveur (réservé au propriétaire). */
+const memberCount = (serverId) => db.prepare('SELECT COUNT(*) AS n FROM server_members WHERE server_id = ?').get(serverId).n;
+
+/** Suppression directe (réservé au propriétaire ET seulement s'il est seul dans le serveur). */
 router.delete('/:id', (req, res) => {
   const server = db.prepare('SELECT * FROM servers WHERE id = ?').get(req.params.id);
   if (!server) return res.status(404).json({ error: 'Serveur introuvable' });
   if (server.owner_id !== req.userId) return res.status(403).json({ error: 'Action réservée au propriétaire du serveur' });
+  if (memberCount(server.id) > 1) return res.status(400).json({ error: 'Transférez d’abord la propriété : le serveur ne peut pas être supprimé tant qu’il reste des membres.' });
   db.prepare('DELETE FROM servers WHERE id = ?').run(server.id);
-  res.json({ ok: true });
+  res.json({ ok: true, deleted: true });
 });
 
-/** Quitter un serveur (le propriétaire ne peut pas, il doit le supprimer). */
+/** Quitter un serveur. Le propriétaire doit d'abord transférer s'il reste du monde.
+ *  Quand le dernier membre part, le serveur est supprimé définitivement. */
 router.post('/:id/leave', (req, res) => {
   const server = db.prepare('SELECT * FROM servers WHERE id = ?').get(req.params.id);
   if (!server) return res.status(404).json({ error: 'Serveur introuvable' });
-  if (server.owner_id === req.userId) return res.status(400).json({ error: 'Le propriétaire doit supprimer le serveur' });
+  if (!isMember(server.id, req.userId)) return res.status(404).json({ error: 'Vous n’êtes pas membre de ce serveur' });
+  const count = memberCount(server.id);
+  if (server.owner_id === req.userId && count > 1) {
+    return res.status(400).json({ error: 'En tant que fondateur, transférez d’abord la propriété à un autre membre.' });
+  }
   db.prepare('DELETE FROM server_members WHERE server_id = ? AND user_id = ?').run(server.id, req.userId);
+  if (count <= 1) {
+    db.prepare('DELETE FROM servers WHERE id = ?').run(server.id); // plus personne : suppression définitive
+    return res.json({ ok: true, deleted: true });
+  }
   notifyServerUpdate(server.id);
+  res.json({ ok: true, deleted: false });
+});
+
+/** Transférer la propriété du serveur à un autre membre (réservé au propriétaire). */
+router.post('/:id/transfer', (req, res) => {
+  const server = db.prepare('SELECT * FROM servers WHERE id = ?').get(req.params.id);
+  if (!server) return res.status(404).json({ error: 'Serveur introuvable' });
+  if (server.owner_id !== req.userId) return res.status(403).json({ error: 'Action réservée au propriétaire du serveur' });
+  const targetId = Number(req.body?.userId);
+  if (!targetId || targetId === req.userId) return res.status(400).json({ error: 'Choisissez un autre membre.' });
+  if (!isMember(server.id, targetId)) return res.status(400).json({ error: 'Ce membre n’est pas dans le serveur.' });
+  db.prepare('UPDATE servers SET owner_id = ? WHERE id = ?').run(targetId, server.id);
+  notifyServerUpdate(server.id);
+  res.json({ ok: true });
+});
+
+/** Archiver / cacher un serveur (préférence de vue, propre à l'utilisateur). */
+router.patch('/:id/membership', (req, res) => {
+  const server = db.prepare('SELECT * FROM servers WHERE id = ?').get(req.params.id);
+  if (!server || !isMember(server.id, req.userId)) return res.status(404).json({ error: 'Serveur introuvable' });
+  const sets = [];
+  const vals = [];
+  if ('archived' in (req.body || {})) { sets.push('archived = ?'); vals.push(req.body.archived ? 1 : 0); }
+  if ('hidden' in (req.body || {})) { sets.push('hidden = ?'); vals.push(req.body.hidden ? 1 : 0); }
+  if (!sets.length) return res.json({ ok: true });
+  vals.push(server.id, req.userId);
+  db.prepare(`UPDATE server_members SET ${sets.join(', ')} WHERE server_id = ? AND user_id = ?`).run(...vals);
   res.json({ ok: true });
 });
 

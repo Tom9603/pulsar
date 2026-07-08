@@ -22,6 +22,7 @@ import DmChat from '../components/DmChat.jsx';
 import FriendsPanel from '../components/FriendsPanel.jsx';
 import ActionCenter from '../components/ActionCenter.jsx';
 import SavedListModal from '../components/SavedListModal.jsx';
+import LeaveServerModal from '../components/LeaveServerModal.jsx';
 import TaskModal from '../components/TaskModal.jsx';
 import CreateServerModal from '../components/CreateServerModal.jsx';
 import SettingsModal from '../components/SettingsModal.jsx';
@@ -90,9 +91,15 @@ export default function AppLayout() {
   const [taskModal, setTaskModal] = useState(null); // { task } | { prefill, members }
   const todoCount = tasks.filter((t) => t.status !== 'done' && t.assignee_id === user.id).length;
 
+  // Serveurs affichés dans le rail vs archivés / cachés (préférence de vue perso).
+  const visibleServers = servers.filter((s) => !s.archived && !s.hidden);
+  const archivedServers = servers.filter((s) => s.archived);
+  const hiddenServers = servers.filter((s) => s.hidden);
+
   // Enregistrements personnels (marque-pages sans rappel + rappels datés), visibles de moi seul.
   const [savedItems, setSavedItems] = useState([]);
   const [savedModal, setSavedModal] = useState(null); // 'saved' | 'reminders' | null
+  const [leaveTarget, setLeaveTarget] = useState(null); // serveur à quitter / supprimer
   const taskMsgIds = new Set(tasks.map((t) => t.source_message_id).filter(Boolean));
   const refreshSaved = useCallback(() => {
     api('/saved').then(({ items }) => setSavedItems(items)).catch(() => {});
@@ -235,28 +242,26 @@ export default function AppLayout() {
   const askConfirm = (opts) => setConfirmState(opts);
   const copyText = (t) => { navigator.clipboard?.writeText(t).catch(() => {}); };
 
-  async function leaveServerId(sv) {
-    await api(`/servers/${sv.id}/leave`, { method: 'POST' });
-    const list = await refreshServers();
-    if (activeServerId === sv.id) { setActiveServerId(list[0]?.id ?? null); setSection('home'); }
+  async function setServerFlag(sv, patch) {
+    try { await api(`/servers/${sv.id}/membership`, { method: 'PATCH', body: patch }); await refreshServers(); } catch { /* ignore */ }
   }
-  async function deleteServerId(sv) {
-    await api(`/servers/${sv.id}`, { method: 'DELETE' });
-    const list = await refreshServers();
-    if (activeServerId === sv.id) { setActiveServerId(list[0]?.id ?? null); setSection('home'); }
-  }
+  const afterLeave = async () => { const list = await refreshServers(); if (!list.some((s) => s.id === activeServerId)) { setActiveServerId(list[0]?.id ?? null); setSection('home'); } };
 
   // Menu d'un serveur (icône du rail ou carte d'accueil).
   const serverMenu = (sv) => ctx(() => {
     const owner = sv.owner_id === user.id;
+    const others = (sv.member_count ?? 1) > 1;
     return [
       { label: 'Ouvrir le serveur', icon: 'right-to-bracket', onClick: () => openServer(sv.id) },
       sv.invite_code && { label: 'Copier le code d’invitation', icon: 'link', onClick: () => copyText(sv.invite_code) },
       owner && { label: 'Paramètres du serveur', icon: 'gear', onClick: () => { openServer(sv.id); setModal('serverSettings'); } },
       { sep: true },
+      { label: sv.archived ? 'Désarchiver' : 'Archiver le serveur', icon: 'box-archive', onClick: () => setServerFlag(sv, { archived: !sv.archived }) },
+      { label: sv.hidden ? 'Réafficher' : 'Cacher le serveur', icon: sv.hidden ? 'eye' : 'eye-slash', onClick: () => setServerFlag(sv, { hidden: !sv.hidden }) },
+      { sep: true },
       owner
-        ? { label: 'Supprimer le serveur', icon: 'trash', danger: true, onClick: () => askConfirm({ title: 'Supprimer le serveur', message: `« ${sv.name} » sera définitivement supprimé pour tout le monde.`, confirmLabel: 'Supprimer', danger: true, onConfirm: () => deleteServerId(sv) }) }
-        : { label: 'Quitter le serveur', icon: 'right-from-bracket', danger: true, onClick: () => askConfirm({ title: 'Quitter le serveur', message: `Quitter « ${sv.name} » ?`, confirmLabel: 'Quitter', danger: true, onConfirm: () => leaveServerId(sv) }) },
+        ? { label: others ? 'Quitter (céder le serveur)' : 'Supprimer le serveur', icon: others ? 'right-from-bracket' : 'trash', danger: true, onClick: () => setLeaveTarget(sv) }
+        : { label: 'Quitter le serveur', icon: 'right-from-bracket', danger: true, onClick: () => setLeaveTarget(sv) },
     ];
   });
 
@@ -370,18 +375,7 @@ export default function AppLayout() {
   }
   async function createChannel(name, type, opts = {}) { await api(`/servers/${activeServerId}/channels`, { method: 'POST', body: { name, type, ...opts } }); await refreshDetail(activeServerId, true); }
   async function deleteChannel(channelId) { await api(`/channels/${channelId}`, { method: 'DELETE' }); await refreshDetail(activeServerId, activeChannelId !== channelId); }
-  async function deleteServer() {
-    if (!confirm(`Supprimer définitivement « ${detail.server.name} » ?`)) return;
-    await api(`/servers/${detail.server.id}`, { method: 'DELETE' });
-    const list = await refreshServers();
-    setActiveServerId(list[0]?.id ?? null); setSection('home');
-  }
-  async function leaveServer() {
-    if (!confirm(`Quitter « ${detail.server.name} » ?`)) return;
-    await api(`/servers/${detail.server.id}/leave`, { method: 'POST' });
-    const list = await refreshServers();
-    setActiveServerId(list[0]?.id ?? null); setSection('home');
-  }
+  const openLeaveServer = () => detail?.server && setLeaveTarget(detail.server);
   async function startDm(username) { const { user: target } = await api('/dms/start', { method: 'POST', body: { username } }); openDm(target); }
 
   // ---- Tâches ----
@@ -423,7 +417,7 @@ export default function AppLayout() {
       <div className="pulsar-body">
         <NavRail
           section={section}
-          servers={servers}
+          servers={visibleServers}
           activeServerId={activeServerId}
           hasUnreadDm={hasUnreadDm}
           todoCount={todoCount}
@@ -441,7 +435,7 @@ export default function AppLayout() {
             connectedChannelId={voice.connectedChannelId}
             onSelectChannel={setActiveChannelId} onCreateChannel={createChannel} onDeleteChannel={deleteChannel}
             onManageAccess={setAccessChannel}
-            onDeleteServer={deleteServer} onLeaveServer={leaveServer}
+            onDeleteServer={openLeaveServer} onLeaveServer={openLeaveServer}
             onManageRoles={() => setModal('roles')} onServerSettings={() => setModal('serverSettings')}
           />
         )}
@@ -451,9 +445,11 @@ export default function AppLayout() {
 
         <div className="pulsar-main">
           {section === 'home' && (
-            <HomeView user={user} servers={servers} dmConversations={dmConversations} onlineIds={onlineIds}
+            <HomeView user={user} servers={visibleServers} dmConversations={dmConversations} onlineIds={onlineIds}
               onOpenServer={openServer} onOpenDm={openDm} onOpenFriends={openFriends} onOpenSaved={openSaved} onAddServer={() => setModal('create')}
-              serverMenu={serverMenu} dmMenu={dmMenu} />
+              serverMenu={serverMenu} dmMenu={dmMenu}
+              archivedServers={archivedServers} hiddenServers={hiddenServers}
+              onRestoreServer={(sv) => setServerFlag(sv, { archived: 0, hidden: 0 })} />
           )}
           {section === 'friends' && <FriendsPanel onlineIds={onlineIds} onOpenDm={openDm} onOpenProfile={setProfileTarget} />}
           {section === 'saved' && (
@@ -551,6 +547,7 @@ export default function AppLayout() {
       {modal === 'editProfile' && <EditProfileModal onClose={() => setModal(null)} />}
       {modal === 'feedback' && <FeedbackModal onClose={() => setModal(null)} />}
       {savedModal && <SavedListModal mode={savedModal} currentUser={user} onClose={() => setSavedModal(null)} />}
+      {leaveTarget && <LeaveServerModal server={leaveTarget} currentUserId={user.id} onDone={afterLeave} onClose={() => setLeaveTarget(null)} />}
       {confirmState && (
         <ConfirmModal
           title={confirmState.title}

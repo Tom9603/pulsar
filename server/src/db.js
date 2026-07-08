@@ -239,6 +239,8 @@ ensure('channels', 'category_id', 'INTEGER');
 ensure('channels', 'client_label', 'TEXT');            // projet / client rattaché au salon
 ensure('channels', 'private', 'INTEGER NOT NULL DEFAULT 0'); // salon restreint (espace client)
 ensure('servers', 'icon_url', 'TEXT');
+ensure('server_members', 'archived', 'INTEGER NOT NULL DEFAULT 0'); // serveur archivé pour CE membre (vue perso)
+ensure('server_members', 'hidden', 'INTEGER NOT NULL DEFAULT 0');   // serveur caché pour CE membre (vue perso)
 
 // Fiche professionnelle enrichie (profil)
 ensure('users', 'headline', 'TEXT');      // poste / intitulé ("Développeuse web", "Gérant")
