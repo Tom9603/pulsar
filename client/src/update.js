@@ -36,16 +36,40 @@ export function useUpdate() {
   return snap;
 }
 
+const DISMISS_KEY = 'pulsar.updateDismissed';
+
+// Compare deux versions « x.y.z » : vrai si `remote` est STRICTEMENT plus récente que `local`.
+function isNewer(remote, local) {
+  const A = String(remote).split('.').map((n) => parseInt(n, 10) || 0);
+  const B = String(local).split('.').map((n) => parseInt(n, 10) || 0);
+  for (let i = 0; i < Math.max(A.length, B.length); i++) {
+    const x = A[i] || 0, y = B[i] || 0;
+    if (x !== y) return x > y;
+  }
+  return false;
+}
+
+function wasDismissed(version) {
+  try { return !!version && localStorage.getItem(DISMISS_KEY) === version; } catch { return false; }
+}
+
 function markAvailable(version) {
-  if (state.available) { if (version) set({ version }); return; }
-  set({ available: true, version: version || '', phase: 'available', open: true });
+  const v = version || '';
+  if (state.available) { if (v) set({ version: v }); return; }
+  // Si « Plus tard » a déjà été choisi pour CETTE version, on n'ouvre pas la modale
+  // (le rappel en haut à droite reste dispo). Une version plus récente la rouvrira.
+  const dismissed = wasDismissed(v);
+  set({ available: true, version: v, phase: 'available', open: !dismissed, dismissed });
 }
 
 /** Rouvre la modale depuis le rappel « Mettre à jour ». */
 export function openUpdate() { set({ open: true }); }
 
-/** « Plus tard » : ferme la modale mais garde le rappel visible. */
-export function dismissUpdate() { set({ open: false, dismissed: true }); }
+/** « Plus tard » : ferme la modale, mémorise le choix pour cette version, garde le rappel. */
+export function dismissUpdate() {
+  try { if (state.version) localStorage.setItem(DISMISS_KEY, state.version); } catch { /* ignore */ }
+  set({ open: false, dismissed: true });
+}
 
 /** Lance la mise à jour (télécharge sur desktop, recharge sur le web). */
 export function beginUpdate() {
@@ -86,7 +110,9 @@ export function startUpdateWatch() {
       const res = await fetch(`${getServerUrl()}/api/version`, { cache: 'no-store' });
       if (!res.ok) return;
       const { version } = await res.json();
-      if (version && version !== state.currentVersion) markAvailable(version);
+      // On ne propose que si le serveur est PLUS RÉCENT (évite une « rétrogradation »
+      // qui bouclerait : un rechargement ne changerait pas la version en local).
+      if (isNewer(version, state.currentVersion)) markAvailable(version);
     } catch { /* hors-ligne : on réessaiera plus tard */ }
   };
   check();
