@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react';
 import Modal from './Modal.jsx';
 import ConfirmModal from './ConfirmModal.jsx';
 import { api } from '../api.js';
-import { PERMISSIONS, PERMISSION_KEYS } from '../permissions.js';
+import Icon from './Icon.jsx';
+import { PERMISSIONS, PERMISSION_KEYS, PERMISSION_META } from '../permissions.js';
 
 const COLORS = ['#99aab5', '#5865F2', '#EB459E', '#57F287', '#FAA61A', '#ED4245', '#3498DB', '#9B59B6', '#14b8a6', '#e67e22'];
 
@@ -105,12 +106,21 @@ export default function RolesModal({ serverId, roles, onClose, onChanged }) {
               </div>
               <div className="field">
                 <label>Permissions</label>
-                {PERMISSION_KEYS.map((key) => (
-                  <label key={key} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 0', cursor: 'pointer', textTransform: 'none', fontWeight: 400, color: 'var(--text)' }}>
-                    <input type="checkbox" checked={form.permissions.includes(key)} onChange={() => togglePerm(key)} />
-                    {PERMISSIONS[key]}
-                  </label>
-                ))}
+                <div className="perm-list">
+                  {PERMISSION_KEYS.map((key) => {
+                    const on = form.permissions.includes(key);
+                    return (
+                      <label key={key} className={`perm-row ${on ? 'on' : ''}`}>
+                        <span className="perm-ico"><Icon name={PERMISSION_META[key]?.icon || 'circle-check'} /></span>
+                        <span className="perm-text">
+                          <span className="perm-name">{PERMISSIONS[key]}</span>
+                          <span className="perm-desc">{PERMISSION_META[key]?.desc}</span>
+                        </span>
+                        <input type="checkbox" className="perm-check" checked={on} onChange={() => togglePerm(key)} />
+                      </label>
+                    );
+                  })}
+                </div>
               </div>
               <div className="modal-actions" style={{ marginTop: 12 }}>
                 <button className="btn btn-danger" style={{ width: 'auto', padding: '8px 16px' }} onClick={() => setConfirmDel(true)} disabled={busy}>Supprimer</button>
