@@ -611,6 +611,15 @@ input[type="file"]::file-selector-button:hover {
 .voice-tile .vname { font-size: 14px; font-weight: 600; }
 .voice-controls { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
 .voice-btn.hand-on { background: rgba(240, 178, 50, 0.18); color: var(--idle); outline: 1px solid rgba(240, 178, 50, 0.5); }
+.voice-btn.cam-on { background: rgba(59, 130, 246, 0.2); color: var(--accent-2); outline: 1px solid rgba(59, 130, 246, 0.5); }
+.voice-tile.has-video { width: 220px; height: 150px; padding: 0; overflow: hidden; }
+.voice-video { width: 100%; height: 100%; object-fit: cover; border-radius: 12px; background: #000; }
+.voice-video.mirror { transform: scaleX(-1); }
+.voice-tile.has-video .vname {
+  position: absolute; left: 0; right: 0; bottom: 0; padding: 6px 10px;
+  background: linear-gradient(transparent, rgba(0, 0, 0, 0.75)); border-radius: 0 0 12px 12px;
+  font-size: 13px; text-align: left;
+}
 .voice-btn {
   padding: 12px 24px;
   border-radius: 24px;

@@ -15,9 +15,12 @@ export function useVoice() {
   const [connectedChannelId, setConnectedChannelId] = useState(null);
   const [muted, setMuted] = useState(getAudio().micMuted);
   const [remoteStreams, setRemoteStreams] = useState({}); // socketId -> MediaStream
+  const [videoOn, setVideoOn] = useState(false);
+  const [localVideoStream, setLocalVideoStream] = useState(null); // aperçu de ma caméra
 
   const pcs = useRef(new Map()); // socketId -> RTCPeerConnection
   const localStream = useRef(null);
+  const camStream = useRef(null);   // flux caméra (vidéo)
   const rawStream = useRef(null);   // flux micro brut (avant gain)
   const gainRef = useRef(null);     // gain du micro (volume d'entrée)
   const gainCtx = useRef(null);     // contexte audio pour le gain d'entrée
@@ -74,6 +77,10 @@ export function useVoice() {
 
     if (localStream.current) {
       for (const track of localStream.current.getTracks()) pc.addTrack(track, localStream.current);
+    }
+    // Si la caméra est déjà active, on l'ajoute d'emblée pour les nouveaux venus.
+    if (camStream.current) {
+      for (const track of camStream.current.getVideoTracks()) pc.addTrack(track, camStream.current);
     }
 
     pc.onicecandidate = (e) => {
@@ -142,6 +149,9 @@ export function useVoice() {
     gainRef.current = null;
     if (localStream.current) { localStream.current.getTracks().forEach((t) => t.stop()); localStream.current = null; }
     if (rawStream.current) { rawStream.current.getTracks().forEach((t) => t.stop()); rawStream.current = null; }
+    if (camStream.current) { camStream.current.getTracks().forEach((t) => t.stop()); camStream.current = null; }
+    setLocalVideoStream(null);
+    setVideoOn(false);
     speakingRef.current = false;
   }, [removePeer]);
 
@@ -186,6 +196,47 @@ export function useVoice() {
   const toggleMute = useCallback(() => {
     setAudio({ micMuted: !getAudio().micMuted });
   }, []);
+
+  // Renégocie avec tous les pairs après un ajout / retrait de piste (caméra).
+  const renegotiateAll = useCallback(async () => {
+    for (const [sid, pc] of pcs.current) {
+      try {
+        const offer = await pc.createOffer();
+        await pc.setLocalDescription(offer);
+        socket.emit('voice:signal', { targetSocketId: sid, data: { sdp: pc.localDescription } });
+      } catch (err) { console.warn('renégociation vidéo', err); }
+    }
+  }, [socket]);
+
+  // Active / coupe la caméra pendant l'appel (vidéo ajoutée à la volée aux pairs).
+  const toggleCamera = useCallback(async () => {
+    if (camStream.current) {
+      const vtrack = camStream.current.getVideoTracks()[0];
+      for (const pc of pcs.current.values()) {
+        const sender = pc.getSenders().find((s) => s.track === vtrack);
+        if (sender) pc.removeTrack(sender);
+      }
+      camStream.current.getTracks().forEach((t) => t.stop());
+      camStream.current = null;
+      setLocalVideoStream(null);
+      setVideoOn(false);
+      await renegotiateAll();
+      return;
+    }
+    let cam;
+    try {
+      cam = await navigator.mediaDevices.getUserMedia({ video: { width: { ideal: 640 }, height: { ideal: 480 } } });
+    } catch {
+      alert('Caméra inaccessible : autorisez la caméra dans votre navigateur.');
+      return;
+    }
+    camStream.current = cam;
+    const vtrack = cam.getVideoTracks()[0];
+    for (const pc of pcs.current.values()) pc.addTrack(vtrack, cam);
+    setLocalVideoStream(cam);
+    setVideoOn(true);
+    await renegotiateAll();
+  }, [renegotiateAll]);
 
   // Lève / baisse sa propre main (l'état affiché vient de voice:state, autoritaire).
   const raiseHand = useCallback((raised) => {
@@ -234,5 +285,5 @@ export function useVoice() {
   // Nettoyage à la fermeture de l'app
   useEffect(() => () => teardown(), [teardown]);
 
-  return { connectedChannelId, muted, remoteStreams, join, leave, toggleMute, raiseHand, lowerHand };
+  return { connectedChannelId, muted, remoteStreams, videoOn, localVideoStream, join, leave, toggleMute, toggleCamera, raiseHand, lowerHand };
 }
