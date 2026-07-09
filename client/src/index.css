@@ -1277,7 +1277,10 @@ input[type="file"]::file-selector-button:hover {
 .board-tools { display: flex; gap: 4px; }
 .board-spacer { flex: 1; }
 .board-publish { width: auto; padding: 8px 14px; font-size: 13px; display: inline-flex; align-items: center; gap: 7px; }
-.board-canvas-wrap { position: relative; }
+.board-main { display: flex; align-items: stretch; }
+.board-tools-left { display: flex; flex-direction: column; gap: 6px; padding: 12px 8px; background: var(--bg-content-alt); border-right: 1px solid var(--border); }
+.board-tools-left .board-tool { width: 40px; height: 40px; font-size: 16px; }
+.board-canvas-wrap { position: relative; display: flex; }
 .board-text-input {
   position: absolute; z-index: 5; min-width: 140px;
   background: rgba(0, 0, 0, 0.35); border: 1px dashed rgba(255, 255, 255, 0.5);
