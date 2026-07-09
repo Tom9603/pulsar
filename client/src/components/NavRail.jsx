@@ -35,16 +35,20 @@ export default function NavRail({ section, servers, activeServerId, hasUnreadDm,
       <div className="nav-sep" />
       <div className="nav-servers">
         {servers.map((sv) => (
-          <button
-            key={sv.id}
-            className={`nav-server ${section === 'server' && sv.id === activeServerId ? 'active' : ''}`}
-            style={{ background: sv.icon_url ? undefined : sv.icon_color }}
-            title={sv.name}
-            onClick={() => onSelectServer(sv.id)}
-            onContextMenu={serverMenu?.(sv)}
-          >
-            {sv.icon_url ? <img src={mediaUrl(sv.icon_url)} alt="" /> : sv.name.charAt(0).toUpperCase()}
-          </button>
+          <div className="nav-server-wrap" key={sv.id}>
+            <button
+              className={`nav-server ${section === 'server' && sv.id === activeServerId ? 'active' : ''}`}
+              style={{ background: sv.icon_url ? undefined : sv.icon_color }}
+              title={sv.name}
+              onClick={() => onSelectServer(sv.id)}
+              onContextMenu={serverMenu?.(sv)}
+            >
+              {sv.icon_url ? <img src={mediaUrl(sv.icon_url)} alt="" /> : sv.name.charAt(0).toUpperCase()}
+            </button>
+            {sv.mentions > 0
+              ? <span className="nav-server-badge">{sv.mentions > 9 ? '9+' : sv.mentions}</span>
+              : sv.unread ? <span className="nav-server-dot" /> : null}
+          </div>
         ))}
         <button className="nav-server nav-add" title="Ajouter un serveur" onClick={onAddServer}><Icon name="plus" /></button>
       </div>

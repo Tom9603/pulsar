@@ -39,7 +39,7 @@ function safeParse(json) {
   }
 }
 
-/** Liste des serveurs dont l'utilisateur est membre. */
+/** Liste des serveurs dont l'utilisateur est membre (+ non-lus et mentions par serveur). */
 router.get('/', (req, res) => {
   const servers = db.prepare(`
     SELECT s.*, m.archived, m.hidden,
@@ -49,6 +49,26 @@ router.get('/', (req, res) => {
     WHERE m.user_id = ?
     ORDER BY m.joined_at ASC
   `).all(req.userId);
+
+  // Agrégat non-lus + mentions par serveur (pour le badge sur l'icône du serveur).
+  const me = db.prepare('SELECT username FROM users WHERE id = ?').get(req.userId);
+  const mentionLike = '%@' + me.username + '%';
+  const lastReadOf = db.prepare('SELECT last_read_id FROM channel_reads WHERE user_id = ? AND channel_id = ?');
+  const hasUnread = db.prepare('SELECT 1 FROM messages WHERE channel_id = ? AND id > ? AND user_id != ? LIMIT 1');
+  const countMentions = db.prepare('SELECT COUNT(*) AS n FROM messages WHERE channel_id = ? AND id > ? AND user_id != ? AND content LIKE ?');
+  for (const s of servers) {
+    let mentions = 0, unread = false;
+    const chans = db.prepare("SELECT id, private FROM channels WHERE server_id = ? AND type = 'text'").all(s.id);
+    for (const c of chans) {
+      if (c.private && !canAccessChannel(c.id, req.userId)) continue;
+      const lastRead = lastReadOf.get(req.userId, c.id)?.last_read_id || 0;
+      if (!unread) unread = !!hasUnread.get(c.id, lastRead, req.userId);
+      mentions += countMentions.get(c.id, lastRead, req.userId, mentionLike).n;
+    }
+    s.mentions = mentions;
+    s.unread = unread;
+  }
+
   res.json({ servers });
 });
 

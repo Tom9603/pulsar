@@ -1315,6 +1315,17 @@ input[type="file"]::file-selector-button:hover {
 .nav-label { font-size: 10px; letter-spacing: 0.3px; }
 .nav-sep { width: 40px; height: 1px; background: var(--border); margin: 8px 0; }
 .nav-servers { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.nav-server-wrap { position: relative; display: flex; }
+.nav-server-badge {
+  position: absolute; top: -3px; right: -4px; min-width: 18px; height: 18px; padding: 0 5px;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--danger); color: #fff; font-size: 11px; font-weight: 700;
+  border-radius: 999px; border: 2px solid var(--bg-rail); pointer-events: none;
+}
+.nav-server-dot {
+  position: absolute; bottom: -1px; right: -1px; width: 14px; height: 14px;
+  background: var(--accent); border-radius: 50%; border: 3px solid var(--bg-rail); pointer-events: none;
+}
 .nav-server {
   width: 46px; height: 46px; border-radius: 14px;
   display: flex; align-items: center; justify-content: center;

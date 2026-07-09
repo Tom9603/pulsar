@@ -216,6 +216,15 @@ export default function AppLayout() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeChannelId, section, detail?.channels?.length]);
 
+  // Synchronise le badge du serveur actif (icône de gauche) avec l'état de ses salons.
+  useEffect(() => {
+    if (!detail?.server) return;
+    const sid = detail.server.id;
+    const mentions = detail.channels.reduce((n, c) => n + (c.mentions || 0), 0);
+    const unread = detail.channels.some((c) => c.type === 'text' && c.unread);
+    setServers((list) => list.map((s) => (s.id === sid && (s.mentions !== mentions || s.unread !== unread) ? { ...s, mentions, unread } : s)));
+  }, [detail]);
+
   // ---- Navigation ----
   const goHome = () => { setSection('home'); refreshConversations(); };
   const openServer = (id) => { getSocket().emit('server:subscribe', { serverId: id }); setActiveServerId(id); setSection('server'); };
@@ -313,6 +322,7 @@ export default function AppLayout() {
         setDetail((d) => (d && d.channels.some((c) => c.id === channelId)
           ? { ...d, channels: d.channels.map((c) => (c.id === channelId ? { ...c, unread: true, mentions: (c.mentions || 0) + (mentioned ? 1 : 0) } : c)) }
           : d));
+        setServers((list) => list.map((s) => (s.id === serverId ? { ...s, unread: true, mentions: (s.mentions || 0) + (mentioned ? 1 : 0) } : s)));
       }
       if (mentioned && !focused) {
         playPing();
