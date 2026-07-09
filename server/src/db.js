@@ -223,6 +223,13 @@ db.exec(`
     PRIMARY KEY (poll_id, user_id, option_index)
   );
 
+  CREATE TABLE IF NOT EXISTS ai_usage (
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    day     TEXT NOT NULL,            -- AAAA-MM-JJ (quota IA par jour)
+    count   INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (user_id, day)
+  );
+
   CREATE INDEX IF NOT EXISTS idx_messages_channel ON messages(channel_id, id);
   CREATE INDEX IF NOT EXISTS idx_members_user ON server_members(user_id);
   CREATE INDEX IF NOT EXISTS idx_member_roles ON member_roles(server_id, user_id);

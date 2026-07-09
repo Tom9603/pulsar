@@ -20,7 +20,7 @@ import { formatTime, formatTimeDate } from '../datetime.js';
 const QUICK_EMOJIS = ['👍', '❤️', '😂', '😮', '😢', '🎉'];
 
 /** Conversation privée : mêmes options qu'un salon (réponse, réactions, tâche, rappel, édition…). */
-export default function DmChat({ peer, currentUser, onlineIds, onCall, onOpenProfile, onCreateTask, reminderMsgIds, taskMsgIds, savedMsgIds, savedByMsg }) {
+export default function DmChat({ peer, currentUser, onlineIds, onCall, onOpenProfile, onCreateTask, reminderMsgIds, taskMsgIds, savedMsgIds, savedByMsg, aiEnabled }) {
   const [messages, setMessages] = useState([]);
   const [peerTyping, setPeerTyping] = useState(false);
   const [editingId, setEditingId] = useState(null);
@@ -275,6 +275,7 @@ export default function DmChat({ peer, currentUser, onlineIds, onCall, onOpenPro
             onSendAttachment={(url, text, name) => send({ content: text || '', attachmentUrl: url, attachmentName: name })}
             onTyping={onTypingSignal}
             onWatch={() => setWatchOpen((v) => !v)}
+            aiEnabled={aiEnabled}
           />
 
           {confirmDel && (

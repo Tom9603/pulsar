@@ -24,6 +24,8 @@ import ActionCenter from '../components/ActionCenter.jsx';
 import SavedListModal from '../components/SavedListModal.jsx';
 import LeaveServerModal from '../components/LeaveServerModal.jsx';
 import TaskModal from '../components/TaskModal.jsx';
+import AiSummaryModal from '../components/AiSummaryModal.jsx';
+import { aiStatus } from '../ai.js';
 import CreateServerModal from '../components/CreateServerModal.jsx';
 import SettingsModal from '../components/SettingsModal.jsx';
 import RolesModal from '../components/RolesModal.jsx';
@@ -89,6 +91,9 @@ export default function AppLayout() {
   const [tasks, setTasks] = useState([]);
   const [taskFilter, setTaskFilter] = useState('mine');
   const [taskModal, setTaskModal] = useState(null); // { task } | { prefill, members }
+  const [ai, setAi] = useState({ enabled: false });
+  const [aiSummary, setAiSummary] = useState(null); // { channelId, channelName }
+  useEffect(() => { aiStatus().then(setAi).catch(() => {}); }, []);
   const todoCount = tasks.filter((t) => t.status !== 'done' && t.assignee_id === user.id).length;
 
   // Serveurs affichés dans le rail vs archivés / cachés (préférence de vue perso).
@@ -474,7 +479,7 @@ export default function AppLayout() {
           )}
           {section === 'dm' && (
             activeDm
-              ? <DmChat peer={activeDm} currentUser={user} onlineIds={onlineIds} onCall={call.startCall} onOpenProfile={setProfileTarget} onCreateTask={openTaskFromMessage} reminderMsgIds={reminderMsgIds} taskMsgIds={taskMsgIds} savedMsgIds={savedMsgIds} savedByMsg={savedByMsg} />
+              ? <DmChat peer={activeDm} currentUser={user} onlineIds={onlineIds} onCall={call.startCall} onOpenProfile={setProfileTarget} onCreateTask={openTaskFromMessage} reminderMsgIds={reminderMsgIds} taskMsgIds={taskMsgIds} savedMsgIds={savedMsgIds} savedByMsg={savedByMsg} aiEnabled={ai.enabled} />
               : <div className="main-content"><div className="empty-hero"><h2><Icon name="comment" /> Messages</h2><p>Choisissez une conversation à gauche, ou ajoutez un contact.</p></div></div>
           )}
           {section === 'server' && (
@@ -486,6 +491,9 @@ export default function AppLayout() {
                   {activeChannel.client_label && <span className="topic topic-client"><Icon name="folder-open" /> {activeChannel.client_label}</span>}
                   {activeChannel.type === 'text' && !activeChannel.client_label && <span className="topic">Salon textuel</span>}
                   <span className="spacer" />
+                  {ai.enabled && activeChannel.type === 'text' && (
+                    <button className="header-btn header-ai" title="Rattrapage : résumé IA des nouveaux messages" onClick={() => setAiSummary({ channelId: activeChannel.id, channelName: activeChannel.name })}><Icon name="wand-magic-sparkles" /></button>
+                  )}
                   <button className="header-btn" title="Tâches du serveur" onClick={() => setServerTasksOpen(true)}><Icon name="list-check" /></button>
                   <button className="header-btn" title="Tableau blanc partagé" onClick={() => setWhiteboardOpen(true)}><Icon name="palette" /></button>
                   <button className="header-btn" title="Rechercher" onClick={() => setSearchOpen(true)}><Icon name="magnifying-glass" /></button>
@@ -501,7 +509,7 @@ export default function AppLayout() {
                       onToggleScreen={voice.toggleScreen} onSetPeerVolume={voice.setPeerVolume}
                       onRaiseHand={voice.raiseHand} onLowerHand={voice.lowerHand} />
                   ) : (
-                    <ChatView channel={activeChannel} currentUser={user} canManage={can('MANAGE_CHANNELS')} members={detail?.members} onCreateTask={openTaskFromMessage} onOpenProfile={setProfileTarget} reminderMsgIds={reminderMsgIds} taskMsgIds={taskMsgIds} savedMsgIds={savedMsgIds} savedByMsg={savedByMsg} />
+                    <ChatView channel={activeChannel} currentUser={user} canManage={can('MANAGE_CHANNELS')} members={detail?.members} onCreateTask={openTaskFromMessage} onOpenProfile={setProfileTarget} reminderMsgIds={reminderMsgIds} taskMsgIds={taskMsgIds} savedMsgIds={savedMsgIds} savedByMsg={savedByMsg} aiEnabled={ai.enabled} />
                   )}
                 </div>
               </div>
@@ -566,6 +574,7 @@ export default function AppLayout() {
       )}
       {modal === 'editProfile' && <EditProfileModal onClose={() => setModal(null)} />}
       {modal === 'feedback' && <FeedbackModal onClose={() => setModal(null)} />}
+      {aiSummary && <AiSummaryModal channelId={aiSummary.channelId} channelName={aiSummary.channelName} onClose={() => setAiSummary(null)} />}
       {savedModal && <SavedListModal mode={savedModal} currentUser={user} onClose={() => setSavedModal(null)} />}
       {leaveTarget && <LeaveServerModal server={leaveTarget} currentUserId={user.id} onDone={afterLeave} onClose={() => setLeaveTarget(null)} />}
       {confirmState && (

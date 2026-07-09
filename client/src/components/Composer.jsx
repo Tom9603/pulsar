@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react';
 import { uploadFile } from '../api.js';
 import { notify } from '../notice.js';
+import { aiRewrite } from '../ai.js';
 import Icon from './Icon.jsx';
 import Avatar from './Avatar.jsx';
 import GifPicker from './GifPicker.jsx';
@@ -23,12 +24,23 @@ const readAsDataURL = (file) =>
  * - onTyping()                          : signale la frappe
  * - replyingTo / onClearReply           : réponse à un message
  */
-export default function Composer({ placeholder, onSendText, onSendAttachment, onTyping, replyingTo, onClearReply, onWatch, onPoll, mentionables }) {
+export default function Composer({ placeholder, onSendText, onSendAttachment, onTyping, replyingTo, onClearReply, onWatch, onPoll, mentionables, aiEnabled }) {
   const [input, setInput] = useState('');
   const [uploading, setUploading] = useState(false);
   const [panel, setPanel] = useState(null); // 'gif' | 'emoji' | null
   const [mention, setMention] = useState(null); // { items, index } — suggestions @ (serveur uniquement)
+  const [rewrite, setRewrite] = useState(null); // { loading } | { text } — proposition de reformulation IA
   const inputRef = useRef(null);
+
+  async function doRewrite() {
+    const t = input.trim();
+    if (!t || rewrite?.loading) return;
+    setRewrite({ loading: true });
+    try {
+      const { rewrite: text } = await aiRewrite(t);
+      setRewrite({ text });
+    } catch (e) { setRewrite(null); notify(e.message); }
+  }
 
   function afterSend() {
     setInput('');
@@ -125,6 +137,17 @@ export default function Composer({ placeholder, onSendText, onSendAttachment, on
         </div>
       )}
 
+      {rewrite?.text && (
+        <div className="ai-rewrite">
+          <div className="ai-rewrite-head"><span><Icon name="wand-magic-sparkles" /> Proposition de l'assistant</span><button title="Fermer" onClick={() => setRewrite(null)}><Icon name="xmark" /></button></div>
+          <div className="ai-rewrite-text">{rewrite.text}</div>
+          <div className="ai-rewrite-actions">
+            <button className="btn btn-ghost" onClick={() => setRewrite(null)}>Garder l'original</button>
+            <button className="btn" onClick={() => { setInput(rewrite.text); setRewrite(null); inputRef.current?.focus(); }}>Utiliser</button>
+          </div>
+        </div>
+      )}
+
       {replyingTo && (
         <div className="reply-bar">
           <span>Réponse à <strong>{replyingTo.display_name}</strong></span>
@@ -146,6 +169,9 @@ export default function Composer({ placeholder, onSendText, onSendAttachment, on
           )}
           {onPoll && (
             <button type="button" className="composer-attach" title="Créer un sondage" onClick={onPoll}><Icon name="chart-simple" /></button>
+          )}
+          {aiEnabled && (
+            <button type="button" className={`composer-attach composer-ai ${rewrite?.loading ? 'busy' : ''}`} title="Reformuler mon message (assistant)" onClick={doRewrite} disabled={!input.trim() || rewrite?.loading}><Icon name="wand-magic-sparkles" /></button>
           )}
           <VoiceRecorder onSend={(url) => { onSendAttachment(url, ''); afterSend(); }} disabled={uploading} />
           <input

@@ -25,7 +25,7 @@ function shouldGroup(prev, cur) {
   return gap < 5 * 60 * 1000;
 }
 
-export default function ChatView({ channel, currentUser, canManage, members, onCreateTask, onOpenProfile, reminderMsgIds, taskMsgIds, savedMsgIds, savedByMsg }) {
+export default function ChatView({ channel, currentUser, canManage, members, onCreateTask, onOpenProfile, reminderMsgIds, taskMsgIds, savedMsgIds, savedByMsg, aiEnabled }) {
   const [messages, setMessages] = useState([]);
   const [typing, setTyping] = useState({});
   const [editingId, setEditingId] = useState(null);
@@ -314,6 +314,7 @@ export default function ChatView({ channel, currentUser, canManage, members, onC
         onWatch={() => setWatchOpen((v) => !v)}
         onPoll={() => setPollOpen(true)}
         mentionables={members}
+        aiEnabled={aiEnabled}
       />
 
       {pollOpen && <CreatePollModal channelId={channel.id} onClose={() => setPollOpen(false)} />}
