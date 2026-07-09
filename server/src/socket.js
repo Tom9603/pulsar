@@ -404,7 +404,7 @@ export function setupSocket(io) {
 
       const existing = roomMembers(channelId);
       if (!voiceRooms.has(channelId)) voiceRooms.set(channelId, new Map());
-      voiceRooms.get(channelId).set(socket.id, { socketId: socket.id, userId, user, muted: false, speaking: false, handRaised: false });
+      voiceRooms.get(channelId).set(socket.id, { socketId: socket.id, userId, user, muted: false, speaking: false, handRaised: false, sharingScreen: false });
       socket.data.voiceChannelId = channelId;
       socket.join('voice:' + channelId);
 
@@ -449,6 +449,15 @@ export function setupSocket(io) {
       }
       const me = room.get(socket.id);
       if (me && me.handRaised !== !!raised) { me.handRaised = !!raised; emitVoiceState(io, channelId); }
+    });
+
+    socket.on('voice:screen', ({ sharing }) => {
+      const room = voiceRooms.get(socket.data.voiceChannelId);
+      const me = room?.get(socket.id);
+      if (me && me.sharingScreen !== !!sharing) {
+        me.sharingScreen = !!sharing;
+        emitVoiceState(io, socket.data.voiceChannelId);
+      }
     });
 
     socket.on('voice:leave', () => removeSocketFromVoice(io, socket));

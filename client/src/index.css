@@ -635,6 +635,22 @@ input[type="file"]::file-selector-button:hover {
   background: linear-gradient(transparent, rgba(0, 0, 0, 0.75)); border-radius: 0 0 12px 12px;
   font-size: 13px; text-align: left;
 }
+/* Partage d'écran : tuile large, image entière, label et volume du flux */
+.voice-tile.has-screen { width: 340px; height: 210px; padding: 0; overflow: hidden; outline: 2px solid rgba(59, 130, 246, 0.5); }
+.voice-tile.has-screen .voice-video { object-fit: contain; background: #000; }
+.voice-tile.has-screen .vname {
+  position: absolute; left: 0; right: 0; bottom: 0; padding: 6px 10px;
+  background: linear-gradient(transparent, rgba(0, 0, 0, 0.8)); border-radius: 0 0 12px 12px; font-size: 13px; text-align: left;
+}
+.voice-screen-tag {
+  position: absolute; top: 8px; left: 8px; z-index: 2; display: inline-flex; align-items: center; gap: 6px;
+  background: rgba(59, 130, 246, 0.9); color: #fff; font-size: 11px; font-weight: 600; padding: 3px 9px; border-radius: 999px;
+}
+.voice-stream-vol {
+  position: absolute; top: 8px; right: 8px; z-index: 2; display: flex; align-items: center; gap: 7px;
+  background: rgba(0, 0, 0, 0.55); border-radius: 999px; padding: 5px 10px; color: #fff; font-size: 12px;
+}
+.voice-stream-vol input[type="range"] { width: 80px; accent-color: var(--accent); cursor: pointer; }
 .voice-btn {
   padding: 12px 24px;
   border-radius: 24px;
@@ -979,6 +995,24 @@ input[type="file"]::file-selector-button:hover {
 .call-live-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--online); animation: pulse 1.5s infinite; }
 .call-icon { background: var(--bg-active); width: 34px; height: 34px; border-radius: 50%; font-size: 15px; }
 .call-icon:hover { background: var(--bg-hover); }
+.call-icon.on { background: rgba(59, 130, 246, 0.25); color: var(--accent-2); }
+
+/* Panneau vidéo d'un appel privé (partage d'écran) */
+.call-video {
+  position: fixed; top: 60px; right: 20px; z-index: 150; width: min(46vw, 520px);
+  background: #000; border: 1px solid var(--border); border-radius: 14px; overflow: hidden;
+  box-shadow: 0 16px 44px rgba(0, 0, 0, 0.6);
+}
+.call-video video { display: block; width: 100%; max-height: 60vh; object-fit: contain; background: #000; }
+.call-video-tag {
+  position: absolute; top: 8px; left: 8px; display: inline-flex; align-items: center; gap: 6px;
+  background: rgba(59, 130, 246, 0.9); color: #fff; font-size: 11px; font-weight: 600; padding: 3px 9px; border-radius: 999px;
+}
+.call-video-vol {
+  position: absolute; bottom: 8px; right: 8px; display: flex; align-items: center; gap: 7px;
+  background: rgba(0, 0, 0, 0.6); border-radius: 999px; padding: 5px 10px; color: #fff; font-size: 12px;
+}
+.call-video-vol input[type="range"] { width: 90px; accent-color: var(--accent); cursor: pointer; }
 
 /* Markdown */
 .md-code { background: var(--bg-rail); border-radius: 4px; padding: 1px 5px; font-family: monospace; font-size: 90%; }

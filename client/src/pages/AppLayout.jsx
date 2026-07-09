@@ -496,7 +496,9 @@ export default function AppLayout() {
                     <VoiceView channel={activeChannel} members={voiceStates[activeChannel.id] || []} currentUser={user}
                       connected={voice.connectedChannelId === activeChannel.id} muted={voice.muted} canManage={can('MANAGE_CHANNELS')}
                       videoOn={voice.videoOn} localVideoStream={voice.localVideoStream} remoteStreams={voice.remoteStreams}
+                      screenOn={voice.screenOn} localScreenStream={voice.localScreenStream} peerVolumes={voice.peerVolumes}
                       onJoin={() => joinVoice(activeChannel)} onLeave={leaveVoice} onToggleMute={voice.toggleMute} onToggleCamera={voice.toggleCamera}
+                      onToggleScreen={voice.toggleScreen} onSetPeerVolume={voice.setPeerVolume}
                       onRaiseHand={voice.raiseHand} onLowerHand={voice.lowerHand} />
                   ) : (
                     <ChatView channel={activeChannel} currentUser={user} canManage={can('MANAGE_CHANNELS')} members={detail?.members} onCreateTask={openTaskFromMessage} onOpenProfile={setProfileTarget} reminderMsgIds={reminderMsgIds} taskMsgIds={taskMsgIds} savedMsgIds={savedMsgIds} savedByMsg={savedByMsg} />
@@ -516,7 +518,7 @@ export default function AppLayout() {
 
       <div style={{ display: 'none' }}>
         {Object.entries(voice.remoteStreams).map(([sid, stream]) => (
-          <RemoteAudio key={sid} stream={stream} />
+          <RemoteAudio key={sid} stream={stream} volume={voice.peerVolumes[sid] ?? 1} />
         ))}
       </div>
 

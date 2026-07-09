@@ -1,15 +1,28 @@
+import { useEffect, useRef } from 'react';
 import Avatar from './Avatar.jsx';
 import Icon from './Icon.jsx';
 import RemoteAudio from './RemoteAudio.jsx';
 
-/** Affiche l'état d'un appel privé (entrant / sortant / en cours) + joue l'audio distant. */
+function VideoEl({ stream, muted }) {
+  const ref = useRef(null);
+  useEffect(() => { if (ref.current) ref.current.srcObject = stream || null; }, [stream]);
+  return <video ref={ref} autoPlay playsInline muted={muted} />;
+}
+
+const hasVideo = (s) => !!s && s.getVideoTracks && s.getVideoTracks().some((t) => t.readyState === 'live');
+
+/** Affiche l'état d'un appel privé (entrant / sortant / en cours), l'audio, la vidéo et le partage d'écran. */
 export default function CallOverlay({ call }) {
-  const { status, peer, muted, remoteStream, accept, decline, cancel, hangup, toggleMute } = call;
+  const { status, peer, muted, remoteStream, screenOn, localScreenStream, remoteVolume = 1, setRemoteVolume,
+    accept, decline, cancel, hangup, toggleMute, toggleScreen } = call;
   if (status === 'idle' || !peer) return null;
+
+  const remoteScreen = hasVideo(remoteStream); // en MP, une vidéo = un partage d'écran
+  const showPanel = status === 'connected' && (remoteScreen || (screenOn && localScreenStream));
 
   return (
     <>
-      {remoteStream && <RemoteAudio stream={remoteStream} />}
+      {remoteStream && <RemoteAudio stream={remoteStream} volume={remoteVolume} />}
 
       {status === 'incoming' && (
         <div className="call-modal-backdrop">
@@ -33,11 +46,29 @@ export default function CallOverlay({ call }) {
         </div>
       )}
 
+      {showPanel && (
+        <div className="call-video">
+          <div className="call-video-tag">
+            <Icon name="display" /> {remoteScreen ? `Écran de ${peer.display_name}` : 'Vous partagez votre écran'}
+          </div>
+          <VideoEl stream={remoteScreen ? remoteStream : localScreenStream} muted={!remoteScreen} />
+          {remoteScreen && (
+            <div className="call-video-vol" title="Volume du partage (chez vous)">
+              <Icon name={remoteVolume === 0 ? 'volume-xmark' : 'volume-high'} />
+              <input type="range" min="0" max="1" step="0.05" value={remoteVolume} onChange={(e) => setRemoteVolume?.(Number(e.target.value))} />
+            </div>
+          )}
+        </div>
+      )}
+
       {status === 'connected' && (
         <div className="call-bar connected">
           <span className="call-live-dot" /> En appel avec <strong>{peer.display_name}</strong>
           <button className="call-icon" title={muted ? 'Réactiver le micro' : 'Couper le micro'} onClick={toggleMute}>
             <Icon name={muted ? 'microphone-slash' : 'microphone'} />
+          </button>
+          <button className={`call-icon ${screenOn ? 'on' : ''}`} title={screenOn ? 'Arrêter le partage d’écran' : 'Partager l’écran'} onClick={toggleScreen}>
+            <Icon name="display" />
           </button>
           <button className="call-btn decline small" onClick={hangup}>Raccrocher</button>
         </div>

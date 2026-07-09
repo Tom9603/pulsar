@@ -17,10 +17,14 @@ export function useVoice() {
   const [remoteStreams, setRemoteStreams] = useState({}); // socketId -> MediaStream
   const [videoOn, setVideoOn] = useState(false);
   const [localVideoStream, setLocalVideoStream] = useState(null); // aperçu de ma caméra
+  const [screenOn, setScreenOn] = useState(false);
+  const [localScreenStream, setLocalScreenStream] = useState(null); // aperçu de mon partage d'écran
+  const [peerVolumes, setPeerVolumes] = useState({}); // socketId -> volume 0..1 (réglage local)
 
   const pcs = useRef(new Map()); // socketId -> RTCPeerConnection
   const localStream = useRef(null);
   const camStream = useRef(null);   // flux caméra (vidéo)
+  const screenStream = useRef(null); // flux partage d'écran (vidéo + audio système)
   const rawStream = useRef(null);   // flux micro brut (avant gain)
   const gainRef = useRef(null);     // gain du micro (volume d'entrée)
   const gainCtx = useRef(null);     // contexte audio pour le gain d'entrée
@@ -78,9 +82,12 @@ export function useVoice() {
     if (localStream.current) {
       for (const track of localStream.current.getTracks()) pc.addTrack(track, localStream.current);
     }
-    // Si la caméra est déjà active, on l'ajoute d'emblée pour les nouveaux venus.
+    // Si la caméra ou le partage d'écran est déjà actif, on l'ajoute d'emblée pour les nouveaux venus.
     if (camStream.current) {
       for (const track of camStream.current.getVideoTracks()) pc.addTrack(track, camStream.current);
+    }
+    if (screenStream.current) {
+      for (const track of screenStream.current.getTracks()) pc.addTrack(track, screenStream.current);
     }
 
     pc.onicecandidate = (e) => {
@@ -150,8 +157,12 @@ export function useVoice() {
     if (localStream.current) { localStream.current.getTracks().forEach((t) => t.stop()); localStream.current = null; }
     if (rawStream.current) { rawStream.current.getTracks().forEach((t) => t.stop()); rawStream.current = null; }
     if (camStream.current) { camStream.current.getTracks().forEach((t) => t.stop()); camStream.current = null; }
+    if (screenStream.current) { screenStream.current.getTracks().forEach((t) => t.stop()); screenStream.current = null; }
     setLocalVideoStream(null);
+    setLocalScreenStream(null);
     setVideoOn(false);
+    setScreenOn(false);
+    setPeerVolumes({});
     speakingRef.current = false;
   }, [removePeer]);
 
@@ -238,6 +249,58 @@ export function useVoice() {
     await renegotiateAll();
   }, [renegotiateAll]);
 
+  // Réglage local du volume d'un participant (utile surtout pour un partage d'écran bruyant).
+  const setPeerVolume = useCallback((socketId, vol) => {
+    setPeerVolumes((prev) => ({ ...prev, [socketId]: vol }));
+  }, []);
+
+  // Arrête proprement le partage d'écran (retire les pistes des pairs).
+  const stopScreen = useCallback(async () => {
+    if (!screenStream.current) return;
+    for (const track of screenStream.current.getTracks()) {
+      for (const pc of pcs.current.values()) {
+        const sender = pc.getSenders().find((s) => s.track === track);
+        if (sender) pc.removeTrack(sender);
+      }
+      track.stop();
+    }
+    screenStream.current = null;
+    setLocalScreenStream(null);
+    setScreenOn(false);
+    socket.emit('voice:screen', { sharing: false });
+    await renegotiateAll();
+  }, [renegotiateAll, socket]);
+
+  // Démarre / arrête le partage d'écran (le navigateur propose écran / fenêtre / application).
+  const toggleScreen = useCallback(async () => {
+    if (screenStream.current) { await stopScreen(); return; }
+    // Une seule source vidéo à la fois : on coupe la caméra si elle est active.
+    if (camStream.current) {
+      const vtrack = camStream.current.getVideoTracks()[0];
+      for (const pc of pcs.current.values()) {
+        const sender = pc.getSenders().find((s) => s.track === vtrack);
+        if (sender) pc.removeTrack(sender);
+      }
+      camStream.current.getTracks().forEach((t) => t.stop());
+      camStream.current = null;
+      setLocalVideoStream(null);
+      setVideoOn(false);
+    }
+    let disp;
+    try { disp = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true }); }
+    catch { return; } // partage annulé par l'utilisateur
+    screenStream.current = disp;
+    for (const track of disp.getTracks()) {
+      for (const pc of pcs.current.values()) pc.addTrack(track, disp);
+    }
+    const vt = disp.getVideoTracks()[0];
+    if (vt) vt.onended = () => { stopScreen(); }; // clic sur « arrêter le partage » du navigateur
+    setLocalScreenStream(disp);
+    setScreenOn(true);
+    socket.emit('voice:screen', { sharing: true });
+    await renegotiateAll();
+  }, [stopScreen, renegotiateAll, socket]);
+
   // Lève / baisse sa propre main (l'état affiché vient de voice:state, autoritaire).
   const raiseHand = useCallback((raised) => {
     socket.emit('voice:hand', { raised });
@@ -285,5 +348,5 @@ export function useVoice() {
   // Nettoyage à la fermeture de l'app
   useEffect(() => () => teardown(), [teardown]);
 
-  return { connectedChannelId, muted, remoteStreams, videoOn, localVideoStream, join, leave, toggleMute, toggleCamera, raiseHand, lowerHand };
+  return { connectedChannelId, muted, remoteStreams, videoOn, localVideoStream, screenOn, localScreenStream, peerVolumes, join, leave, toggleMute, toggleCamera, toggleScreen, setPeerVolume, raiseHand, lowerHand };
 }

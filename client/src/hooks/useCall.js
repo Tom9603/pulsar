@@ -11,10 +11,15 @@ export function useCall() {
   const [peer, setPeer] = useState(null);
   const [muted, setMuted] = useState(false);
   const [remoteStream, setRemoteStream] = useState(null);
+  const [screenOn, setScreenOn] = useState(false);
+  const [localScreenStream, setLocalScreenStream] = useState(null);
+  const [remoteVolume, setRemoteVolume] = useState(1); // volume local du correspondant (utile pour un partage)
 
   const callId = useRef(null);
   const pc = useRef(null);
+  const peerSid = useRef(null);
   const localStream = useRef(null);
+  const screenStream = useRef(null);
   const iceConfig = useRef(DEFAULT_ICE);
   const mutedRef = useRef(false);
   const statusRef = useRef('idle');
@@ -28,7 +33,11 @@ export function useCall() {
   const teardown = useCallback(() => {
     if (pc.current) { pc.current.close(); pc.current = null; }
     if (localStream.current) { localStream.current.getTracks().forEach((t) => t.stop()); localStream.current = null; }
+    if (screenStream.current) { screenStream.current.getTracks().forEach((t) => t.stop()); screenStream.current = null; }
     setRemoteStream(null);
+    setLocalScreenStream(null);
+    setScreenOn(false);
+    peerSid.current = null;
     callId.current = null;
   }, []);
 
@@ -38,6 +47,7 @@ export function useCall() {
     setPeer(null);
     setMuted(false);
     mutedRef.current = false;
+    setRemoteVolume(1);
   }, [teardown]);
 
   async function getMic() {
@@ -50,6 +60,7 @@ export function useCall() {
   const makePc = useCallback((peerSocketId, initiator) => {
     const p = new RTCPeerConnection(iceConfig.current);
     pc.current = p;
+    peerSid.current = peerSocketId;
     if (localStream.current) localStream.current.getTracks().forEach((t) => p.addTrack(t, localStream.current));
     p.onicecandidate = (e) => {
       if (e.candidate) socket.emit('call:signal', { targetSocketId: peerSocketId, data: { candidate: e.candidate } });
@@ -98,6 +109,38 @@ export function useCall() {
       return n;
     });
   }, []);
+
+  const toggleScreenRef = useRef(null);
+  const toggleScreen = useCallback(async () => {
+    const p = pc.current;
+    if (!p) return;
+    if (screenStream.current) {
+      for (const track of screenStream.current.getTracks()) {
+        const sender = p.getSenders().find((s) => s.track === track);
+        if (sender) p.removeTrack(sender);
+        track.stop();
+      }
+      screenStream.current = null;
+      setLocalScreenStream(null);
+      setScreenOn(false);
+    } else {
+      let disp;
+      try { disp = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true }); }
+      catch { return; }
+      screenStream.current = disp;
+      for (const track of disp.getTracks()) p.addTrack(track, disp);
+      const vt = disp.getVideoTracks()[0];
+      if (vt) vt.onended = () => toggleScreenRef.current?.();
+      setLocalScreenStream(disp);
+      setScreenOn(true);
+    }
+    try {
+      const offer = await p.createOffer();
+      await p.setLocalDescription(offer);
+      socket.emit('call:signal', { targetSocketId: peerSid.current, data: { sdp: p.localDescription } });
+    } catch { /* ignore */ }
+  }, [socket]);
+  useEffect(() => { toggleScreenRef.current = toggleScreen; }, [toggleScreen]);
 
   useEffect(() => {
     const onIncoming = ({ callId: id, from }) => {
@@ -152,5 +195,5 @@ export function useCall() {
     };
   }, [socket, makePc, reset]);
 
-  return { status, peer, muted, remoteStream, startCall, accept, decline, cancel, hangup, toggleMute };
+  return { status, peer, muted, remoteStream, screenOn, localScreenStream, remoteVolume, setRemoteVolume, startCall, accept, decline, cancel, hangup, toggleMute, toggleScreen };
 }
