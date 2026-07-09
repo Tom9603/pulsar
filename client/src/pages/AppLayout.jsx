@@ -517,7 +517,10 @@ export default function AppLayout() {
 
       <CallOverlay call={call} />
       <ContextMenu />
-      {whiteboardOpen && activeChannel && <Whiteboard channelId={activeChannel.id} onClose={() => setWhiteboardOpen(false)} />}
+      {whiteboardOpen && activeChannel && (
+        <Whiteboard channelId={activeChannel.id} onClose={() => setWhiteboardOpen(false)}
+          onPublish={(url) => getSocket().emit('message:send', { channelId: activeChannel.id, attachmentUrl: url, attachmentName: 'tableau-blanc.png', content: '' })} />
+      )}
       {serverTasksOpen && detail && (
         <ServerTasksModal serverId={detail.server.id} serverName={detail.server.name}
           onOpenTask={(t) => { setServerTasksOpen(false); editTask(t); }} onClose={() => setServerTasksOpen(false)} />
