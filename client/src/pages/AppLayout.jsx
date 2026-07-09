@@ -494,8 +494,9 @@ export default function AppLayout() {
                 <div className="content-body">
                   {activeChannel.type === 'voice' ? (
                     <VoiceView channel={activeChannel} members={voiceStates[activeChannel.id] || []} currentUser={user}
-                      connected={voice.connectedChannelId === activeChannel.id} muted={voice.muted}
-                      onJoin={() => joinVoice(activeChannel)} onLeave={leaveVoice} onToggleMute={voice.toggleMute} />
+                      connected={voice.connectedChannelId === activeChannel.id} muted={voice.muted} canManage={can('MANAGE_CHANNELS')}
+                      onJoin={() => joinVoice(activeChannel)} onLeave={leaveVoice} onToggleMute={voice.toggleMute}
+                      onRaiseHand={voice.raiseHand} onLowerHand={voice.lowerHand} />
                   ) : (
                     <ChatView channel={activeChannel} currentUser={user} canManage={can('MANAGE_CHANNELS')} members={detail?.members} onCreateTask={openTaskFromMessage} onOpenProfile={setProfileTarget} reminderMsgIds={reminderMsgIds} taskMsgIds={taskMsgIds} savedMsgIds={savedMsgIds} savedByMsg={savedByMsg} />
                   )}

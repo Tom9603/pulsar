@@ -7,7 +7,9 @@ import Soundboard from './Soundboard.jsx';
  * La connexion vit au niveau de l'app (hook useVoice) et survit à la navigation ;
  * ce composant ne gère que l'affichage et les boutons.
  */
-export default function VoiceView({ channel, members, currentUser, connected, muted, onJoin, onLeave, onToggleMute }) {
+export default function VoiceView({ channel, members, currentUser, connected, muted, canManage, onJoin, onLeave, onToggleMute, onRaiseHand, onLowerHand }) {
+  const myHandRaised = members.find((m) => m.userId === currentUser.id)?.handRaised;
+
   return (
     <div className="voice-stage">
       <span className="voice-badge"><Icon name="volume-high" /> {channel.name}</span>
@@ -18,13 +20,19 @@ export default function VoiceView({ channel, members, currentUser, connected, mu
       ) : (
         <div className="voice-grid">
           {members.map((m) => (
-            <div className={`voice-tile ${m.speaking ? 'speaking' : ''}`} key={m.socketId}>
+            <div className={`voice-tile ${m.speaking ? 'speaking' : ''} ${m.handRaised ? 'hand' : ''}`} key={m.socketId}>
+              {m.handRaised && <span className="voice-hand" title="A levé la main"><Icon name="hand" /></span>}
               <Avatar user={m.user} size={56} />
               <span className="vname">
                 {m.muted && <span title="Micro coupé"><Icon name="microphone-slash" /> </span>}
                 {m.user.display_name}
                 {m.userId === currentUser.id && ' (vous)'}
               </span>
+              {m.handRaised && canManage && m.userId !== currentUser.id && (
+                <button className="voice-lower" title="Baisser la main de ce membre" onClick={() => onLowerHand?.(m.socketId)}>
+                  <Icon name="hand" /> Baisser
+                </button>
+              )}
             </div>
           ))}
         </div>
@@ -35,6 +43,9 @@ export default function VoiceView({ channel, members, currentUser, connected, mu
           <>
             <button className={`voice-btn ${muted ? 'leave' : ''}`} onClick={onToggleMute}>
               {muted ? <><Icon name="microphone-slash" /> Micro coupé</> : <><Icon name="microphone" /> Micro actif</>}
+            </button>
+            <button className={`voice-btn ${myHandRaised ? 'hand-on' : ''}`} onClick={() => onRaiseHand?.(!myHandRaised)}>
+              <Icon name="hand" /> {myHandRaised ? 'Baisser la main' : 'Lever la main'}
             </button>
             <button className="voice-btn leave" onClick={onLeave}>Se déconnecter</button>
           </>

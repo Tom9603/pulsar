@@ -593,8 +593,24 @@ input[type="file"]::file-selector-button:hover {
   gap: 10px;
 }
 .voice-tile.speaking { outline: 2px solid var(--accent); }
+.voice-tile.hand { outline: 2px solid var(--idle); }
+.voice-tile { position: relative; }
+.voice-hand {
+  position: absolute; top: -10px; right: -10px; width: 30px; height: 30px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--idle); color: #1a1205; font-size: 14px; border: 2px solid var(--bg-content);
+  animation: hand-wave 1.4s ease-in-out infinite;
+}
+@keyframes hand-wave { 0%, 100% { transform: rotate(-8deg); } 50% { transform: rotate(10deg); } }
+.voice-lower {
+  position: absolute; bottom: -12px; display: inline-flex; align-items: center; gap: 5px;
+  font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 999px;
+  background: var(--bg-app); border: 1px solid var(--border); color: var(--text-muted); cursor: pointer;
+}
+.voice-lower:hover { color: #fff; border-color: rgba(240, 178, 50, 0.5); background: rgba(240, 178, 50, 0.12); }
 .voice-tile .vname { font-size: 14px; font-weight: 600; }
-.voice-controls { display: flex; gap: 12px; }
+.voice-controls { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
+.voice-btn.hand-on { background: rgba(240, 178, 50, 0.18); color: var(--idle); outline: 1px solid rgba(240, 178, 50, 0.5); }
 .voice-btn {
   padding: 12px 24px;
   border-radius: 24px;

@@ -1,6 +1,6 @@
 import db from './db.js';
 import { verifyToken, publicUser } from './auth.js';
-import { hasPermission, canAccessChannel } from './permissions.js';
+import { hasPermission, canAccessChannel, isOwner } from './permissions.js';
 
 // Présence : userId -> Set(socketId)
 const onlineUsers = new Map();
@@ -403,7 +403,7 @@ export function setupSocket(io) {
 
       const existing = roomMembers(channelId);
       if (!voiceRooms.has(channelId)) voiceRooms.set(channelId, new Map());
-      voiceRooms.get(channelId).set(socket.id, { socketId: socket.id, userId, user, muted: false, speaking: false });
+      voiceRooms.get(channelId).set(socket.id, { socketId: socket.id, userId, user, muted: false, speaking: false, handRaised: false });
       socket.data.voiceChannelId = channelId;
       socket.join('voice:' + channelId);
 
@@ -432,6 +432,22 @@ export function setupSocket(io) {
         me.speaking = !!speaking;
         emitVoiceState(io, socket.data.voiceChannelId);
       }
+    });
+
+    socket.on('voice:hand', ({ raised, targetSocketId }) => {
+      const channelId = socket.data.voiceChannelId;
+      const room = voiceRooms.get(channelId);
+      if (!room) return;
+      if (targetSocketId && targetSocketId !== socket.id) {
+        // Baisser la main d'un autre : réservé au propriétaire ou à « Gérer les salons ».
+        const serverId = serverIdOfChannel(channelId);
+        if (!serverId || !(isOwner(serverId, userId) || hasPermission(serverId, userId, 'MANAGE_CHANNELS'))) return;
+        const target = room.get(targetSocketId);
+        if (target && target.handRaised) { target.handRaised = false; emitVoiceState(io, channelId); }
+        return;
+      }
+      const me = room.get(socket.id);
+      if (me && me.handRaised !== !!raised) { me.handRaised = !!raised; emitVoiceState(io, channelId); }
     });
 
     socket.on('voice:leave', () => removeSocketFromVoice(io, socket));

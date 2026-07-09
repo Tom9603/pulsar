@@ -187,6 +187,16 @@ export function useVoice() {
     setAudio({ micMuted: !getAudio().micMuted });
   }, []);
 
+  // Lève / baisse sa propre main (l'état affiché vient de voice:state, autoritaire).
+  const raiseHand = useCallback((raised) => {
+    socket.emit('voice:hand', { raised });
+  }, [socket]);
+
+  // Baisser la main d'un autre participant (réservé aux gérants côté serveur).
+  const lowerHand = useCallback((targetSocketId) => {
+    socket.emit('voice:hand', { targetSocketId });
+  }, [socket]);
+
   // Écoute des évènements de signalisation (montés une seule fois)
   useEffect(() => {
     const onPeers = ({ peers }) => {
@@ -224,5 +234,5 @@ export function useVoice() {
   // Nettoyage à la fermeture de l'app
   useEffect(() => () => teardown(), [teardown]);
 
-  return { connectedChannelId, muted, remoteStreams, join, leave, toggleMute };
+  return { connectedChannelId, muted, remoteStreams, join, leave, toggleMute, raiseHand, lowerHand };
 }
