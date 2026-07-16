@@ -1,0 +1,29 @@
+# Service systemd : fait tourner Pulsar en permanence (24h/24),
+# le relance en cas de plantage et au redémarrage du serveur.
+# À copier dans /etc/systemd/system/pulsar.service
+
+[Unit]
+Description=Pulsar (serveur)
+After=network.target
+
+[Service]
+Type=simple
+User=pulsar
+Group=pulsar
+
+# IMPORTANT : le dossier de travail doit être « server »,
+# c'est là que se trouve le fichier .env (lu au démarrage).
+WorkingDirectory=/opt/pulsar/server
+ExecStart=/usr/bin/node src/index.js
+
+Restart=always
+RestartSec=3
+
+# Sécurité : le service ne peut écrire que dans son dossier de données.
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ReadWritePaths=/var/lib/pulsar
+
+[Install]
+WantedBy=multi-user.target

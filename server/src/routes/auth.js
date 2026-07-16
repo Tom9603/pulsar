@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { randomBytes } from 'node:crypto';
 import db from '../db.js';
-import { hashPassword, verifyPassword, signToken, authMiddleware, publicUser } from '../auth.js';
+import { hashPassword, verifyPassword, issueToken, authMiddleware, publicUser } from '../auth.js';
 import { mailEnabled, sendActivationEmail } from '../mail.js';
 
 const router = Router();
@@ -43,7 +43,7 @@ router.post('/register', async (req, res) => {
 
   const user = db.prepare('SELECT * FROM users WHERE id = ?').get(info.lastInsertRowid);
   if (!verified) { await sendActivation(req, user); return res.json({ pending: true, email: cleanEmail }); }
-  res.json({ token: signToken(user), user: publicUser(user) });
+  res.json({ token: issueToken(user, req), user: publicUser(user) });
 });
 
 router.post('/login', (req, res) => {
@@ -54,7 +54,7 @@ router.post('/login', (req, res) => {
     return res.status(401).json({ error: 'Identifiants invalides' });
   }
   if (!user.verified) return res.status(403).json({ error: 'Compte non activé. Vérifiez votre email.', needsVerification: true, email: user.email });
-  res.json({ token: signToken(user), user: publicUser(user) });
+  res.json({ token: issueToken(user, req), user: publicUser(user) });
 });
 
 /** Lien d'activation cliqué depuis l'email : active le compte puis renvoie vers l'app. */

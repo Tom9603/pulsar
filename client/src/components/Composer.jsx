@@ -8,6 +8,7 @@ import GifPicker from './GifPicker.jsx';
 import EmojiPicker from './EmojiPicker.jsx';
 import VoiceRecorder from './VoiceRecorder.jsx';
 import QuickMessages from './QuickMessages.jsx';
+import ScheduleModal from './ScheduleModal.jsx';
 
 const readAsDataURL = (file) =>
   new Promise((resolve, reject) => {
@@ -24,12 +25,13 @@ const readAsDataURL = (file) =>
  * - onTyping()                          : signale la frappe
  * - replyingTo / onClearReply           : réponse à un message
  */
-export default function Composer({ placeholder, onSendText, onSendAttachment, onTyping, replyingTo, onClearReply, onWatch, onPoll, mentionables, aiEnabled }) {
+export default function Composer({ placeholder, onSendText, onSendAttachment, onTyping, replyingTo, onClearReply, onWatch, onPoll, mentionables, aiEnabled, scheduleScope }) {
   const [input, setInput] = useState('');
   const [uploading, setUploading] = useState(false);
   const [panel, setPanel] = useState(null); // 'gif' | 'emoji' | null
   const [mention, setMention] = useState(null); // { items, index } — suggestions @ (serveur uniquement)
   const [rewrite, setRewrite] = useState(null); // { loading } | { text } — proposition de reformulation IA
+  const [scheduling, setScheduling] = useState(false); // fenêtre "programmer un message" ouverte
   const inputRef = useRef(null);
 
   async function doRewrite() {
@@ -113,6 +115,14 @@ export default function Composer({ placeholder, onSendText, onSendAttachment, on
 
   return (
     <div className="composer">
+      {scheduling && scheduleScope && (
+        <ScheduleModal
+          scope={scheduleScope}
+          draft={input}
+          onScheduled={() => { setScheduling(false); afterSend(); notify('Message programmé.', 'success'); }}
+          onClose={() => setScheduling(false)}
+        />
+      )}
       {panel === 'gif' && (
         <GifPicker onSelect={(url) => { onSendAttachment(url, ''); afterSend(); setPanel(null); }} onClose={() => setPanel(null)} />
       )}
@@ -172,6 +182,9 @@ export default function Composer({ placeholder, onSendText, onSendAttachment, on
           )}
           {aiEnabled && (
             <button type="button" className={`composer-attach composer-ai ${rewrite?.loading ? 'busy' : ''}`} title="Reformuler mon message (assistant)" onClick={doRewrite} disabled={!input.trim() || rewrite?.loading}><Icon name="wand-magic-sparkles" /></button>
+          )}
+          {scheduleScope && (
+            <button type="button" className={`composer-attach ${scheduling ? 'active' : ''}`} title="Programmer l’envoi" onClick={() => setScheduling(true)}><Icon name="clock" /></button>
           )}
           <VoiceRecorder onSend={(url) => { onSendAttachment(url, ''); afterSend(); }} disabled={uploading} />
           <input

@@ -1,5 +1,6 @@
 import Avatar from './Avatar.jsx';
 import Icon from './Icon.jsx';
+import CustomStatus from './CustomStatus.jsx';
 
 /** Rôle le plus haut porté par le membre (roles est trié par position décroissante). */
 function topRole(member, roles) {
@@ -20,6 +21,7 @@ export default function MemberList({ members, onlineIds, ownerId, roles = [], on
         <Avatar user={m} size={34} status={isOnline ? m.status : 'offline'} />
         <span className="mbr-info">
           <span className="mbr-name">{m.display_name}</span>
+          <CustomStatus user={m} className="cs-member" />
           {(m.id === ownerId || role) && (
             <span className="mbr-tags">
               {m.id === ownerId && <span className="mbr-tag owner"><Icon name="crown" /> Fondateur</span>}

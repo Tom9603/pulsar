@@ -1,3 +1,4 @@
+import 'dotenv/config'; // charge le fichier server/.env (clés, réglages) avant tout le reste
 import express from 'express';
 import cors from 'cors';
 import http from 'node:http';
@@ -25,6 +26,8 @@ import taskRoutes from './routes/tasks.js';
 import feedbackRoutes from './routes/feedback.js';
 import pollRoutes from './routes/polls.js';
 import aiRoutes from './routes/ai.js';
+import scheduledRoutes from './routes/scheduled.js';
+import sessionRoutes from './routes/sessions.js';
 import { setupSocket } from './socket.js';
 import { setIO } from './realtime.js';
 
@@ -57,6 +60,8 @@ app.use('/api/tasks', taskRoutes);
 app.use('/api/feedback', feedbackRoutes);
 app.use('/api/polls', pollRoutes);
 app.use('/api/ai', aiRoutes);
+app.use('/api/scheduled', scheduledRoutes);
+app.use('/api/sessions', sessionRoutes);
 
 // Fichiers uploadés : nosniff + téléchargement forcé pour tout ce qui n'est pas média (anti-XSS).
 app.use(

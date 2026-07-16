@@ -1,6 +1,12 @@
 import db from './db.js';
-import { verifyToken, publicUser } from './auth.js';
+import { verifyToken, publicUser, sessionExists } from './auth.js';
 import { hasPermission, canAccessChannel, isOwner } from './permissions.js';
+import { getIO } from './realtime.js';
+
+// Deux utilisateurs sont-ils amis (relation acceptée) ?
+const areFriends = (a, b) => !!db.prepare(
+  "SELECT 1 FROM friendships WHERE status = 'accepted' AND ((requester_id = ? AND addressee_id = ?) OR (requester_id = ? AND addressee_id = ?))"
+).get(a, b, b, a);
 
 // Présence : userId -> Set(socketId)
 const onlineUsers = new Map();
@@ -176,8 +182,32 @@ function removeSocketFromVoice(io, socket) {
   emitVoiceState(io, channelId);
 }
 
+// Liste des utilisateurs en ligne, en retirant ceux qui ont choisi d'apparaître hors ligne.
+function onlineIds() {
+  const ids = Array.from(onlineUsers.keys());
+  if (!ids.length) return ids;
+  const hidden = new Set(
+    db.prepare(`SELECT id FROM users WHERE hide_presence = 1 AND id IN (${ids.map(() => '?').join(',')})`).all(...ids).map((r) => r.id)
+  );
+  return ids.filter((id) => !hidden.has(id));
+}
 function broadcastPresence(io) {
-  io.emit('presence', { online: Array.from(onlineUsers.keys()) });
+  io.emit('presence', { online: onlineIds() });
+}
+// Rediffuse la présence (appelé depuis les réglages quand on (dé)masque son statut).
+export function refreshPresence() {
+  const io = getIO();
+  if (io) io.emit('presence', { online: onlineIds() });
+}
+
+/** Coupe les connexions temps réel des sessions révoquées (déconnexion à distance immédiate). */
+export function disconnectSessions(sessionIds = []) {
+  const io = getIO();
+  if (!io || !sessionIds.length) return;
+  const revoked = new Set(sessionIds);
+  for (const s of io.sockets.sockets.values()) {
+    if (revoked.has(s.data?.sessionId)) s.disconnect(true);
+  }
 }
 
 export function setupSocket(io) {
@@ -191,11 +221,52 @@ export function setupSocket(io) {
     }
   }, 20000);
 
+  // Distributeur des messages programmés : envoie ceux arrivés à échéance,
+  // que l'auteur soit connecté ou non.
+  setInterval(() => {
+    const now = Math.floor(Date.now() / 1000);
+    // Efface les statuts personnalisés dont l'expiration est passée.
+    db.prepare('UPDATE users SET custom_status = NULL, custom_status_emoji = NULL, custom_status_until = NULL WHERE custom_status_until IS NOT NULL AND custom_status_until <= ?').run(now);
+    const due = db.prepare('SELECT * FROM scheduled_messages WHERE sent = 0 AND send_at <= ?').all(now);
+    for (const s of due) {
+      db.prepare('UPDATE scheduled_messages SET sent = 1 WHERE id = ?').run(s.id); // marqué avant envoi : jamais de doublon
+      try {
+        if (s.channel_id) {
+          const channel = db.prepare("SELECT * FROM channels WHERE id = ? AND type = 'text'").get(s.channel_id);
+          if (channel && canAccessChannel(s.channel_id, s.user_id)) {
+            const info = db.prepare('INSERT INTO messages (channel_id, user_id, content) VALUES (?, ?, ?)').run(s.channel_id, s.user_id, s.content);
+            io.to('server:' + channel.server_id).emit('message:new', {
+              channelId: s.channel_id,
+              serverId: channel.server_id,
+              message: fullMessage(info.lastInsertRowid),
+            });
+          }
+        } else if (s.recipient_id) {
+          const recipient = db.prepare('SELECT id, privacy_dm FROM users WHERE id = ?').get(s.recipient_id);
+          const blocked = recipient && db.prepare(
+            'SELECT 1 FROM blocks WHERE (blocker_id = ? AND blocked_id = ?) OR (blocker_id = ? AND blocked_id = ?)'
+          ).get(s.user_id, s.recipient_id, s.recipient_id, s.user_id);
+          const refused = recipient && recipient.privacy_dm === 'friends' && !areFriends(s.user_id, s.recipient_id);
+          if (recipient && !blocked && !refused) {
+            const info = db.prepare('INSERT INTO dm_messages (sender_id, recipient_id, content) VALUES (?, ?, ?)').run(s.user_id, s.recipient_id, s.content);
+            const message = fullDm(info.lastInsertRowid);
+            io.to('user:' + s.recipient_id).emit('dm:new', { message });
+            io.to('user:' + s.user_id).emit('dm:new', { message });
+          }
+        }
+      } catch { /* déjà marqué envoyé : on n'essaie pas en boucle */ }
+      io.to('user:' + s.user_id).emit('scheduled:sent', { id: s.id }); // rafraîchit la liste "en attente" côté auteur
+    }
+  }, 15000);
+
   io.use((socket, next) => {
     const token = socket.handshake.auth?.token;
     const payload = token ? verifyToken(token) : null;
     if (!payload) return next(new Error('unauthorized'));
+    // La session doit exister : un appareil déconnecté à distance est refusé.
+    if (!sessionExists(payload.sid, payload.id)) return next(new Error('unauthorized'));
     socket.userId = payload.id;
+    socket.data.sessionId = payload.sid;
     next();
   });
 
@@ -319,13 +390,19 @@ export function setupSocket(io) {
       const text = (content || '').trim().slice(0, 2000);
       const attach = validAttachment(attachmentUrl);
       if ((!text && !attach) || !toUserId) return;
-      const recipient = db.prepare('SELECT id FROM users WHERE id = ?').get(toUserId);
+      const recipient = db.prepare('SELECT id, privacy_dm FROM users WHERE id = ?').get(toUserId);
       if (!recipient || recipient.id === userId) return;
 
       const blocked = db.prepare(
         'SELECT 1 FROM blocks WHERE (blocker_id = ? AND blocked_id = ?) OR (blocker_id = ? AND blocked_id = ?)'
       ).get(userId, recipient.id, recipient.id, userId);
       if (blocked) { socket.emit('dm:blocked', { toUserId: recipient.id }); return; }
+
+      // Confidentialité : cette personne n'accepte les messages que de ses contacts.
+      if (recipient.privacy_dm === 'friends' && !areFriends(userId, recipient.id)) {
+        socket.emit('dm:refused', { toUserId: recipient.id, reason: 'friends' });
+        return;
+      }
 
       let replyId = null;
       if (replyTo) {

@@ -65,6 +65,9 @@ router.post('/request', (req, res) => {
     return res.status(409).json({ error: 'Demande déjà envoyée' });
   }
 
+  // Confidentialité : cette personne n'accepte pas les demandes d'ami.
+  if (target.privacy_friend === 'none') return res.status(403).json({ error: 'Cette personne n’accepte pas les demandes d’ami.' });
+
   const message = (req.body?.message || '').toString().slice(0, 300) || null;
   db.prepare("INSERT INTO friendships (requester_id, addressee_id, status, message) VALUES (?, ?, 'pending', ?)").run(me, target.id, message);
   notify(target.id);

@@ -1,12 +1,17 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Modal from './Modal.jsx';
 import ConfirmModal from './ConfirmModal.jsx';
 import Avatar from './Avatar.jsx';
 import Icon from './Icon.jsx';
 import { api, uploadFile, mediaUrl } from '../api.js';
 import { useAuth } from '../context/AuthContext.jsx';
-import { isSoundEnabled, setSoundEnabled, isDesktopEnabled, setDesktopEnabled } from '../notify.js';
+import { isSoundEnabled, setSoundEnabled, isDesktopEnabled, setDesktopEnabled,
+  isQuietEnabled, setQuietEnabled, getQuietFrom, setQuietFrom, getQuietTo, setQuietTo, isQuietWeekend, setQuietWeekend } from '../notify.js';
 import AudioSettingsPanel from './AudioSettingsPanel.jsx';
+import { loadAppearance, saveAppearance, applyAppearance, ACCENTS } from '../theme.js';
+import Logo from './Logo.jsx';
+import wordUrl from '../assets/pulsar-wordmark.png';
+import { useUpdate, openUpdate } from '../update.js';
 
 const COLORS = ['#5865F2', '#EB459E', '#57F287', '#FAA61A', '#ED4245', '#3498DB', '#9B59B6', '#14b8a6', '#e67e22'];
 const STATUSES = [
@@ -19,16 +24,36 @@ const STATUSES = [
 
 const MENU = [
   { group: 'Application', items: [
+    { id: 'appearance', icon: 'palette', label: 'Apparence' },
     { id: 'notif', icon: 'bell', label: 'Notifications' },
     { id: 'audio', icon: 'sliders', label: 'Audio et vocal' },
   ] },
-  { group: 'Compte', items: [{ id: 'account', icon: 'lock', label: 'Sécurité et compte' }] },
+  { group: 'Compte', items: [
+    { id: 'privacy', icon: 'shield-halved', label: 'Confidentialité' },
+    { id: 'account', icon: 'lock', label: 'Sécurité et compte' },
+  ] },
+  { group: 'Aide', items: [{ id: 'about', icon: 'circle-info', label: 'À propos et aide' }] },
 ];
+
+// Questions fréquentes (réponses repliables).
+const FAQ = [
+  { q: 'Comment créer un serveur ou un salon ?', a: 'Depuis la barre de gauche, utilisez le bouton « plus » pour créer un serveur. À l’intérieur, ajoutez des salons écrits ou vocaux selon vos besoins.' },
+  { q: 'Comment passer un appel ou partager mon écran ?', a: 'Rejoignez un salon vocal, ou lancez un appel depuis une conversation privée. Pendant l’appel, vous pouvez activer votre caméra ou partager votre écran.' },
+  { q: 'Comment programmer un message ?', a: 'Dans la zone de saisie, cliquez sur l’icône horloge, écrivez votre message, puis choisissez la date et l’heure d’envoi. Il partira tout seul, même si vous êtes déconnecté.' },
+  { q: 'Comment changer le thème ou la couleur ?', a: 'Réglages, rubrique Apparence : thème clair ou sombre, couleur d’accent, densité des messages et taille de l’affichage.' },
+  { q: 'L’assistant IA, comment ça marche ?', a: 'S’il est activé, des boutons étoile apparaissent pour résumer un salon ou reformuler un message. Chaque personne dispose d’un nombre d’actions limité par jour.' },
+  { q: 'Mes échanges sont-ils privés ?', a: 'Pulsar fonctionne sur votre propre serveur : vos données restent chez vous et ne transitent pas par un service tiers.' },
+];
+
+const THEMES = [{ v: 'system', l: 'Système' }, { v: 'light', l: 'Clair' }, { v: 'dark', l: 'Sombre' }];
+const DENSITIES = [{ v: 'cozy', l: 'Aéré' }, { v: 'compact', l: 'Compact' }];
+const SIZES = [{ v: 'petit', l: 'Petit' }, { v: 'normal', l: 'Normal' }, { v: 'grand', l: 'Grand' }];
 
 /** Réglages : profil, fiche pro (+ CV), notifications, compte · en menus. */
 export default function SettingsModal({ onClose }) {
   const { user, updateUser, logout } = useAuth();
   const [menu, setMenu] = useState('notif');
+  const up = useUpdate();
 
   // Profil
   const [displayName, setDisplayName] = useState(user.display_name);
@@ -52,9 +77,42 @@ export default function SettingsModal({ onClose }) {
   const [newPw, setNewPw] = useState('');
   const [delPw, setDelPw] = useState('');
   const [accountMsg, setAccountMsg] = useState('');
+  // Sessions actives (appareils connectés)
+  const [sessions, setSessions] = useState([]);
+  const loadSessions = () => api('/sessions').then(({ sessions: s }) => setSessions(s)).catch(() => {});
+  useEffect(() => { if (menu === 'account') loadSessions(); }, [menu]);
+
+  async function revokeSession(s) {
+    try {
+      await api(`/sessions/${s.id}`, { method: 'DELETE' });
+      if (s.current) { logout(); return; } // on s'est déconnecté soi-même
+      loadSessions();
+    } catch (e) { setAccountMsg(e.message); }
+  }
+  async function revokeOthers() {
+    try {
+      const { count } = await api('/sessions/revoke-others', { method: 'POST' });
+      setAccountMsg(count ? `${count} appareil${count > 1 ? 's' : ''} déconnecté${count > 1 ? 's' : ''}.` : 'Aucun autre appareil connecté.');
+      loadSessions();
+    } catch (e) { setAccountMsg(e.message); }
+  }
   // Notifications (préférences locales)
   const [sound, setSound] = useState(isSoundEnabled());
   const [desktop, setDesktop] = useState(isDesktopEnabled());
+  // Heures calmes (préférences locales)
+  const [quietOn, setQuietOn] = useState(isQuietEnabled());
+  const [quietFrom, setQuietFromV] = useState(getQuietFrom());
+  const [quietTo, setQuietToV] = useState(getQuietTo());
+  const [quietWeekend, setQuietWeekendV] = useState(isQuietWeekend());
+  // Confidentialité
+  const [privacyDm, setPrivacyDm] = useState(user.privacy_dm || 'everyone');
+  const [privacyFriend, setPrivacyFriend] = useState(user.privacy_friend || 'everyone');
+  const [hidePresence, setHidePresence] = useState(!!user.hide_presence);
+  // Apparence (préférences locales, appliquées en direct)
+  const [appr, setAppr] = useState(loadAppearance());
+  function changeAppr(patch) {
+    setAppr((a) => { const next = { ...a, ...patch }; saveAppearance(next); applyAppearance(next); return next; });
+  }
 
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
@@ -95,6 +153,7 @@ export default function SettingsModal({ onClose }) {
           display_name: displayName, avatar_color: avatarColor, avatar_url: avatarUrl || null, about, status,
           headline, company, location, website, email_pro: emailPro, phone, skills,
           cv_url: cvUrl || null, cv_name: cvName || null, cv_summary: cvSummary,
+          privacy_dm: privacyDm, privacy_friend: privacyFriend, hide_presence: hidePresence,
         },
       });
       updateUser(updated);
@@ -118,7 +177,7 @@ export default function SettingsModal({ onClose }) {
     } catch (e) { setAccountMsg(e.message); }
   }
 
-  const showFooter = menu === 'identity' || menu === 'pro';
+  const showFooter = menu === 'identity' || menu === 'pro' || menu === 'privacy';
 
   return (
     <Modal onClose={onClose} className="modal-settings">
@@ -233,6 +292,49 @@ export default function SettingsModal({ onClose }) {
             </>
           )}
 
+          {menu === 'appearance' && (
+            <>
+              <h2>Apparence</h2>
+              <p className="modal-sub">Personnalisez l’affichage. Réglages enregistrés sur cet appareil, appliqués aussitôt.</p>
+
+              <div className="appr-group">
+                <label>Thème</label>
+                <div className="appr-choices">
+                  {THEMES.map((t) => (
+                    <button type="button" key={t.v} className={`appr-choice ${appr.theme === t.v ? 'active' : ''}`} onClick={() => changeAppr({ theme: t.v })}>{t.l}</button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="appr-group">
+                <label>Couleur d’accent</label>
+                <div className="appr-accents">
+                  {Object.entries(ACCENTS).map(([key, a]) => (
+                    <button type="button" key={key} title={a.label} className={`appr-accent ${appr.accent === key ? 'active' : ''}`} style={{ background: `linear-gradient(135deg, ${a.accent}, ${a.accent2})` }} onClick={() => changeAppr({ accent: key })} />
+                  ))}
+                </div>
+              </div>
+
+              <div className="appr-group">
+                <label>Densité des messages</label>
+                <div className="appr-choices">
+                  {DENSITIES.map((d) => (
+                    <button type="button" key={d.v} className={`appr-choice ${appr.density === d.v ? 'active' : ''}`} onClick={() => changeAppr({ density: d.v })}>{d.l}</button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="appr-group">
+                <label>Taille de l’affichage</label>
+                <div className="appr-choices">
+                  {SIZES.map((s) => (
+                    <button type="button" key={s.v} className={`appr-choice ${appr.textSize === s.v ? 'active' : ''}`} onClick={() => changeAppr({ textSize: s.v })}>{s.l}</button>
+                  ))}
+                </div>
+              </div>
+            </>
+          )}
+
           {menu === 'notif' && (
             <>
               <h2>Notifications</h2>
@@ -245,6 +347,29 @@ export default function SettingsModal({ onClose }) {
                 <input type="checkbox" checked={desktop} onChange={(e) => { setDesktop(e.target.checked); setDesktopEnabled(e.target.checked); if (e.target.checked && typeof Notification !== 'undefined') Notification.requestPermission().catch(() => {}); }} />
                 <span>Notifications sur le bureau</span>
               </label>
+
+              <div className="quiet-block">
+                <label className="settings-toggle">
+                  <input type="checkbox" checked={quietOn} onChange={(e) => { setQuietOn(e.target.checked); setQuietEnabled(e.target.checked); }} />
+                  <span>Heures calmes (couper le son et les notifications sur une plage)</span>
+                </label>
+                {quietOn && (
+                  <div className="quiet-rows">
+                    <div className="quiet-time">
+                      <label>De</label>
+                      <input type="time" value={quietFrom} onChange={(e) => { setQuietFromV(e.target.value); setQuietFrom(e.target.value); }} />
+                    </div>
+                    <div className="quiet-time">
+                      <label>À</label>
+                      <input type="time" value={quietTo} onChange={(e) => { setQuietToV(e.target.value); setQuietTo(e.target.value); }} />
+                    </div>
+                    <label className="settings-toggle quiet-weekend">
+                      <input type="checkbox" checked={quietWeekend} onChange={(e) => { setQuietWeekendV(e.target.checked); setQuietWeekend(e.target.checked); }} />
+                      <span>Tout le week-end</span>
+                    </label>
+                  </div>
+                )}
+              </div>
             </>
           )}
 
@@ -253,6 +378,70 @@ export default function SettingsModal({ onClose }) {
               <h2>Audio et vocal</h2>
               <p className="modal-sub">Micro, sortie, volumes et tests. Réglages enregistrés sur cet appareil.</p>
               <AudioSettingsPanel />
+            </>
+          )}
+
+          {menu === 'privacy' && (
+            <>
+              <h2>Confidentialité</h2>
+              <p className="modal-sub">Choisissez qui peut vous contacter, et si vous apparaissez en ligne.</p>
+
+              <div className="appr-group">
+                <label>Qui peut m’envoyer des messages privés</label>
+                <div className="appr-choices">
+                  <button type="button" className={`appr-choice ${privacyDm === 'everyone' ? 'active' : ''}`} onClick={() => setPrivacyDm('everyone')}>Tout le monde</button>
+                  <button type="button" className={`appr-choice ${privacyDm === 'friends' ? 'active' : ''}`} onClick={() => setPrivacyDm('friends')}>Mes contacts uniquement</button>
+                </div>
+              </div>
+
+              <div className="appr-group">
+                <label>Qui peut m’ajouter en ami</label>
+                <div className="appr-choices">
+                  <button type="button" className={`appr-choice ${privacyFriend === 'everyone' ? 'active' : ''}`} onClick={() => setPrivacyFriend('everyone')}>Tout le monde</button>
+                  <button type="button" className={`appr-choice ${privacyFriend === 'none' ? 'active' : ''}`} onClick={() => setPrivacyFriend('none')}>Personne</button>
+                </div>
+              </div>
+
+              <label className="settings-toggle">
+                <input type="checkbox" checked={hidePresence} onChange={(e) => setHidePresence(e.target.checked)} />
+                <span>Apparaître hors ligne (masquer mon statut en ligne)</span>
+              </label>
+            </>
+          )}
+
+          {menu === 'about' && (
+            <>
+              <h2>À propos et aide</h2>
+
+              <div className="about-card">
+                <Logo size={44} wordmark={false} />
+                <div className="about-meta">
+                  <img className="brand-word-img about-word" src={wordUrl} alt="Pulsar" style={{ height: 18 }} />
+                  <div className="about-version">Version {up.currentVersion} · {up.isDesktop ? 'Application de bureau' : 'Version web'}</div>
+                  {up.available && up.version && (
+                    <button type="button" className="about-update" onClick={() => { openUpdate(); onClose(); }}><Icon name="rotate" /> Mettre à jour ({up.version})</button>
+                  )}
+                </div>
+              </div>
+
+              <h3 className="about-sub">Questions fréquentes</h3>
+              <div className="faq">
+                {FAQ.map((item) => (
+                  <details key={item.q}>
+                    <summary>{item.q}</summary>
+                    <p>{item.a}</p>
+                  </details>
+                ))}
+              </div>
+
+              <h3 className="about-sub">Mentions légales</h3>
+              <div className="legal">
+                <p><strong>Éditeur :</strong> [à compléter : votre nom ou votre société]</p>
+                <p><strong>Contact :</strong> [à compléter : adresse email]</p>
+                <p><strong>Hébergeur :</strong> [à compléter : nom et adresse de l’hébergeur]</p>
+                <p><strong>Directeur de la publication :</strong> [à compléter]</p>
+                <p className="legal-note">Remplacez les mentions « à compléter » par vos informations réelles avant la mise en ligne. Donnez-les-moi et je les intègre.</p>
+              </div>
             </>
           )}
 
@@ -266,6 +455,27 @@ export default function SettingsModal({ onClose }) {
                 <input type="password" placeholder="Nouveau mot de passe" value={newPw} onChange={(e) => setNewPw(e.target.value)} />
                 <button className="btn" style={{ width: 'auto', padding: '8px 16px', marginTop: 8 }} onClick={changePassword}>Mettre à jour</button>
               </div>
+              <div className="field" style={{ marginTop: 24, borderTop: '1px solid var(--border)', paddingTop: 16 }}>
+                <label>Appareils connectés</label>
+                <p className="field-hint" style={{ marginBottom: 10 }}>Les appareils actuellement connectés à votre compte. En cas de doute, déconnectez-les.</p>
+                <div className="sess-list">
+                  {sessions.length === 0 && <p className="sess-empty">Chargement…</p>}
+                  {sessions.map((s) => (
+                    <div className="sess-item" key={s.id}>
+                      <span className="sess-ico"><Icon name={s.label === 'Application de bureau' ? 'desktop' : 'globe'} /></span>
+                      <span className="sess-main">
+                        <span className="sess-label">{s.label}{s.current && <span className="sess-current">Cet appareil</span>}</span>
+                        <span className="sess-seen">Vu le {new Date(s.last_seen * 1000).toLocaleString('fr-FR', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' })}</span>
+                      </span>
+                      <button type="button" className="sess-revoke" title="Déconnecter cet appareil" onClick={() => revokeSession(s)}><Icon name="right-from-bracket" /></button>
+                    </div>
+                  ))}
+                </div>
+                {sessions.length > 1 && (
+                  <button className="btn btn-ghost" style={{ width: 'auto', padding: '8px 16px', marginTop: 10 }} onClick={revokeOthers}>Déconnecter tous les autres appareils</button>
+                )}
+              </div>
+
               <div className="field" style={{ marginTop: 24, borderTop: '1px solid var(--border)', paddingTop: 16 }}>
                 <label style={{ color: 'var(--danger)' }}>Suppression de compte</label>
                 <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 8 }}>Supprimer votre compte efface tout définitivement.</p>

@@ -44,6 +44,8 @@ export function AuthProvider({ children }) {
   }
 
   function logout() {
+    // Ferme la session côté serveur (au mieux) pour retirer l'appareil de la liste.
+    api('/sessions/current', { method: 'DELETE' }).catch(() => {});
     setToken(null);
     setUser(null);
     disconnectSocket();

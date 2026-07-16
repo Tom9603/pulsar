@@ -42,6 +42,13 @@ const STATUSES = [
   { value: 'meeting', label: 'En réunion' },
   { value: 'invisible', label: 'Invisible' },
 ];
+const EXPIRE = [
+  { v: 0, l: 'Ne pas effacer' },
+  { v: 30, l: 'Dans 30 minutes' },
+  { v: 60, l: 'Dans 1 heure' },
+  { v: 240, l: 'Dans 4 heures' },
+  { v: 1440, l: 'Dans 24 heures' },
+];
 
 /** Modale « Modifier le profil » : onglets Fiche profil + Fiche professionnelle. */
 export default function EditProfileModal({ initialTab = 'profil', onClose }) {
@@ -49,6 +56,7 @@ export default function EditProfileModal({ initialTab = 'profil', onClose }) {
   const [tab, setTab] = useState(initialTab);
   const [f, setF] = useState({
     display_name: user.display_name, pronouns: user.pronouns || '', status: user.status,
+    custom_status: user.custom_status || '', custom_status_emoji: user.custom_status_emoji || '',
     avatar_color: user.avatar_color, avatar_url: user.avatar_url || '',
     banner_color: user.banner_color || '', banner_url: user.banner_url || '', about: user.about || '',
     headline: user.headline || '', company: user.company || '', location: user.location || '',
@@ -58,6 +66,7 @@ export default function EditProfileModal({ initialTab = 'profil', onClose }) {
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [presetId, setPresetId] = useState(null);
+  const [statusMinutes, setStatusMinutes] = useState(0); // expiration à appliquer au statut personnalisé
   const set = (k, v) => setF((s) => ({ ...s, [k]: v }));
   const pickPreset = (p) => { setPresetId(p.id); set('avatar_url', presetToPng(p)); };
 
@@ -88,7 +97,7 @@ export default function EditProfileModal({ initialTab = 'profil', onClose }) {
       if (banner && banner.startsWith('data:')) banner = await uploadImage(banner);
       const { user: updated } = await api('/users/me', {
         method: 'PATCH',
-        body: { ...f, banner_url: banner || null, avatar_url: f.avatar_url || null, cv_url: f.cv_url || null, cv_name: f.cv_name || null },
+        body: { ...f, banner_url: banner || null, avatar_url: f.avatar_url || null, cv_url: f.cv_url || null, cv_name: f.cv_name || null, custom_status_minutes: statusMinutes },
       });
       updateUser(updated);
       onClose();
@@ -127,6 +136,19 @@ export default function EditProfileModal({ initialTab = 'profil', onClose }) {
                   <select value={f.status} onChange={(e) => set('status', e.target.value)}>
                     {STATUSES.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
                   </select>
+                </div>
+                <div className="field">
+                  <label>Statut personnalisé</label>
+                  <div className="custom-status-row">
+                    <input className="cs-emoji" value={f.custom_status_emoji} onChange={(e) => set('custom_status_emoji', e.target.value)} placeholder="🙂" maxLength={8} title="Emoji (optionnel)" />
+                    <input className="cs-text" value={f.custom_status} onChange={(e) => set('custom_status', e.target.value)} placeholder="En congé, en réunion, focus…" maxLength={100} />
+                  </div>
+                  {f.custom_status.trim() && (
+                    <select className="cs-expire" value={statusMinutes} onChange={(e) => setStatusMinutes(Number(e.target.value))}>
+                      {EXPIRE.map((x) => <option key={x.v} value={x.v}>Effacer&nbsp;: {x.l.toLowerCase()}</option>)}
+                    </select>
+                  )}
+                  <p className="field-hint">Un petit message visible sur votre profil. Videz le champ pour le retirer.</p>
                 </div>
                 <div className="field">
                   <label>Photos de profil</label>

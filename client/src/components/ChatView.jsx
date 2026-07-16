@@ -315,6 +315,7 @@ export default function ChatView({ channel, currentUser, canManage, members, onC
         onPoll={() => setPollOpen(true)}
         mentionables={members}
         aiEnabled={aiEnabled}
+        scheduleScope={{ channelId: channel.id }}
       />
 
       {pollOpen && <CreatePollModal channelId={channel.id} onClose={() => setPollOpen(false)} />}

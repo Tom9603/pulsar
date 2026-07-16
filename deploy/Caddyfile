@@ -1,0 +1,15 @@
+# Caddy : HTTPS automatique (certificat gratuit, renouvelé tout seul)
+# et redirection du trafic vers Pulsar qui tourne en local sur le port 3001.
+# À copier dans /etc/caddy/Caddyfile puis : sudo systemctl reload caddy
+
+join-pulsar.com, www.join-pulsar.com {
+	encode zstd gzip
+
+	# Pulsar (Express + Socket.IO). Caddy gère automatiquement les websockets.
+	reverse_proxy 127.0.0.1:3001
+
+	# Taille max des envois (avatars, images, messages vocaux en base64).
+	request_body {
+		max_size 12MB
+	}
+}

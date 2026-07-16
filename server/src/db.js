@@ -230,6 +230,27 @@ db.exec(`
     PRIMARY KEY (user_id, day)
   );
 
+  CREATE TABLE IF NOT EXISTS scheduled_messages (
+    id           INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id      INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    channel_id   INTEGER REFERENCES channels(id) ON DELETE CASCADE,   -- message de salon
+    recipient_id INTEGER REFERENCES users(id) ON DELETE CASCADE,      -- message privé
+    content      TEXT NOT NULL,
+    send_at      INTEGER NOT NULL,                                    -- horodatage unix (secondes)
+    created_at   TEXT NOT NULL DEFAULT (datetime('now')),
+    sent         INTEGER NOT NULL DEFAULT 0                           -- 0 = en attente, 1 = envoyé
+  );
+
+  CREATE TABLE IF NOT EXISTS sessions (
+    id         TEXT PRIMARY KEY,          -- identifiant de session (aléatoire), porté par le jeton
+    user_id    INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    user_agent TEXT,                      -- appareil / navigateur (pour l'affichage)
+    created_at INTEGER NOT NULL,          -- unix (secondes)
+    last_seen  INTEGER NOT NULL
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_sessions_user ON sessions(user_id);
+  CREATE INDEX IF NOT EXISTS idx_scheduled_due ON scheduled_messages(sent, send_at);
   CREATE INDEX IF NOT EXISTS idx_messages_channel ON messages(channel_id, id);
   CREATE INDEX IF NOT EXISTS idx_members_user ON server_members(user_id);
   CREATE INDEX IF NOT EXISTS idx_member_roles ON member_roles(server_id, user_id);
@@ -258,6 +279,12 @@ ensure('messages', 'poll_id', 'INTEGER'); // message porteur d'un sondage
 ensure('users', 'email', 'TEXT');                              // email (activation, récupération)
 ensure('users', 'verified', 'INTEGER NOT NULL DEFAULT 1');    // compte activé (1 par défaut : comptes existants OK)
 ensure('users', 'verify_token', 'TEXT');                      // jeton d'activation par email
+ensure('users', 'privacy_dm', "TEXT NOT NULL DEFAULT 'everyone'");     // qui peut m'écrire : 'everyone' | 'friends'
+ensure('users', 'privacy_friend', "TEXT NOT NULL DEFAULT 'everyone'"); // qui peut m'ajouter : 'everyone' | 'none'
+ensure('users', 'hide_presence', 'INTEGER NOT NULL DEFAULT 0');        // apparaître hors ligne (masquer le statut en ligne)
+ensure('users', 'custom_status', 'TEXT');                             // statut personnalisé (texte libre)
+ensure('users', 'custom_status_emoji', 'TEXT');                       // emoji du statut personnalisé
+ensure('users', 'custom_status_until', 'INTEGER');                    // expiration automatique (unix, secondes) ou NULL
 ensure('dm_messages', 'attachment_url', 'TEXT');
 ensure('dm_messages', 'attachment_name', 'TEXT');
 ensure('dm_messages', 'reply_to_id', 'INTEGER');

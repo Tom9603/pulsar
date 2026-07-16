@@ -1,11 +1,14 @@
 import { Router } from 'express';
 import db from '../db.js';
 import { authMiddleware, publicUser, hashPassword, verifyPassword } from '../auth.js';
+import { refreshPresence } from '../socket.js';
 
 const router = Router();
 router.use(authMiddleware);
 
 const STATUSES = ['online', 'idle', 'dnd', 'meeting', 'invisible'];
+const DM_POLICIES = ['everyone', 'friends'];
+const FRIEND_POLICIES = ['everyone', 'none'];
 
 /** Met à jour le profil de l'utilisateur connecté (personnalisation). */
 router.patch('/me', (req, res) => {
@@ -37,14 +40,37 @@ router.patch('/me', (req, res) => {
   const nextBannerColor = b.banner_color === undefined ? current.banner_color : (/^#[0-9a-fA-F]{6}$/.test(b.banner_color || '') ? b.banner_color : null);
   const nextBannerUrl = b.banner_url === undefined ? current.banner_url : (b.banner_url || null);
 
+  // Confidentialité
+  const nextPrivacyDm = DM_POLICIES.includes(b.privacy_dm) ? b.privacy_dm : current.privacy_dm;
+  const nextPrivacyFriend = FRIEND_POLICIES.includes(b.privacy_friend) ? b.privacy_friend : current.privacy_friend;
+  const nextHide = b.hide_presence === undefined ? current.hide_presence : (b.hide_presence ? 1 : 0);
+
+  // Statut personnalisé (texte + emoji + expiration)
+  const rawCustom = b.custom_status === undefined ? (current.custom_status || '') : String(b.custom_status || '').slice(0, 100).trim();
+  const hasCustom = !!rawCustom;
+  const nextCustom = hasCustom ? rawCustom : null;
+  const nextCustomEmoji = !hasCustom ? null : (b.custom_status_emoji === undefined ? current.custom_status_emoji : (String(b.custom_status_emoji || '').slice(0, 16) || null));
+  let nextCustomUntil = current.custom_status_until;
+  if (!hasCustom) nextCustomUntil = null;
+  else if (b.custom_status_minutes !== undefined) {
+    const mins = Number(b.custom_status_minutes) || 0;
+    nextCustomUntil = mins > 0 ? Math.floor(Date.now() / 1000) + mins * 60 : null;
+  }
+
   db.prepare(`
     UPDATE users SET display_name = ?, avatar_color = ?, avatar_url = ?, about = ?, status = ?,
       headline = ?, company = ?, location = ?, website = ?, email_pro = ?, phone = ?, skills = ?,
-      cv_url = ?, cv_name = ?, cv_summary = ?, pronouns = ?, banner_color = ?, banner_url = ?
+      cv_url = ?, cv_name = ?, cv_summary = ?, pronouns = ?, banner_color = ?, banner_url = ?,
+      privacy_dm = ?, privacy_friend = ?, hide_presence = ?,
+      custom_status = ?, custom_status_emoji = ?, custom_status_until = ?
     WHERE id = ?
   `).run(nextName, nextColor, nextAvatar, nextAbout, nextStatus,
     nextHeadline, nextCompany, nextLocation, nextWebsite, nextEmailPro, nextPhone, nextSkills,
-    nextCvUrl, nextCvName, nextCvSummary, nextPronouns, nextBannerColor, nextBannerUrl, req.userId);
+    nextCvUrl, nextCvName, nextCvSummary, nextPronouns, nextBannerColor, nextBannerUrl,
+    nextPrivacyDm, nextPrivacyFriend, nextHide,
+    nextCustom, nextCustomEmoji, nextCustomUntil, req.userId);
+
+  if (nextHide !== current.hide_presence) refreshPresence(); // (dé)masquer le statut en ligne, tout de suite
 
   const user = db.prepare('SELECT * FROM users WHERE id = ?').get(req.userId);
   res.json({ user: publicUser(user) });

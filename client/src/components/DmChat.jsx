@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { api } from '../api.js';
 import { getSocket } from '../socket.js';
+import { notify } from '../notice.js';
 import { renderRich } from '../richtext.jsx';
 import Avatar from './Avatar.jsx';
 import Icon from './Icon.jsx';
@@ -71,12 +72,16 @@ export default function DmChat({ peer, currentUser, onlineIds, onCall, onOpenPro
       clearTimeout(typingTimer.current);
       typingTimer.current = setTimeout(() => setPeerTyping(false), 4000);
     };
+    const onRefused = ({ toUserId }) => { if (toUserId === peer.id) notify('Cette personne n’accepte les messages privés que de ses contacts.'); };
+    const onBlocked = ({ toUserId }) => { if (toUserId === peer.id) notify('Message non envoyé.'); };
     socket.on('dm:new', onNew);
     socket.on('dm:updated', onUpdated);
     socket.on('dm:reaction', onReaction);
     socket.on('dm:pins-changed', onPins);
     socket.on('dm:typing', onTyping);
-    return () => { socket.off('dm:new', onNew); socket.off('dm:updated', onUpdated); socket.off('dm:reaction', onReaction); socket.off('dm:pins-changed', onPins); socket.off('dm:typing', onTyping); };
+    socket.on('dm:refused', onRefused);
+    socket.on('dm:blocked', onBlocked);
+    return () => { socket.off('dm:new', onNew); socket.off('dm:updated', onUpdated); socket.off('dm:reaction', onReaction); socket.off('dm:pins-changed', onPins); socket.off('dm:typing', onTyping); socket.off('dm:refused', onRefused); socket.off('dm:blocked', onBlocked); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [peer.id, currentUser.id, showPins]);
 
@@ -276,6 +281,7 @@ export default function DmChat({ peer, currentUser, onlineIds, onCall, onOpenPro
             onTyping={onTypingSignal}
             onWatch={() => setWatchOpen((v) => !v)}
             aiEnabled={aiEnabled}
+            scheduleScope={{ toUserId: peer.id }}
           />
 
           {confirmDel && (

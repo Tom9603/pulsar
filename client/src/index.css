@@ -2134,3 +2134,117 @@ input[type="file"]::file-selector-button:hover {
 .archived-row .ar-tag { font-size: 11px; text-transform: uppercase; letter-spacing: 0.4px; color: var(--text-faint); }
 .archived-row .ar-restore { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--text-muted); padding: 6px 10px; border-radius: 8px; }
 .archived-row .ar-restore:hover { background: var(--bg-hover); color: var(--text); }
+
+/* --- Messages programmés --- */
+.sched-preview { background: var(--bg-input); border: 1px solid var(--border); border-radius: 10px; padding: 10px 14px; color: var(--text-muted); font-size: 14px; margin-bottom: 18px; font-style: italic; }
+.sched-hint { color: var(--text-muted); font-size: 14px; margin-bottom: 18px; }
+.sched-presets { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+.sched-preset { background: var(--bg-input); border: 1px solid var(--border); color: var(--text-muted); padding: 8px 14px; border-radius: 10px; font-size: 13px; cursor: pointer; }
+.sched-preset:hover { color: var(--text); }
+.sched-preset.active { background: var(--bg-active); color: var(--text); border-color: var(--accent); }
+.modal-schedule input[type="datetime-local"] { color-scheme: dark; }
+.sched-list { margin-top: 22px; border-top: 1px solid var(--border); padding-top: 16px; }
+.sched-list-title { font-size: 12px; text-transform: uppercase; letter-spacing: 0.4px; color: var(--text-faint); margin-bottom: 10px; }
+.sched-item { display: flex; align-items: center; gap: 10px; padding: 8px 0; }
+.sched-item + .sched-item { border-top: 1px solid var(--border); }
+.sched-item-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.sched-item-when { font-size: 13px; color: var(--accent); display: inline-flex; align-items: center; gap: 6px; }
+.sched-item-text { font-size: 13px; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sched-item-cancel { background: none; border: none; color: var(--text-faint); cursor: pointer; padding: 6px; border-radius: 8px; flex-shrink: 0; }
+.sched-item-cancel:hover { color: var(--danger); background: var(--bg-hover); }
+
+/* Champs natifs (heure, date, cases) accordés au thème */
+:root { color-scheme: dark; }
+:root[data-theme="light"] { color-scheme: light; }
+
+/* --- Sessions actives (appareils connectés) --- */
+.sess-list { display: flex; flex-direction: column; }
+.sess-empty { font-size: 13px; color: var(--text-faint); margin: 0; }
+.sess-item { display: flex; align-items: center; gap: 12px; padding: 10px 0; }
+.sess-item + .sess-item { border-top: 1px solid var(--border); }
+.sess-ico { width: 30px; height: 30px; border-radius: 8px; background: var(--bg-input); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; color: var(--text-muted); flex-shrink: 0; }
+.sess-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.sess-label { font-size: 14px; display: flex; align-items: center; gap: 8px; }
+.sess-current { font-size: 11px; text-transform: uppercase; letter-spacing: 0.4px; color: var(--accent); border: 1px solid var(--accent); border-radius: 6px; padding: 1px 6px; }
+.sess-seen { font-size: 12px; color: var(--text-faint); }
+.sess-revoke { background: none; border: none; color: var(--text-faint); cursor: pointer; padding: 7px; border-radius: 8px; flex-shrink: 0; }
+.sess-revoke:hover { color: var(--danger); background: var(--bg-hover); }
+
+/* --- Statut personnalisé --- */
+.custom-status-row { display: flex; gap: 8px; }
+.custom-status-row .cs-emoji { width: 64px; flex-shrink: 0; text-align: center; }
+.custom-status-row .cs-text { flex: 1; min-width: 0; }
+.cs-expire { margin-top: 8px; }
+.custom-status { display: inline-flex; align-items: center; gap: 6px; max-width: 100%; }
+.cs-badge-emoji { flex-shrink: 0; }
+.cs-badge-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cs-profile { margin-top: 6px; font-size: 14px; color: var(--text-muted); }
+.cs-member { font-size: 12px; color: var(--text-faint); margin-top: 1px; }
+
+/* --- Heures calmes --- */
+.quiet-block { margin-top: 14px; border-top: 1px solid var(--border); padding-top: 14px; }
+.quiet-rows { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 18px; margin-top: 12px; padding-left: 30px; }
+.quiet-time { display: flex; flex-direction: column; gap: 6px; }
+.quiet-time label { font-size: 13px; color: var(--text-muted); }
+.quiet-time input[type="time"] { width: auto; }
+.quiet-weekend { margin: 0; }
+
+/* --- Thème clair --- */
+:root[data-theme="light"] {
+  --bg-app: #f3f4f8;
+  --bg-rail: #e7e9f0;
+  --bg-sidebar: #edeff4;
+  --bg-content: #ffffff;
+  --bg-content-alt: #eef0f5;
+  --bg-input: #ffffff;
+  --bg-hover: rgba(30, 30, 55, 0.05);
+  --bg-active: rgba(139, 92, 246, 0.14);
+  --text: #1b1c28;
+  --text-muted: #5a5c6e;
+  --text-faint: #9799ab;
+  --border: rgba(30, 30, 55, 0.11);
+  --glass: rgba(255, 255, 255, 0.72);
+}
+:root[data-theme="light"] .message:hover { background: rgba(30, 30, 55, 0.05); }
+:root[data-theme="light"] .message .msg-author { color: var(--text); }
+
+/* --- Densité compacte --- */
+:root[data-density="compact"] .message { padding-top: 2px; padding-bottom: 2px; }
+:root[data-density="compact"] .message:not(.grouped) { margin-top: 8px; }
+:root[data-density="compact"] .message .msg-text { line-height: 1.32; }
+
+/* --- Réglages d'apparence --- */
+.appr-group { margin-bottom: 22px; }
+.appr-group > label { display: block; text-transform: uppercase; font-size: 12px; letter-spacing: 0.4px; color: var(--text-faint); margin-bottom: 10px; }
+.appr-choices { display: flex; flex-wrap: wrap; gap: 8px; }
+.appr-choice { background: var(--bg-input); border: 1px solid var(--border); color: var(--text-muted); padding: 9px 16px; border-radius: 10px; font-size: 14px; cursor: pointer; }
+.appr-choice:hover { color: var(--text); }
+.appr-choice.active { background: var(--bg-active); color: var(--text); border-color: var(--accent); }
+.appr-accents { display: flex; gap: 12px; }
+.appr-accent { width: 34px; height: 34px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; }
+.appr-accent.active { border-color: var(--text); }
+
+/* --- Marque « PULSAR » (image de la charte) --- */
+.brand-word-img { display: block; width: auto; object-fit: contain; }
+:root[data-theme="light"] .brand-word-img { filter: invert(1); }
+
+/* --- À propos et aide --- */
+.about-card { display: flex; align-items: center; gap: 16px; background: var(--bg-input); border: 1px solid var(--border); border-radius: 12px; padding: 16px; margin-bottom: 12px; }
+.about-card .brand-logo { margin: 0; }
+.about-meta { display: flex; flex-direction: column; }
+.about-name { font-weight: 700; font-size: 18px; }
+.about-word { margin-bottom: 4px; }
+.about-version { color: var(--text-muted); font-size: 13px; margin-top: 2px; }
+.about-update { align-self: flex-start; margin-top: 8px; display: inline-flex; align-items: center; gap: 7px; background: var(--bg-active); color: var(--text); border: 1px solid var(--accent); padding: 6px 12px; border-radius: 9px; font-size: 13px; cursor: pointer; }
+.about-link { margin-bottom: 20px; }
+.about-link a { color: var(--accent); display: inline-flex; align-items: center; gap: 7px; font-size: 14px; }
+.about-sub { font-size: 15px; margin: 18px 0 10px; }
+.faq details { border: 1px solid var(--border); border-radius: 10px; margin-bottom: 8px; overflow: hidden; }
+.faq summary { cursor: pointer; padding: 12px 14px; font-size: 14px; font-weight: 500; list-style: none; display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.faq summary::-webkit-details-marker { display: none; }
+.faq summary::after { content: '+'; color: var(--text-muted); font-size: 18px; line-height: 1; }
+.faq details[open] summary::after { content: '\2212'; }
+.faq details p { padding: 0 14px 12px; color: var(--text-muted); font-size: 14px; line-height: 1.5; margin: 0; }
+.legal p { font-size: 14px; color: var(--text-muted); margin: 0 0 6px; }
+.legal strong { color: var(--text); }
+.legal-note { font-style: italic; margin-top: 12px; color: var(--text-faint); font-size: 13px; }

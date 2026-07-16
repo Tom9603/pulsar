@@ -5,6 +5,7 @@ import Avatar from './Avatar.jsx';
 import Icon from './Icon.jsx';
 import { ProCard } from './MemberModal.jsx';
 import FriendsListModal from './FriendsListModal.jsx';
+import CustomStatus from './CustomStatus.jsx';
 import { api, mediaUrl } from '../api.js';
 import { useAuth } from '../context/AuthContext.jsx';
 
@@ -91,6 +92,7 @@ export default function ProfileModal({ userId, servers = [], onClose, onMessage,
               </div>
               <div className="profile-sub">@{u.username}</div>
               {u.headline && <div className="profile-headline">{u.headline}</div>}
+              <CustomStatus user={u} className="cs-profile" />
             </div>
             <div className="profile-primary">
               {self
