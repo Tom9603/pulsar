@@ -39,6 +39,7 @@ import ChannelAccessModal from '../components/ChannelAccessModal.jsx';
 import ServerTasksModal from '../components/ServerTasksModal.jsx';
 import ProfileModal from '../components/ProfileModal.jsx';
 import EditProfileModal from '../components/EditProfileModal.jsx';
+import AdminPanel from '../components/AdminPanel.jsx';
 import FeedbackModal from '../components/FeedbackModal.jsx';
 import SearchModal from '../components/SearchModal.jsx';
 import CallOverlay from '../components/CallOverlay.jsx';
@@ -79,6 +80,7 @@ export default function AppLayout() {
   const [memberTarget, setMemberTarget] = useState(null);
   const [accessChannel, setAccessChannel] = useState(null);
   const [profileTarget, setProfileTarget] = useState(null); // id d'utilisateur
+  const [adminOpen, setAdminOpen] = useState(false); // espace d'administration (admins uniquement)
   const [confirmState, setConfirmState] = useState(null); // confirmation clic droit { title, message, ... }
 
   // Navigation « retour » / « avancer »
@@ -602,8 +604,10 @@ export default function AppLayout() {
         <ProfileModal userId={profileTarget} servers={servers}
           onClose={() => setProfileTarget(null)} onMessage={openDm}
           onEditProfile={() => setModal('editProfile')} onLogout={logout}
-          onOpenProfile={(id) => setProfileTarget(id)} onOpenServer={openServer} />
+          onOpenProfile={(id) => setProfileTarget(id)} onOpenServer={openServer}
+          canAdmin={!!user.platform_admin} onOpenAdmin={() => { setProfileTarget(null); setAdminOpen(true); }} />
       )}
+      {adminOpen && user.platform_admin && <AdminPanel onClose={() => setAdminOpen(false)} />}
       {modal === 'editProfile' && <EditProfileModal onClose={() => setModal(null)} />}
       {modal === 'feedback' && <FeedbackModal onClose={() => setModal(null)} />}
       {aiAsk && (

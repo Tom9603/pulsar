@@ -8,6 +8,7 @@ import Composer from './Composer.jsx';
 import FileDropZone from './FileDropZone.jsx';
 import ThreadStrip from './ThreadStrip.jsx';
 import ThreadPanel from './ThreadPanel.jsx';
+import ReportModal from './ReportModal.jsx';
 import { sendFiles } from '../attachments.js';
 import Attachment from './Attachment.jsx';
 import PollCard from './PollCard.jsx';
@@ -43,6 +44,7 @@ export default function ChatView({ channel, currentUser, canManage, members, onC
   const [watchOpen, setWatchOpen] = useState(false);
   const [pollOpen, setPollOpen] = useState(false);
   const [threadId, setThreadId] = useState(null); // fil ouvert dans le panneau latéral
+  const [reportTarget, setReportTarget] = useState(null); // message à signaler
   useEffect(() => { setWatchOpen(false); setPollOpen(false); setThreadId(null); }, [channel.id]);
 
   // Un fil ouvert prend la place à droite : on prévient la mise en page, qui
@@ -160,6 +162,7 @@ export default function ChatView({ channel, currentUser, canManage, members, onC
     { label: savedByMsg?.get(m.id) ? 'Retirer des enregistrés' : 'Enregistrer le message', icon: 'bookmark', onClick: () => toggleSave(m) },
     canManage && { label: m.pinned ? 'Détacher' : 'Épingler', icon: 'thumbtack', onClick: () => pin(m) },
     m.content && { label: 'Copier le texte', icon: 'copy', onClick: () => navigator.clipboard?.writeText(m.content) },
+    !isOwn && { label: 'Signaler', icon: 'flag', onClick: () => setReportTarget({ type: 'message', id: m.id }) },
     (isOwn || canManage) && { sep: true },
     isOwn && { label: 'Modifier', icon: 'pen', onClick: () => startEdit(m) },
     (isOwn || canManage) && { label: 'Supprimer', icon: 'trash', danger: true, onClick: () => del(m) },
@@ -368,6 +371,7 @@ export default function ChatView({ channel, currentUser, canManage, members, onC
         onClose={() => setThreadId(null)}
       />
     )}
+    {reportTarget && <ReportModal target={reportTarget} onClose={() => setReportTarget(null)} />}
     </div>
   );
 }

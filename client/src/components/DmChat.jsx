@@ -6,6 +6,7 @@ import { renderRich } from '../richtext.jsx';
 import Avatar from './Avatar.jsx';
 import Icon from './Icon.jsx';
 import Composer from './Composer.jsx';
+import ReportModal from './ReportModal.jsx';
 import FileDropZone from './FileDropZone.jsx';
 import { sendFiles } from '../attachments.js';
 import Attachment from './Attachment.jsx';
@@ -35,6 +36,7 @@ export default function DmChat({ peer, currentUser, onlineIds, onCall, onOpenPro
   const [showPins, setShowPins] = useState(false);
   const [pins, setPins] = useState([]);
   const [watchOpen, setWatchOpen] = useState(false);
+  const [reportTarget, setReportTarget] = useState(null); // message privé à signaler
   const [showSearch, setShowSearch] = useState(false);
   const [searchQ, setSearchQ] = useState('');
   const [boardOpen, setBoardOpen] = useState(false);
@@ -112,6 +114,7 @@ export default function DmChat({ peer, currentUser, onlineIds, onCall, onOpenPro
     { label: savedByMsg?.get(m.id) ? 'Retirer des enregistrés' : 'Enregistrer le message', icon: 'bookmark', onClick: () => toggleSave(m) },
     { label: m.pinned ? 'Détacher' : 'Épingler', icon: 'thumbtack', onClick: () => pin(m) },
     m.content && { label: 'Copier le texte', icon: 'copy', onClick: () => navigator.clipboard?.writeText(m.content) },
+    !isOwn && { label: 'Signaler', icon: 'flag', onClick: () => setReportTarget({ type: 'dm', id: m.id }) },
     isOwn && { sep: true },
     isOwn && { label: 'Modifier', icon: 'pen', onClick: () => startEdit(m) },
     isOwn && { label: 'Supprimer', icon: 'trash', danger: true, onClick: () => setConfirmDel(m) },
@@ -297,6 +300,7 @@ export default function DmChat({ peer, currentUser, onlineIds, onCall, onOpenPro
         </div>
       </div>
     </div>
+    {reportTarget && <ReportModal target={reportTarget} onClose={() => setReportTarget(null)} />}
     </FileDropZone>
   );
 }

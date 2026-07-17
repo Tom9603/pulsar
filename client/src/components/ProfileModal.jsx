@@ -23,7 +23,7 @@ function memberSince(created) {
 }
 
 /** Fiche de profil en modale (soi ou un tiers) : bannière, statut, mutuels, actions. */
-export default function ProfileModal({ userId, servers = [], onClose, onMessage, onEditProfile, onLogout, onOpenProfile, onOpenServer }) {
+export default function ProfileModal({ userId, servers = [], onClose, onMessage, onEditProfile, onLogout, onOpenProfile, onOpenServer, canAdmin = false, onOpenAdmin }) {
   const { user: me, updateUser } = useAuth();
   const [data, setData] = useState(null);
   const [err, setErr] = useState('');
@@ -183,7 +183,10 @@ export default function ProfileModal({ userId, servers = [], onClose, onMessage,
         <div className="modal-actions profile-actions">
           <div className="pm-left">
             {self ? (
-              <button className="btn btn-ghost" onClick={onLogout}><Icon name="right-from-bracket" /> Se déconnecter</button>
+              <>
+                {canAdmin && <button className="btn btn-ghost pm-admin" onClick={() => onOpenAdmin?.()}><Icon name="shield-halved" /> Administration</button>}
+                <button className="btn btn-ghost" onClick={onLogout}><Icon name="right-from-bracket" /> Se déconnecter</button>
+              </>
             ) : (
               <>
                 {rel === 'none' && <button className="btn btn-ghost" onClick={addContact}><Icon name="user-plus" /> Ajouter en contact</button>}

@@ -30,6 +30,8 @@ import scheduledRoutes from './routes/scheduled.js';
 import sessionRoutes from './routes/sessions.js';
 import searchRoutes from './routes/search.js';
 import privacyRoutes from './routes/privacy.js';
+import adminRoutes from './routes/admin.js';
+import reportRoutes from './routes/reports.js';
 import { setupSocket } from './socket.js';
 import { setIO } from './realtime.js';
 
@@ -66,6 +68,8 @@ app.use('/api/scheduled', scheduledRoutes);
 app.use('/api/sessions', sessionRoutes);
 app.use('/api/search', searchRoutes);
 app.use('/api/privacy', privacyRoutes);
+app.use('/api/admin', adminRoutes);
+app.use('/api/reports', reportRoutes);
 
 // Fichiers uploadés : nosniff + téléchargement forcé pour tout ce qui n'est pas média (anti-XSS).
 app.use(

@@ -74,6 +74,11 @@ router.post('/login', limit('login', 10, 900, 'Trop de tentatives de connexion. 
     return res.status(401).json({ error: 'Identifiants invalides' });
   }
   if (!user.verified) return res.status(403).json({ error: 'Compte non confirmé. Saisissez le code reçu par email.', needsVerification: true, email: user.email });
+  if (user.suspended) {
+    return res.status(403).json({ error: user.suspended_reason
+      ? `Votre compte a été suspendu : ${user.suspended_reason}`
+      : 'Votre compte a été suspendu. Contactez l’administrateur.' });
+  }
   reset(`login:${clientIp(req)}`); // connexion réussie : on repart de zéro
   res.json({ token: issueToken(user, req), user: publicUser(user) });
 });

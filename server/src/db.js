@@ -194,7 +194,18 @@ db.exec(`
     message     TEXT NOT NULL,
     area        TEXT,
     screenshots TEXT DEFAULT '[]',
+    handled     INTEGER NOT NULL DEFAULT 0,
     created_at  TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+
+  -- Journal des actions d'administration (qui a fait quoi, quand). Traçabilité.
+  CREATE TABLE IF NOT EXISTS admin_log (
+    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+    admin_id   INTEGER REFERENCES users(id) ON DELETE SET NULL,
+    action     TEXT NOT NULL,
+    target      TEXT,
+    detail     TEXT,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
   );
 
   CREATE TABLE IF NOT EXISTS dm_reactions (
@@ -291,6 +302,22 @@ ensure('users', 'reset_expires', 'INTEGER');                  // fin de validit�
 // Preuve d'acceptation des conditions (RGPD) : quand, et quelle version.
 ensure('users', 'tos_accepted_at', 'INTEGER');
 ensure('users', 'tos_version', 'INTEGER');
+// Administration de la plateforme. Ces deux drapeaux ne se posent JAMAIS depuis
+// l'application : « platform_admin » via un script serveur uniquement, pour que
+// personne ne puisse s'auto-promouvoir.
+ensure('users', 'platform_admin', 'INTEGER NOT NULL DEFAULT 0');
+ensure('users', 'suspended', 'INTEGER NOT NULL DEFAULT 0'); // compte suspendu par un administrateur
+ensure('users', 'suspended_reason', 'TEXT');               // motif affiché à la connexion
+
+// Modération : on enrichit la table « reports » (qui servait déjà à signaler un
+// profil) pour couvrir aussi les messages, avec une copie du contenu incriminé
+// afin que l'administrateur juge sans ouvrir les conversations privées.
+ensure('reports', 'target_type', "TEXT NOT NULL DEFAULT 'user'"); // 'message' | 'dm' | 'user'
+ensure('reports', 'content_excerpt', 'TEXT');                     // copie du contenu signalé
+ensure('reports', 'context_label', 'TEXT');                      // ex. « salon Général · Studio »
+ensure('reports', 'status', "TEXT NOT NULL DEFAULT 'open'");      // 'open' | 'resolved' | 'dismissed'
+ensure('reports', 'handled_by', 'INTEGER');                      // administrateur qui a traité
+ensure('feedback', 'handled', 'INTEGER NOT NULL DEFAULT 0');     // retour traité (au cas où table ancienne)
 ensure('users', 'privacy_dm', "TEXT NOT NULL DEFAULT 'everyone'");     // qui peut m'écrire : 'everyone' | 'friends'
 ensure('users', 'privacy_friend', "TEXT NOT NULL DEFAULT 'everyone'"); // qui peut m'ajouter : 'everyone' | 'none'
 ensure('users', 'hide_presence', 'INTEGER NOT NULL DEFAULT 0');        // apparaître hors ligne (masquer le statut en ligne)
