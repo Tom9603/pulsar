@@ -156,7 +156,7 @@ export default function ChatView({ channel, currentUser, canManage, members, onC
   const msgMenu = (m, isOwn) => ctx(() => m.deleted ? [] : [
     { label: 'Répondre', icon: 'reply', onClick: () => setReplyingTo(m) },
     { label: m.thread?.reply_count ? 'Ouvrir le fil' : 'Répondre dans un fil', icon: 'comments', onClick: () => setThreadId(m.id) },
-    onCreateTask && { label: 'Créer une tâche', icon: 'square-check', onClick: () => taskFromMsg(m) },
+    onCreateTask && { label: 'Créer une tâche', icon: 'circle-check', onClick: () => taskFromMsg(m) },
     { label: savedByMsg?.get(m.id) ? 'Retirer des enregistrés' : 'Enregistrer le message', icon: 'bookmark', onClick: () => toggleSave(m) },
     canManage && { label: m.pinned ? 'Détacher' : 'Épingler', icon: 'thumbtack', onClick: () => pin(m) },
     m.content && { label: 'Copier le texte', icon: 'copy', onClick: () => navigator.clipboard?.writeText(m.content) },
@@ -221,7 +221,7 @@ export default function ChatView({ channel, currentUser, canManage, members, onC
             <div className={`message ${grouped ? 'grouped' : ''} ${m.pinned ? 'pinned' : ''} ${m.reply_to && !m.deleted ? 'is-reply' : ''} ${m.deleted ? 'is-deleted' : ''} ${isTaskMsg ? 'is-task' : ''} ${isReminderMsg ? 'is-reminder' : ''} ${isSavedMsg ? 'is-saved' : ''}`} key={m.id} onContextMenu={msgMenu(m, isOwn)}>
               {(isTaskMsg || isReminderMsg || isSavedMsg) && (
                 <span className={`msg-mark ${isTaskMsg ? 'task' : isReminderMsg ? 'reminder' : 'saved'}`} title={isTaskMsg ? 'Vous avez créé une tâche depuis ce message' : isReminderMsg ? 'Vous vous êtes fait un rappel sur ce message' : 'Vous avez enregistré ce message'}>
-                  <Icon name={isTaskMsg ? 'square-check' : isReminderMsg ? 'clock' : 'bookmark'} />
+                  <Icon name={isTaskMsg ? 'circle-check' : isReminderMsg ? 'clock' : 'bookmark'} />
                 </span>
               )}
               {grouped ? (
@@ -301,7 +301,7 @@ export default function ChatView({ channel, currentUser, canManage, members, onC
                       channel_id: channel.id,
                       source_message_id: m.id,
                       source_label: channel.name,
-                    })}><Icon name="square-check" /></button>
+                    })}><Icon name="circle-check" /></button>
                   )}
                   <BookmarkButton content={m.content} attachmentUrl={m.attachment_url} authorName={m.display_name} source={channel.name} sourceMessageId={m.id} existing={savedByMsg?.get(m.id)} />
                   <ReminderButton content={m.content} attachmentUrl={m.attachment_url} authorName={m.display_name} source={channel.name} sourceMessageId={m.id} existing={savedByMsg?.get(m.id)} dropUp={nearBottom} />

@@ -80,7 +80,23 @@
         var el = document.getElementById('pulsar-splash');
         if (!el || el.classList.contains('is-hiding')) return;
         el.classList.add('is-hiding');
-        setTimeout(function () { el.remove(); }, 500);
+        // On le masque sans le retirer : il resservira, par exemple juste
+        // apres la saisie du code de confirmation.
+        setTimeout(function () {
+          if (el.classList.contains('is-hiding')) el.style.display = 'none';
+        }, 500);
+      };
+
+      window.__showPulsarSplash = function () {
+        var el = document.getElementById('pulsar-splash');
+        if (!el) return;
+        el.style.display = '';
+        // Apparition immediate : un fondu laisserait entrevoir l'application
+        // derriere. On coupe la transition, puis on la remet pour la sortie.
+        el.style.transition = 'none';
+        el.classList.remove('is-hiding');
+        void el.offsetWidth; // force le navigateur a appliquer avant la suite
+        el.style.transition = '';
       };
     </script>
     <script type="module" src="/src/main.jsx"></script>

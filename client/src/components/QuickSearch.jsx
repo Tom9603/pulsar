@@ -88,7 +88,9 @@ export default function QuickSearch({ onClose, onGoServer, onGoChannel, onGoDm }
   let cursor = -1;
 
   return (
-    <Modal className="quick-search" onClose={onClose}>
+    <Modal className="quick-search" onClose={onClose} dismissible>
+      {/* Croix au coin de la fenêtre, hors du champ de saisie. */}
+      <button className="qs-close" onClick={onClose} title="Fermer"><Icon name="xmark" /></button>
       <div className="qs-bar">
         <Icon name="magnifying-glass" />
         <input
@@ -98,7 +100,6 @@ export default function QuickSearch({ onClose, onGoServer, onGoChannel, onGoDm }
           placeholder="Rechercher un serveur, un salon, une personne, un message…"
           autoFocus
         />
-        <button className="qs-close" onClick={onClose} title="Fermer"><Icon name="xmark" /></button>
       </div>
 
       <div className="qs-results" ref={listRef}>

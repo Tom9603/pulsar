@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import Modal from './Modal.jsx';
 import Avatar from './Avatar.jsx';
 import Icon from './Icon.jsx';
+import Segmented from './Segmented.jsx';
 import { api } from '../api.js';
 
 const STATUS = { todo: { label: 'À faire', color: 'var(--text-muted)' }, doing: { label: 'En cours', color: '#f0b232' }, done: { label: 'Terminé', color: '#4ade80' } };
@@ -25,10 +26,16 @@ export default function ServerTasksModal({ serverId, serverName, onOpenTask, onC
     <Modal onClose={onClose} className="modal-server-tasks">
       <h2><Icon name="list-check" /> Tâches · {serverName}</h2>
       <p className="modal-sub">Toutes les tâches attribuées dans ce serveur.</p>
-      <div className="seg" style={{ marginBottom: 12 }}>
-        <button className={filter === 'open' ? 'active' : ''} onClick={() => setFilter('open')}>En cours</button>
-        <button className={filter === 'done' ? 'active' : ''} onClick={() => setFilter('done')}>Terminées</button>
-        <button className={filter === 'all' ? 'active' : ''} onClick={() => setFilter('all')}>Toutes</button>
+      <div style={{ marginBottom: 12 }}>
+        <Segmented
+          value={filter}
+          onChange={setFilter}
+          options={[
+            { value: 'open', label: 'En cours' },
+            { value: 'done', label: 'Terminées' },
+            { value: 'all', label: 'Toutes' },
+          ]}
+        />
       </div>
 
       <div className="server-tasks-list">

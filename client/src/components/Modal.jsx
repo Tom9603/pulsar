@@ -11,7 +11,7 @@ import { createPortal } from 'react-dom';
  * Rendue dans un portail sur <body> pour rester centrée et couvrir tout l'écran,
  * même si un parent a un filtre/transform (ex. la barre du haut).
  */
-export default function Modal({ children, onClose, className = '', escapable = true }) {
+export default function Modal({ children, onClose, className = '', escapable = true, dismissible = false }) {
   useEffect(() => {
     if (!escapable) return;
     const onKey = (e) => e.key === 'Escape' && onClose();
@@ -20,8 +20,11 @@ export default function Modal({ children, onClose, className = '', escapable = t
   }, [onClose, escapable]);
 
   return createPortal(
-    <div className="modal-backdrop">
-      <div className={`modal ${className}`} role="dialog" aria-modal="true">
+    // « dismissible » : réservé aux fenêtres qu'on ouvre pour regarder, sans
+    // rien y saisir (la recherche rapide). Partout ailleurs, un clic à côté ne
+    // doit rien fermer.
+    <div className="modal-backdrop" onMouseDown={dismissible ? onClose : undefined}>
+      <div className={`modal ${className}`} role="dialog" aria-modal="true" onMouseDown={(e) => e.stopPropagation()}>
         {children}
       </div>
     </div>,

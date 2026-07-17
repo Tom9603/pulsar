@@ -6,6 +6,7 @@ import Icon from './Icon.jsx';
 import CodeInput from './CodeInput.jsx';
 
 const CODE_LENGTH = 5;
+const MIN_SPLASH = 2000; // le loader reste au moins ce temps : l'entrée dans l'app doit se sentir
 
 /**
  * Étape de confirmation : l'utilisateur saisit le code à 5 chiffres reçu par
@@ -31,10 +32,18 @@ export default function VerifyCode({ email }) {
     if (c.length !== CODE_LENGTH || busy) return;
     setBusy(true);
     setError('');
+    // L'écran de démarrage sert aussi de vérification : il couvre tout, donc
+    // rien n'est cliquable pendant l'ouverture du compte.
+    window.__showPulsarSplash?.();
+    const startedAt = Date.now();
     try {
       await verifyCode(email, c);
-      // Succès : le contexte connecte l'utilisateur, l'application prend le relais.
+      // Succès : le contexte connecte l'utilisateur, l'application prend le
+      // relais derrière le loader, qu'on retire une fois la durée écoulée.
+      const remaining = MIN_SPLASH - (Date.now() - startedAt);
+      setTimeout(() => window.__hidePulsarSplash?.(), Math.max(remaining, 0));
     } catch (e) {
+      window.__hidePulsarSplash?.();
       setError(e.message);
       setCode('');
       setBusy(false);

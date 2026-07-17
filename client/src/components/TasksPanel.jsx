@@ -1,5 +1,6 @@
 import Avatar from './Avatar.jsx';
 import Icon from './Icon.jsx';
+import Segmented from './Segmented.jsx';
 
 const GROUPS = [
   { key: 'todo', label: 'À faire', icon: 'list-check' },
@@ -29,17 +30,21 @@ export default function TasksPanel({ tasks, currentUser, filter, onFilter, onTog
   return (
     <div className="tasks-panel">
       <div className="tasks-bar">
-        <div className="seg">
-          <button className={filter === 'mine' ? 'active' : ''} onClick={() => onFilter('mine')}>Qui m’est assigné{openCount ? ` · ${openCount}` : ''}</button>
-          {assignedCount > 0 && <button className={filter === 'assigned' ? 'active' : ''} onClick={() => onFilter('assigned')}>Attribuées par moi · {assignedCount}</button>}
-          <button className={filter === 'all' ? 'active' : ''} onClick={() => onFilter('all')}>Tout</button>
-        </div>
+        <Segmented
+          value={filter}
+          onChange={onFilter}
+          options={[
+            { value: 'mine', label: `Qui m’est assigné${openCount ? ` · ${openCount}` : ''}` },
+            ...(assignedCount > 0 ? [{ value: 'assigned', label: `Attribuées par moi · ${assignedCount}` }] : []),
+            { value: 'all', label: 'Tout' },
+          ]}
+        />
         <button className="btn" style={{ width: 'auto', padding: '7px 14px', fontSize: 13 }} onClick={onNew}><Icon name="plus" /> Nouvelle tâche</button>
       </div>
 
       {shown.length === 0 && (
         <p className="tasks-empty">
-          Aucune tâche ici. Créez-en une, ou transformez un message en tâche via l’icône <Icon name="square-check" />.
+          Aucune tâche ici. Créez-en une, ou transformez un message en tâche via l’icône <Icon name="circle-check" />.
         </p>
       )}
 

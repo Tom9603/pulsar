@@ -36,7 +36,7 @@ const STEPS = [
     icon: 'wand-magic-sparkles',
     title: 'L’assistant, quand vous en avez besoin',
     text: 'Rattrapez une conversation trop longue en un résumé, ou faites reformuler un message avant de l’envoyer. Chaque action vous est toujours confirmée avant d’être lancée.',
-    tip: 'Trois actions par jour sont offertes à chacun.',
+    tip: 'Trois actions par jour sont offertes.',
   },
   {
     icon: 'sliders',
