@@ -276,6 +276,9 @@ ensure('messages', 'reply_to_id', 'INTEGER');
 ensure('messages', 'pinned', 'INTEGER NOT NULL DEFAULT 0');
 ensure('messages', 'deleted', 'INTEGER NOT NULL DEFAULT 0'); // suppression douce (pierre tombale)
 ensure('messages', 'poll_id', 'INTEGER'); // message porteur d'un sondage
+// Fils de discussion : si renseigné, le message est une réponse rattachée au
+// message d'origine et n'apparaît donc pas dans le flux principal du salon.
+ensure('messages', 'thread_parent_id', 'INTEGER');
 ensure('users', 'email', 'TEXT');                              // email (activation, récupération)
 ensure('users', 'verified', 'INTEGER NOT NULL DEFAULT 1');    // compte activé (1 par défaut : comptes existants OK)
 ensure('users', 'verify_token', 'TEXT');                      // jeton d'activation par email (héritage)
@@ -285,6 +288,9 @@ ensure('users', 'verify_tries', 'INTEGER NOT NULL DEFAULT 0');// essais ratés s
 ensure('users', 'verify_sent_at', 'INTEGER');                 // dernier envoi (anti-renvoi en rafale)
 ensure('users', 'reset_token', 'TEXT');                       // jeton « mot de passe oublié »
 ensure('users', 'reset_expires', 'INTEGER');                  // fin de validité du jeton (timestamp ms)
+// Preuve d'acceptation des conditions (RGPD) : quand, et quelle version.
+ensure('users', 'tos_accepted_at', 'INTEGER');
+ensure('users', 'tos_version', 'INTEGER');
 ensure('users', 'privacy_dm', "TEXT NOT NULL DEFAULT 'everyone'");     // qui peut m'écrire : 'everyone' | 'friends'
 ensure('users', 'privacy_friend', "TEXT NOT NULL DEFAULT 'everyone'"); // qui peut m'ajouter : 'everyone' | 'none'
 ensure('users', 'hide_presence', 'INTEGER NOT NULL DEFAULT 0');        // apparaître hors ligne (masquer le statut en ligne)
@@ -320,6 +326,9 @@ ensure('friendships', 'message', 'TEXT'); // message d'accompagnement d'une dema
 ensure('users', 'pronouns', 'TEXT');      // pronoms (inclusivité)
 ensure('users', 'banner_url', 'TEXT');    // bannière (image/gif) derrière l'avatar
 ensure('users', 'banner_color', 'TEXT');  // bannière (couleur unie) si pas d'image
+
+// Index dépendant d'une colonne ajoutée par « ensure » : il doit venir après.
+db.exec('CREATE INDEX IF NOT EXISTS idx_messages_thread ON messages(thread_parent_id, id);');
 
 /** Exécute une fonction dans une transaction (node:sqlite n'a pas de wrapper natif). */
 export function transaction(fn) {

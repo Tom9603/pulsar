@@ -45,6 +45,31 @@ export async function uploadFile(dataUrl, name) {
   return api('/uploads', { method: 'POST', body: { dataUrl, name } });
 }
 
+/**
+ * Télécharge un fichier servi par l'API (route authentifiée).
+ * Un simple lien ne conviendrait pas : le jeton voyage dans un en-tête, pas
+ * dans l'URL, justement pour ne pas laisser de trace dans l'historique.
+ */
+export async function downloadFile(path, fallbackName) {
+  const res = await fetch(getServerUrl() + '/api' + path, {
+    headers: token ? { Authorization: 'Bearer ' + token } : {},
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.error || 'Téléchargement impossible');
+  }
+  const disposition = res.headers.get('Content-Disposition') || '';
+  const named = /filename="([^"]+)"/.exec(disposition);
+  const url = URL.createObjectURL(await res.blob());
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = named ? named[1] : fallbackName;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
 /** Transforme un chemin serveur (/uploads/...) en URL complète affichable. */
 export function mediaUrl(path) {
   if (!path) return '';

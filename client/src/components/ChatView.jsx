@@ -6,6 +6,8 @@ import Avatar from './Avatar.jsx';
 import Icon from './Icon.jsx';
 import Composer from './Composer.jsx';
 import FileDropZone from './FileDropZone.jsx';
+import ThreadStrip from './ThreadStrip.jsx';
+import ThreadPanel from './ThreadPanel.jsx';
 import { sendFiles } from '../attachments.js';
 import Attachment from './Attachment.jsx';
 import PollCard from './PollCard.jsx';
@@ -27,7 +29,7 @@ function shouldGroup(prev, cur) {
   return gap < 5 * 60 * 1000;
 }
 
-export default function ChatView({ channel, currentUser, canManage, members, onCreateTask, onOpenProfile, reminderMsgIds, taskMsgIds, savedMsgIds, savedByMsg, aiEnabled }) {
+export default function ChatView({ channel, currentUser, canManage, members, onCreateTask, onOpenProfile, reminderMsgIds, taskMsgIds, savedMsgIds, savedByMsg, aiEnabled, onThreadToggle }) {
   const [messages, setMessages] = useState([]);
   const [typing, setTyping] = useState({});
   const [editingId, setEditingId] = useState(null);
@@ -40,7 +42,13 @@ export default function ChatView({ channel, currentUser, canManage, members, onC
   const [confirmDel, setConfirmDel] = useState(null);
   const [watchOpen, setWatchOpen] = useState(false);
   const [pollOpen, setPollOpen] = useState(false);
-  useEffect(() => { setWatchOpen(false); setPollOpen(false); }, [channel.id]);
+  const [threadId, setThreadId] = useState(null); // fil ouvert dans le panneau latéral
+  useEffect(() => { setWatchOpen(false); setPollOpen(false); setThreadId(null); }, [channel.id]);
+
+  // Un fil ouvert prend la place à droite : on prévient la mise en page, qui
+  // escamote la liste des membres pour ne pas écraser la conversation.
+  useEffect(() => { onThreadToggle?.(!!threadId); }, [threadId, onThreadToggle]);
+  useEffect(() => () => onThreadToggle?.(false), [onThreadToggle]);
   const scrollRef = useRef(null);
   const typingTimers = useRef({});
   const lastTypingSent = useRef(0);
@@ -89,6 +97,13 @@ export default function ChatView({ channel, currentUser, canManage, members, onC
       }, 4000);
     };
 
+    // Une réponse dans un fil ne rejoint pas le flux : seule la ligne
+    // récapitulative sous le message d'origine est rafraîchie.
+    const onThreadSummary = ({ channelId, parentId, summary }) => {
+      if (channelId !== channel.id) return;
+      setMessages((prev) => prev.map((m) => (m.id === parentId ? { ...m, thread: summary } : m)));
+    };
+
     socket.on('message:new', onNew);
     socket.on('message:updated', onUpdated);
     socket.on('message:deleted', onDeleted);
@@ -96,6 +111,8 @@ export default function ChatView({ channel, currentUser, canManage, members, onC
     socket.on('pins:changed', onPins);
     socket.on('poll:update', onPoll);
     socket.on('typing', onTypingEvt);
+    socket.on('thread:new', onThreadSummary);
+    socket.on('thread:summary', onThreadSummary);
     return () => {
       socket.off('message:new', onNew);
       socket.off('message:updated', onUpdated);
@@ -104,6 +121,8 @@ export default function ChatView({ channel, currentUser, canManage, members, onC
       socket.off('pins:changed', onPins);
       socket.off('poll:update', onPoll);
       socket.off('typing', onTypingEvt);
+      socket.off('thread:new', onThreadSummary);
+      socket.off('thread:summary', onThreadSummary);
     };
   }, [channel.id, currentUser.id, showPins]);
 
@@ -136,6 +155,7 @@ export default function ChatView({ channel, currentUser, canManage, members, onC
   const taskFromMsg = (m) => onCreateTask?.({ title: (m.content || '').replace(/\s+/g, ' ').trim().slice(0, 140), description: m.content && m.content.length > 140 ? m.content : '', server_id: channel.server_id, channel_id: channel.id, source_message_id: m.id, source_label: channel.name });
   const msgMenu = (m, isOwn) => ctx(() => m.deleted ? [] : [
     { label: 'Répondre', icon: 'reply', onClick: () => setReplyingTo(m) },
+    { label: m.thread?.reply_count ? 'Ouvrir le fil' : 'Répondre dans un fil', icon: 'comments', onClick: () => setThreadId(m.id) },
     onCreateTask && { label: 'Créer une tâche', icon: 'square-check', onClick: () => taskFromMsg(m) },
     { label: savedByMsg?.get(m.id) ? 'Retirer des enregistrés' : 'Enregistrer le message', icon: 'bookmark', onClick: () => toggleSave(m) },
     canManage && { label: m.pinned ? 'Détacher' : 'Épingler', icon: 'thumbtack', onClick: () => pin(m) },
@@ -159,6 +179,7 @@ export default function ChatView({ channel, currentUser, canManage, members, onC
   const sendAttachment = (url, text, name) => send({ content: text || '', attachmentUrl: url, attachmentName: name });
 
   return (
+    <div className="chat-split">
     <FileDropZone onFiles={(files) => sendFiles(files, sendAttachment)} label={`Déposez pour envoyer dans ${channel.name}`}>
     <div className="chat-area">
       <WatchTogether channelId={channel.id} open={watchOpen} onClose={() => setWatchOpen(false)} />
@@ -263,12 +284,15 @@ export default function ChatView({ channel, currentUser, canManage, members, onC
                     ))}
                   </div>
                 )}
+
+                {!m.deleted && <ThreadStrip thread={m.thread} active={threadId === m.id} onOpen={() => setThreadId(m.id)} />}
               </div>
 
               {!editing && !m.deleted && (
                 <div className="msg-actions">
                   <button title="Réagir" onClick={() => (pickerFor === m.id ? setPickerFor(null) : openPicker(m.id))}><Icon name="face-smile" /></button>
                   <button title="Répondre" onClick={() => setReplyingTo(m)}><Icon name="reply" /></button>
+                  <button title={m.thread?.reply_count ? 'Ouvrir le fil' : 'Répondre dans un fil'} onClick={() => setThreadId(m.id)}><Icon name="comments" /></button>
                   {onCreateTask && (
                     <button title="Créer une tâche depuis ce message" onClick={() => onCreateTask({
                       title: (m.content || '').replace(/\s+/g, ' ').trim().slice(0, 140),
@@ -332,5 +356,18 @@ export default function ChatView({ channel, currentUser, canManage, members, onC
       )}
     </div>
     </FileDropZone>
+
+    {threadId && (
+      <ThreadPanel
+        rootId={threadId}
+        channel={channel}
+        currentUser={currentUser}
+        members={members}
+        aiEnabled={aiEnabled}
+        onOpenProfile={onOpenProfile}
+        onClose={() => setThreadId(null)}
+      />
+    )}
+    </div>
   );
 }

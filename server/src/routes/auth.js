@@ -41,12 +41,16 @@ async function issueCode(user) {
 }
 
 router.post('/register', limit('register', 5, 3600, 'Trop de créations de compte depuis cet appareil. Réessayez dans une heure.'), async (req, res) => {
-  const { username, password, display_name, email } = req.body || {};
+  const { username, password, display_name, email, tos_version } = req.body || {};
   const cleanEmail = (email || '').trim().toLowerCase();
   if (!username || !password) return res.status(400).json({ error: 'Nom d’utilisateur et mot de passe requis' });
   if (username.trim().length < 3) return res.status(400).json({ error: 'Nom d’utilisateur trop court (3 caractères min.)' });
   if (!EMAIL_RE.test(cleanEmail)) return res.status(400).json({ error: 'Adresse email invalide' });
   if (password.length < 8) return res.status(400).json({ error: 'Mot de passe trop court (8 caractères min.)' });
+  // L'acceptation est exigée côté serveur aussi : une case cochée dans le
+  // navigateur ne prouve rien, et la preuve doit être enregistrée.
+  const tosVersion = Number(tos_version);
+  if (!tosVersion) return res.status(400).json({ error: 'Vous devez accepter les conditions d’utilisation' });
 
   const clean = username.trim();
   if (db.prepare('SELECT id FROM users WHERE username = ?').get(clean)) return res.status(409).json({ error: 'Ce nom d’utilisateur est déjà pris' });
@@ -54,8 +58,8 @@ router.post('/register', limit('register', 5, 3600, 'Trop de créations de compt
 
   const verified = mailEnabled ? 0 : 1; // sans email configuré : compte activé directement
   const info = db.prepare(
-    'INSERT INTO users (username, password_hash, display_name, avatar_color, email, verified) VALUES (?, ?, ?, ?, ?, ?)'
-  ).run(clean, hashPassword(password), (display_name || '').trim() || clean, randomColor(), cleanEmail, verified);
+    'INSERT INTO users (username, password_hash, display_name, avatar_color, email, verified, tos_accepted_at, tos_version) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
+  ).run(clean, hashPassword(password), (display_name || '').trim() || clean, randomColor(), cleanEmail, verified, Date.now(), tosVersion);
 
   const user = db.prepare('SELECT * FROM users WHERE id = ?').get(info.lastInsertRowid);
   if (!verified) { await issueCode(user); return res.json({ pending: true, email: cleanEmail }); }

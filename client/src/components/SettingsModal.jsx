@@ -3,7 +3,7 @@ import Modal from './Modal.jsx';
 import ConfirmModal from './ConfirmModal.jsx';
 import Avatar from './Avatar.jsx';
 import Icon from './Icon.jsx';
-import { api, uploadFile, mediaUrl } from '../api.js';
+import { api, uploadFile, mediaUrl, downloadFile } from '../api.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import { isSoundEnabled, setSoundEnabled, isDesktopEnabled, setDesktopEnabled,
   isQuietEnabled, setQuietEnabled, getQuietFrom, setQuietFrom, getQuietTo, setQuietTo, isQuietWeekend, setQuietWeekend } from '../notify.js';
@@ -12,6 +12,8 @@ import { loadAppearance, saveAppearance, applyAppearance, ACCENTS } from '../the
 import Logo from './Logo.jsx';
 import wordUrl from '../assets/pulsar-wordmark.png';
 import { useUpdate, openUpdate } from '../update.js';
+import TermsModal from './TermsModal.jsx';
+import { LegalNotice } from '../legal.jsx';
 
 const COLORS = ['#5865F2', '#EB459E', '#57F287', '#FAA61A', '#ED4245', '#3498DB', '#9B59B6', '#14b8a6', '#e67e22'];
 const STATUSES = [
@@ -89,6 +91,17 @@ export default function SettingsModal({ onClose }) {
       loadSessions();
     } catch (e) { setAccountMsg(e.message); }
   }
+  const [termsTab, setTermsTab] = useState(null); // consultation des textes légaux
+  const [exporting, setExporting] = useState(false);
+  async function exportData() {
+    setExporting(true);
+    setAccountMsg('');
+    try {
+      await downloadFile('/privacy/export', 'pulsar-mes-donnees.json');
+    } catch (e) { setAccountMsg(e.message); }
+    finally { setExporting(false); }
+  }
+
   async function revokeOthers() {
     try {
       const { count } = await api('/sessions/revoke-others', { method: 'POST' });
@@ -436,11 +449,13 @@ export default function SettingsModal({ onClose }) {
 
               <h3 className="about-sub">Mentions légales</h3>
               <div className="legal">
-                <p><strong>Éditeur :</strong> [à compléter : votre nom ou votre société]</p>
-                <p><strong>Contact :</strong> [à compléter : adresse email]</p>
-                <p><strong>Hébergeur :</strong> [à compléter : nom et adresse de l’hébergeur]</p>
-                <p><strong>Directeur de la publication :</strong> [à compléter]</p>
-                <p className="legal-note">Remplacez les mentions « à compléter » par vos informations réelles avant la mise en ligne. Donnez-les-moi et je les intègre.</p>
+                <LegalNotice />
+              </div>
+
+              <h3 className="about-sub">Conditions et données personnelles</h3>
+              <div className="about-legal-links">
+                <button className="btn btn-ghost" onClick={() => setTermsTab('terms')}>Conditions générales d’utilisation</button>
+                <button className="btn btn-ghost" onClick={() => setTermsTab('privacy')}>Politique de confidentialité</button>
               </div>
             </>
           )}
@@ -477,6 +492,18 @@ export default function SettingsModal({ onClose }) {
               </div>
 
               <div className="field" style={{ marginTop: 24, borderTop: '1px solid var(--border)', paddingTop: 16 }}>
+                <label>Mes données</label>
+                <p className="field-hint" style={{ marginBottom: 10 }}>
+                  Récupérez l’ensemble des données associées à votre compte dans un fichier :
+                  profil, messages, contacts, tâches et appareils connectés. C’est votre droit
+                  d’accès et de portabilité.
+                </p>
+                <button className="btn btn-ghost" style={{ width: 'auto', padding: '8px 16px' }} disabled={exporting} onClick={exportData}>
+                  <Icon name="download" /> {exporting ? 'Préparation…' : 'Exporter mes données'}
+                </button>
+              </div>
+
+              <div className="field" style={{ marginTop: 24, borderTop: '1px solid var(--border)', paddingTop: 16 }}>
                 <label style={{ color: 'var(--danger)' }}>Suppression de compte</label>
                 <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 8 }}>Supprimer votre compte efface tout définitivement.</p>
                 <input type="password" placeholder="Confirmez votre mot de passe" value={delPw} onChange={(e) => setDelPw(e.target.value)} />
@@ -492,6 +519,8 @@ export default function SettingsModal({ onClose }) {
           </div>
         </div>
       </div>
+
+      {termsTab && <TermsModal tab={termsTab} onClose={() => setTermsTab(null)} />}
 
       {confirmDelAccount && (
         <ConfirmModal

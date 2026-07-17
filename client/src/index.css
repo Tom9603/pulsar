@@ -225,6 +225,47 @@ input[type="file"]::file-selector-button:hover {
 .linklike:hover:not(:disabled) { text-decoration: underline; }
 .linklike:disabled { color: var(--text-faint); cursor: default; }
 
+/* --- Conditions d'utilisation --- */
+.tos-check {
+  display: flex; align-items: flex-start; gap: 10px; margin: 4px 0 18px;
+  font-size: 13px; line-height: 1.5; color: var(--text-muted); cursor: pointer;
+}
+.tos-check input { margin-top: 2px; flex-shrink: 0; accent-color: var(--accent); width: 15px; height: 15px; cursor: pointer; }
+.tos-check .linklike { font-size: inherit; }
+
+.terms-modal { width: min(680px, 94vw); padding: 0; display: flex; flex-direction: column; max-height: 88vh; }
+.tm-head { display: flex; align-items: center; justify-content: space-between; padding: 18px 22px 14px; }
+.tm-head h2 { margin: 0; font-size: 18px; }
+.tm-close { background: none; border: 0; color: var(--text-faint); cursor: pointer; font-size: 16px; }
+.tm-close:hover { color: var(--text); }
+.tm-tabs { display: flex; gap: 4px; padding: 0 22px; border-bottom: 1px solid var(--border); }
+.tm-tabs button {
+  background: none; border: 0; border-bottom: 2px solid transparent; cursor: pointer;
+  padding: 9px 12px; color: var(--text-muted); font-size: 13.5px; font-weight: 600;
+}
+.tm-tabs button:hover { color: var(--text); }
+.tm-tabs button.active { color: var(--accent); border-bottom-color: var(--accent); }
+.tm-scroll { flex: 1; overflow-y: auto; padding: 18px 22px; min-height: 0; }
+.tm-foot { border-top: 1px solid var(--border); padding: 14px 22px 18px; flex-shrink: 0; }
+.tm-check {
+  display: flex; align-items: flex-start; gap: 10px; margin-bottom: 14px;
+  font-size: 13.5px; line-height: 1.5; cursor: pointer;
+}
+.tm-check input { margin-top: 2px; flex-shrink: 0; accent-color: var(--accent); width: 16px; height: 16px; cursor: pointer; }
+.tm-actions { display: flex; align-items: center; gap: 8px; }
+.tm-actions .spacer { flex: 1; }
+.tm-actions .btn, .tm-actions .btn-ghost { width: auto; padding: 9px 18px; white-space: nowrap; }
+.tm-toend { font-size: 12.5px; }
+.about-legal-links { display: flex; gap: 8px; flex-wrap: wrap; }
+.about-legal-links .btn-ghost { width: auto; padding: 8px 14px; border: 1px solid var(--border); }
+.legal h4 { margin: 18px 0 6px; font-size: 14px; color: var(--text); }
+.legal h4:first-of-type { margin-top: 4px; }
+.legal p, .legal li { font-size: 13.5px; line-height: 1.65; color: var(--text-muted); }
+.legal p { margin: 0 0 8px; }
+.legal ul { margin: 0 0 10px; padding-left: 20px; }
+.legal li { margin-bottom: 5px; }
+.legal-date { color: var(--text-faint) !important; font-size: 12.5px !important; font-style: italic; }
+
 /* --- Mot de passe oublié --- */
 .field-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
 .field-link { font-size: 12.5px; color: var(--accent); text-decoration: none; }
@@ -519,6 +560,56 @@ input[type="file"]::file-selector-button:hover {
 
 .content-body { flex: 1; display: flex; min-height: 0; }
 .chat-area { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+
+/* --- Fils de discussion --- */
+/* Le salon et le fil cohabitent : le fil s'ouvre à droite, sans rien créer
+   dans la barre latérale et sans recouvrir la conversation. */
+.chat-split { flex: 1; display: flex; min-width: 0; min-height: 0; }
+
+.thread-strip {
+  display: inline-flex; align-items: center; gap: 8px; margin-top: 6px;
+  padding: 5px 10px 5px 6px; border-radius: 8px;
+  background: var(--bg-content-alt); border: 1px solid var(--border);
+  color: var(--text-muted); font-size: 12.5px; cursor: pointer;
+  transition: border-color .12s, color .12s;
+}
+.thread-strip:hover { border-color: rgba(139, 92, 246, 0.4); color: var(--text); }
+.thread-strip.active { border-color: var(--accent); }
+.ts-faces { display: inline-flex; }
+.ts-faces > * { margin-right: -6px; border: 2px solid var(--bg-content-alt); border-radius: 50%; }
+.ts-faces > *:last-child { margin-right: 2px; }
+.ts-count { color: var(--accent); font-weight: 600; }
+.ts-when { color: var(--text-faint); }
+.ts-go { color: var(--text-faint); font-size: 10px; }
+
+.thread-panel {
+  width: 380px; flex-shrink: 0; display: flex; flex-direction: column; min-height: 0;
+  background: var(--bg-sidebar); border-left: 1px solid var(--border);
+}
+.tp-head { display: flex; align-items: center; gap: 8px; padding: 0 14px; height: 52px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+.tp-title { display: inline-flex; align-items: center; gap: 8px; font-weight: 600; font-size: 14.5px; }
+.tp-title i, .tp-title svg { color: var(--accent); }
+.tp-sub { color: var(--text-faint); font-size: 12.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tp-close { margin-left: auto; background: none; border: 0; color: var(--text-faint); cursor: pointer; font-size: 15px; }
+.tp-close:hover { color: var(--text); }
+.tp-scroll { flex: 1; overflow-y: auto; padding: 14px 14px 8px; min-height: 0; }
+.tp-state { padding: 20px; text-align: center; color: var(--text-faint); font-size: 13.5px; }
+.tp-error { color: var(--danger); }
+.tp-root { background: var(--bg-content-alt); border: 1px solid var(--border); border-radius: 10px; padding: 10px; }
+.tp-sep {
+  display: flex; align-items: center; gap: 10px; margin: 14px 0 10px;
+  color: var(--text-faint); font-size: 12px; white-space: nowrap;
+}
+.tp-sep::before, .tp-sep::after { content: ''; height: 1px; flex: 1; background: var(--border); }
+.tp-msg { display: flex; gap: 10px; padding: 6px 2px; }
+.tp-msg-body { min-width: 0; flex: 1; }
+.tp-msg-head { display: flex; align-items: baseline; gap: 8px; }
+.tp-author { font-weight: 600; font-size: 13.5px; }
+.tp-time, .tp-edited { color: var(--text-faint); font-size: 11px; }
+.tp-text { font-size: 14px; line-height: 1.5; word-wrap: break-word; margin-top: 2px; }
+.tp-gone { color: var(--text-faint); font-style: italic; }
+/* La zone de saisie du fil reprend celle du salon, en plus compact. */
+.thread-panel .composer { padding: 8px 12px 12px; }
 
 /* --- Glisser-déposer de fichiers --- */
 /* La zone épouse son contenu : elle doit se comporter comme l'élément qu'elle enveloppe. */

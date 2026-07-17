@@ -64,6 +64,7 @@ export default function AppLayout() {
   const [voiceStates, setVoiceStates] = useState({});
   const [voiceInfo, setVoiceInfo] = useState(null);
   const [showMembers, setShowMembers] = useState(true);
+  const [threadOpen, setThreadOpen] = useState(false); // un fil occupe la droite
 
   const [dmConversations, setDmConversations] = useState([]);
   const [activeDm, setActiveDm] = useState(null);
@@ -531,7 +532,7 @@ export default function AppLayout() {
                       onToggleScreen={voice.toggleScreen} onSetPeerVolume={voice.setPeerVolume}
                       onRaiseHand={voice.raiseHand} onLowerHand={voice.lowerHand} />
                   ) : (
-                    <ChatView channel={activeChannel} currentUser={user} canManage={can('MANAGE_CHANNELS')} members={detail?.members} onCreateTask={openTaskFromMessage} onOpenProfile={setProfileTarget} reminderMsgIds={reminderMsgIds} taskMsgIds={taskMsgIds} savedMsgIds={savedMsgIds} savedByMsg={savedByMsg} aiEnabled={ai.enabled} />
+                    <ChatView channel={activeChannel} currentUser={user} canManage={can('MANAGE_CHANNELS')} members={detail?.members} onCreateTask={openTaskFromMessage} onOpenProfile={setProfileTarget} reminderMsgIds={reminderMsgIds} taskMsgIds={taskMsgIds} savedMsgIds={savedMsgIds} savedByMsg={savedByMsg} aiEnabled={ai.enabled} onThreadToggle={setThreadOpen} />
                   )}
                 </div>
               </div>
@@ -541,7 +542,7 @@ export default function AppLayout() {
           )}
         </div>
 
-        {section === 'server' && showMembers && detail && (
+        {section === 'server' && showMembers && !threadOpen && detail && (
           <MemberList members={detail.members} onlineIds={onlineIds} ownerId={detail.server.owner_id} roles={detail.roles} onMemberClick={setMemberTarget} />
         )}
       </div>

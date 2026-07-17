@@ -3,7 +3,7 @@ import db from '../db.js';
 import { authMiddleware } from '../auth.js';
 import { hasPermission, canAccessChannel } from '../permissions.js';
 import { getIO } from '../realtime.js';
-import { reactionsFor, replyPreview, pollObject, fullMessage } from '../socket.js';
+import { reactionsFor, replyPreview, pollObject, fullMessage, attachThreads } from '../socket.js';
 
 const router = Router();
 router.use(authMiddleware);
@@ -19,7 +19,7 @@ function decorate(rows, userId) {
     m.reply_to = replyPreview(m.reply_to_id);
     if (m.poll_id) m.poll = pollObject(m.poll_id, userId);
   }
-  return rows;
+  return attachThreads(rows);
 }
 
 /** Renvoie le salon (avec owner_id du serveur) si l'utilisateur y a accès, sinon null. */
@@ -41,13 +41,28 @@ router.get('/:id/messages', (req, res) => {
   const limit = Math.min(parseInt(req.query.limit, 10) || 50, 100);
   const before = parseInt(req.query.before, 10) || null;
 
+  // « thread_parent_id IS NULL » : les réponses d'un fil vivent dans leur fil,
+  // pas dans le flux du salon. C'est tout l'intérêt des fils.
   const rows = before
     ? db.prepare(`SELECT ${MESSAGE_COLS} FROM messages m JOIN users u ON u.id = m.user_id
-        WHERE m.channel_id = ? AND m.id < ? ORDER BY m.id DESC LIMIT ?`).all(channel.id, before, limit)
+        WHERE m.channel_id = ? AND m.thread_parent_id IS NULL AND m.id < ? ORDER BY m.id DESC LIMIT ?`).all(channel.id, before, limit)
     : db.prepare(`SELECT ${MESSAGE_COLS} FROM messages m JOIN users u ON u.id = m.user_id
-        WHERE m.channel_id = ? ORDER BY m.id DESC LIMIT ?`).all(channel.id, limit);
+        WHERE m.channel_id = ? AND m.thread_parent_id IS NULL ORDER BY m.id DESC LIMIT ?`).all(channel.id, limit);
 
   res.json({ messages: decorate(rows, req.userId).reverse() });
+});
+
+/** Contenu d'un fil : le message d'origine et ses réponses. */
+router.get('/threads/:messageId', (req, res) => {
+  const parent = db.prepare(`SELECT ${MESSAGE_COLS}, m.channel_id FROM messages m JOIN users u ON u.id = m.user_id WHERE m.id = ?`)
+    .get(req.params.messageId);
+  if (!parent) return res.status(404).json({ error: 'Message introuvable' });
+  if (!accessibleChannel(parent.channel_id, req.userId)) return res.status(403).json({ error: 'Accès refusé à ce salon' });
+
+  const replies = db.prepare(`SELECT ${MESSAGE_COLS} FROM messages m JOIN users u ON u.id = m.user_id
+    WHERE m.thread_parent_id = ? ORDER BY m.id ASC`).all(parent.id);
+
+  res.json({ root: decorate([parent], req.userId)[0], messages: decorate(replies, req.userId) });
 });
 
 /** Messages épinglés d'un salon. */

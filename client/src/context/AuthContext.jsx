@@ -31,10 +31,10 @@ export function AuthProvider({ children }) {
     connectSocket();
   }
 
-  async function register(username, password, display_name, email) {
+  async function register(username, password, display_name, email, tos_version) {
     const res = await api('/auth/register', {
       method: 'POST',
-      body: { username, password, display_name, email },
+      body: { username, password, display_name, email, tos_version },
     });
     if (res.pending) return { pending: true, email: res.email }; // code de confirmation requis
     setToken(res.token);

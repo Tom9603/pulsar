@@ -134,6 +134,51 @@ export function fullMessage(id, userId = null) {
   return m;
 }
 
+const THREAD_FACES = 3; // avatars montrés sous le message d'origine
+
+/**
+ * Attache à chaque message le résumé de son fil (nombre de réponses,
+ * participants, dernière activité), ou null s'il n'en a pas.
+ * Volontairement en deux requêtes groupées plutôt qu'une par message :
+ * un salon chargé afficherait sinon des centaines de requêtes.
+ */
+export function attachThreads(rows) {
+  const ids = rows.map((r) => r.id);
+  if (!ids.length) return rows;
+  const marks = ids.map(() => '?').join(',');
+
+  const counts = db.prepare(`
+    SELECT thread_parent_id AS pid, COUNT(*) AS reply_count, MAX(created_at) AS last_reply_at
+    FROM messages WHERE thread_parent_id IN (${marks}) AND deleted = 0
+    GROUP BY thread_parent_id
+  `).all(...ids);
+  const byId = new Map(counts.map((c) => [c.pid, c]));
+
+  const faces = db.prepare(`
+    SELECT DISTINCT m.thread_parent_id AS pid, u.id, u.username, u.display_name, u.avatar_url, u.avatar_color
+    FROM messages m JOIN users u ON u.id = m.user_id
+    WHERE m.thread_parent_id IN (${marks}) AND m.deleted = 0
+    ORDER BY m.thread_parent_id, m.id
+  `).all(...ids);
+  const facesBy = new Map();
+  for (const f of faces) {
+    if (!facesBy.has(f.pid)) facesBy.set(f.pid, []);
+    const list = facesBy.get(f.pid);
+    if (list.length < THREAD_FACES) list.push(f);
+  }
+
+  for (const r of rows) {
+    const c = byId.get(r.id);
+    r.thread = c
+      ? { reply_count: c.reply_count, last_reply_at: c.last_reply_at, participants: facesBy.get(r.id) || [] }
+      : null;
+  }
+  return rows;
+}
+
+/** Résumé du fil d'un seul message (après une nouvelle réponse). */
+export const threadSummaryOf = (parentId) => attachThreads([{ id: parentId }])[0].thread;
+
 /** Réactions agrégées d'un message privé. */
 export function dmReactionsFor(messageId) {
   const rows = db.prepare('SELECT emoji, user_id FROM dm_reactions WHERE message_id = ?').all(messageId);
@@ -337,6 +382,39 @@ export function setupSocket(io) {
       });
     });
 
+    /**
+     * Réponse dans un fil rattaché à un message.
+     * Le message est enregistré dans le même salon, mais marqué comme réponse
+     * de fil : il n'apparaîtra donc pas dans le flux principal.
+     */
+    socket.on('thread:send', ({ parentId, content, attachmentUrl, attachmentName }) => {
+      const text = (content || '').trim().slice(0, 2000);
+      const attach = validAttachment(attachmentUrl);
+      if (!text && !attach) return;
+      if (!canSend(socket, userId)) return;
+
+      const parent = db.prepare('SELECT id, channel_id, thread_parent_id FROM messages WHERE id = ?').get(parentId);
+      if (!parent) return;
+      // Pas de fil dans un fil : on répond toujours au message racine.
+      const rootId = parent.thread_parent_id || parent.id;
+      const channel = db.prepare('SELECT * FROM channels WHERE id = ?').get(parent.channel_id);
+      if (!channel || channel.type !== 'text') return;
+      if (!canAccessChannel(channel.id, userId)) return;
+
+      const name = attach && typeof attachmentName === 'string' ? attachmentName.slice(0, 120) : null;
+      const info = db.prepare(
+        'INSERT INTO messages (channel_id, user_id, content, attachment_url, attachment_name, thread_parent_id) VALUES (?, ?, ?, ?, ?, ?)'
+      ).run(channel.id, userId, text, attach, name, rootId);
+
+      io.to('server:' + channel.server_id).emit('thread:new', {
+        channelId: channel.id,
+        serverId: channel.server_id,
+        parentId: rootId,
+        message: fullMessage(info.lastInsertRowid),
+        summary: threadSummaryOf(rootId), // met à jour la ligne sous le message d'origine
+      });
+    });
+
     socket.on('message:pin', ({ messageId, pinned }) => {
       const m = db.prepare('SELECT m.channel_id, c.server_id FROM messages m JOIN channels c ON c.id = m.channel_id WHERE m.id = ?').get(messageId);
       if (!m || !hasPermission(m.server_id, userId, 'MANAGE_CHANNELS')) return;
@@ -366,7 +444,7 @@ export function setupSocket(io) {
     });
 
     socket.on('message:delete', ({ messageId }) => {
-      const m = db.prepare('SELECT m.user_id, m.channel_id, c.server_id FROM messages m JOIN channels c ON c.id = m.channel_id WHERE m.id = ?').get(messageId);
+      const m = db.prepare('SELECT m.user_id, m.channel_id, m.thread_parent_id, c.server_id FROM messages m JOIN channels c ON c.id = m.channel_id WHERE m.id = ?').get(messageId);
       if (!m) return;
       const allowed = m.user_id === userId || hasPermission(m.server_id, userId, 'MANAGE_CHANNELS');
       if (!allowed) return;
@@ -374,6 +452,12 @@ export function setupSocket(io) {
       db.prepare('DELETE FROM message_reactions WHERE message_id = ?').run(messageId);
       io.to('server:' + m.server_id).emit('message:updated', { channelId: m.channel_id, message: fullMessage(messageId) });
       io.to('server:' + m.server_id).emit('pins:changed', { channelId: m.channel_id });
+      // Réponse de fil supprimée : le compteur sous le message d'origine doit suivre.
+      if (m.thread_parent_id) {
+        io.to('server:' + m.server_id).emit('thread:summary', {
+          channelId: m.channel_id, parentId: m.thread_parent_id, summary: threadSummaryOf(m.thread_parent_id),
+        });
+      }
     });
 
     socket.on('reaction:toggle', ({ messageId, emoji }) => {
