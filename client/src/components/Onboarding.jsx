@@ -87,18 +87,19 @@ export default function Onboarding({ onClose }) {
         ))}
       </div>
 
+      {/* Dernière étape : les boutons de parcours laissent la place à la sortie. */}
       <div className="ob-nav">
-        <button className="ob-arrow" onClick={() => setStep((v) => v - 1)} disabled={step === 0} aria-label="Précédent">
-          <Icon name="chevron-left" />
-        </button>
-        <button className="ob-arrow" onClick={() => setStep((v) => v + 1)} disabled={last} aria-label="Suivant">
-          <Icon name="chevron-right" />
-        </button>
-
-        <span className="spacer" />
-
-        <button className="btn-ghost" onClick={() => close(true)}>Ne plus afficher</button>
-        <button className="btn" onClick={() => close(false)}>Fermer</button>
+        {last ? (
+          <>
+            <button className="btn-ghost" onClick={() => close(true)}>Ne plus afficher</button>
+            <button className="btn" onClick={() => close(false)}>Fermer</button>
+          </>
+        ) : (
+          <>
+            {step > 0 && <button className="btn-ghost" onClick={() => setStep((v) => v - 1)}>Retour</button>}
+            <button className="btn" onClick={() => setStep((v) => v + 1)}>Suivant</button>
+          </>
+        )}
       </div>
     </Modal>
   );
