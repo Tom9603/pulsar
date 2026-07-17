@@ -24,6 +24,18 @@ if [ ! -f "$ENV_FILE" ]; then
   exit 1
 fi
 
+# Sans vrai terminal, la saisie masquée est IMPOSSIBLE : c'est la machine de
+# l'utilisateur qui affiche les caractères, avant même qu'ils n'arrivent ici.
+# On refuse plutôt que d'afficher la clé en clair par surprise.
+if [ ! -t 0 ]; then
+  echo "ERREUR : ce script exige un terminal interactif, sinon la cle" >&2
+  echo "s'afficherait en clair a l'ecran." >&2
+  echo "" >&2
+  echo "Relancez avec l'option -t :" >&2
+  echo "  ssh -t root@167.233.98.220 'bash /opt/pulsar/deploy/set-smtp.sh'" >&2
+  exit 1
+fi
+
 echo "Configuration de l'envoi d'emails pour Pulsar"
 echo "  Serveur     : $SMTP_HOST:$SMTP_PORT"
 echo "  Identifiant : $SMTP_USER"
