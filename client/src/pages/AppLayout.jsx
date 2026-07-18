@@ -47,7 +47,7 @@ import Whiteboard from '../components/Whiteboard.jsx';
 import RemoteAudio from '../components/RemoteAudio.jsx';
 import ContextMenu from '../components/ContextMenu.jsx';
 import ConfirmModal from '../components/ConfirmModal.jsx';
-import { openMenu, ctx } from '../contextmenu.js';
+import { ctx } from '../contextmenu.js';
 
 export default function AppLayout() {
   const { user, logout } = useAuth();
@@ -309,19 +309,10 @@ export default function AppLayout() {
     { label: 'Voir le profil', icon: 'user', onClick: () => setProfileTarget(peer.id) },
   ]);
 
-  // Menu clic droit global (repli) : sauf dans les champs de saisie et les médias.
-  function onAppContextMenu(e) {
-    const t = e.target;
-    if (['INPUT', 'TEXTAREA', 'SELECT', 'AUDIO', 'VIDEO', 'IMG', 'A'].includes(t.tagName) || t.isContentEditable) return;
-    e.preventDefault();
-    openMenu(e.clientX, e.clientY, [
-      { label: 'Accueil', icon: 'house', onClick: goHome },
-      { label: 'Messages', icon: 'comment', onClick: openMessages },
-      { label: 'Mon profil', icon: 'user', onClick: () => setProfileTarget(user.id) },
-      { sep: true },
-      { label: 'Réglages', icon: 'gear', onClick: () => setModal('settings') },
-    ]);
-  }
+  // (Le menu clic droit global de navigation a été retiré : il surgissait
+  // partout sans raison. La navigation se fait par le rail de gauche et la
+  // barre du haut ; les menus contextuels utiles restent sur les serveurs,
+  // salons, messages et contacts.)
 
   // ---- Temps réel ----
   useEffect(() => {
@@ -450,7 +441,7 @@ export default function AppLayout() {
   const activeChannel = detail?.channels.find((c) => c.id === activeChannelId) || null;
 
   return (
-    <div className="pulsar-app" onContextMenu={onAppContextMenu}>
+    <div className="pulsar-app">
       <TopBar
         user={user}
         onHome={goHome}
