@@ -3,6 +3,7 @@ import Modal from './Modal.jsx';
 import Avatar from './Avatar.jsx';
 import Icon from './Icon.jsx';
 import { api, uploadImage, uploadFile, mediaUrl } from '../api.js';
+import { fileToImageDataUrl } from '../imagefile.js';
 import { useAuth } from '../context/AuthContext.jsx';
 
 const COLORS = ['#5865F2', '#EB459E', '#57F287', '#FAA61A', '#ED4245', '#3498DB', '#9B59B6', '#14b8a6', '#e67e22'];
@@ -70,14 +71,23 @@ export default function EditProfileModal({ initialTab = 'profil', onClose }) {
   const set = (k, v) => setF((s) => ({ ...s, [k]: v }));
   const pickPreset = (p) => { setPresetId(p.id); set('avatar_url', presetToPng(p)); };
 
-  function pickImage(key, maxMo, e) {
+  async function pickImage(key, maxMo, e) {
     const file = e.target.files?.[0];
     if (!file) return;
     if (file.size > maxMo * 1024 * 1024) { setError(`Image trop lourde (${maxMo} Mo max).`); return; }
     if (key === 'avatar_url') setPresetId(null);
-    const r = new FileReader();
-    r.onload = () => set(key, r.result);
-    r.readAsDataURL(file);
+    setError('');
+    try {
+      // Conversion en format universel (le HEIC des iPhone devient du JPEG) et
+      // redimensionnement : un avatar carré compact, une bannière plus large.
+      const opts = key === 'avatar_url'
+        ? { max: 256, square: true }
+        : { max: 1280, square: false };
+      set(key, await fileToImageDataUrl(file, opts));
+    } catch (err) {
+      set(key, '');
+      setError(err.message);
+    }
   }
   async function pickCv(e) {
     const file = e.target.files?.[0];
@@ -92,12 +102,17 @@ export default function EditProfileModal({ initialTab = 'profil', onClose }) {
   async function save() {
     setError(''); setBusy(true);
     try {
-      // Bannière : si une image a été choisie en base64, on l'envoie d'abord.
+      // Images choisies en base64 : on les envoie au serveur d'abord, pour
+      // stocker une URL de fichier (et non l'image entière) dans le profil.
+      // L'avatar était oublié ici : il finissait en base64 géant dans la base,
+      // et en HEIC illisible pour les autres. Corrigé.
       let banner = f.banner_url;
       if (banner && banner.startsWith('data:')) banner = await uploadImage(banner);
+      let avatar = f.avatar_url;
+      if (avatar && avatar.startsWith('data:')) avatar = await uploadImage(avatar);
       const { user: updated } = await api('/users/me', {
         method: 'PATCH',
-        body: { ...f, banner_url: banner || null, avatar_url: f.avatar_url || null, cv_url: f.cv_url || null, cv_name: f.cv_name || null, custom_status_minutes: statusMinutes },
+        body: { ...f, banner_url: banner || null, avatar_url: avatar || null, cv_url: f.cv_url || null, cv_name: f.cv_name || null, custom_status_minutes: statusMinutes },
       });
       updateUser(updated);
       onClose();
