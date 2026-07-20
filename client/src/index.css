@@ -9,7 +9,7 @@
   --bg-content-alt: #14141f;
   --bg-input: #17172080;
   --bg-hover: rgba(255, 255, 255, 0.045);
-  --bg-active: rgba(139, 92, 246, 0.16);
+  --bg-active: rgba(139, 92, 246, 0.11);
 
   --accent: #8b5cf6;
   --accent-2: #3b82f6;
@@ -20,9 +20,9 @@
   --danger: #f43f5e;
   --danger-hover: #e11d48;
 
-  --text: #ececf5;
-  --text-muted: #9797ad;
-  --text-faint: #55556a;
+  --text: #e8e8f0;
+  --text-muted: #adadc2;
+  --text-faint: #78788f;
   --border: rgba(255, 255, 255, 0.07);
   --glass: rgba(20, 20, 31, 0.55);
 
@@ -41,6 +41,7 @@ html, body, #root { height: 100%; }
 
 body {
   font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  font-weight: 450;
   background: var(--bg-app);
   color: var(--text);
   overflow: hidden;
