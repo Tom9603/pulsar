@@ -10,6 +10,26 @@ import { useAuth } from '../context/AuthContext.jsx';
 
 const BANNERS = ['#1e1b4b', '#0f172a', '#3b0764', '#082f49', '#4a044e', '#1a2e05', '#450a0a', '#111827'];
 
+// Suggestions de localisation (grandes villes, saisie libre possible). Sert de
+// liste d'auto-complétion native, sans service externe.
+const LOCATIONS = [
+  'Paris, France', 'Lyon, France', 'Marseille, France', 'Toulouse, France', 'Bordeaux, France',
+  'Lille, France', 'Nantes, France', 'Nice, France', 'Strasbourg, France', 'Montpellier, France',
+  'Rennes, France', 'Grenoble, France', 'Rouen, France', 'Reims, France', 'Brest, France',
+  'Bretagne, France', 'Île-de-France, France', 'Occitanie, France', 'Nouvelle-Aquitaine, France',
+  'Bruxelles, Belgique', 'Genève, Suisse', 'Lausanne, Suisse', 'Luxembourg, Luxembourg',
+  'Montréal, Canada', 'Québec, Canada', 'Londres, Royaume-Uni', 'Dublin, Irlande',
+  'Madrid, Espagne', 'Barcelone, Espagne', 'Lisbonne, Portugal', 'Porto, Portugal',
+  'Berlin, Allemagne', 'Munich, Allemagne', 'Amsterdam, Pays-Bas', 'Rome, Italie', 'Milan, Italie',
+  'Vienne, Autriche', 'Copenhague, Danemark', 'Stockholm, Suède', 'Oslo, Norvège',
+  'New York, États-Unis', 'San Francisco, États-Unis', 'Los Angeles, États-Unis', 'Miami, États-Unis',
+  'Casablanca, Maroc', 'Rabat, Maroc', 'Tunis, Tunisie', 'Alger, Algérie', 'Dakar, Sénégal',
+  'Abidjan, Côte d’Ivoire', 'Tokyo, Japon', 'Singapour', 'Dubaï, Émirats arabes unis',
+  'Télétravail', 'À distance',
+];
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const PHONE_RE = /^[+0-9 ().-]{6,}$/;
+
 // Photos de profil prêtes à l'emploi : dégradés sobres et modernes (aucune image enfantine).
 const PRESET_AVATARS = [
   { id: 'violet', from: '#8b5cf6', to: '#6366f1' },
@@ -70,12 +90,23 @@ export default function EditProfileModal({ initialTab = 'profil', onClose }) {
   const [presetId, setPresetId] = useState(null);
   const [statusMinutes, setStatusMinutes] = useState(0); // expiration à appliquer au statut personnalisé
   const [emojiOpen, setEmojiOpen] = useState(false);
+  const [skillDraft, setSkillDraft] = useState('');
   const [lightbox, setLightbox] = useState(null); // image affichée en grand (crayon « Afficher »)
   const avatarInput = useRef(null);
   const bannerInput = useRef(null);
   const set = (k, v) => setF((s) => ({ ...s, [k]: v }));
   const pickPreset = (p) => { setPresetId(p.id); set('avatar_url', presetToPng(p)); };
   const srcOf = (url) => (url.startsWith('data:') ? url : mediaUrl(url));
+
+  // Compétences en étiquettes : stockées en chaîne « a, b, c » (compat serveur),
+  // affichées et retirées à l'unité.
+  const skillsList = f.skills.split(',').map((s) => s.trim()).filter(Boolean);
+  const addSkill = (name) => {
+    const n = name.trim();
+    if (n && !skillsList.some((s) => s.toLowerCase() === n.toLowerCase())) set('skills', [...skillsList, n].join(', '));
+    setSkillDraft('');
+  };
+  const removeSkill = (name) => set('skills', skillsList.filter((s) => s !== name).join(', '));
 
   // Menu du crayon sur la photo de profil : afficher, changer, supprimer.
   const avatarMenu = (e) => {
@@ -125,7 +156,11 @@ export default function EditProfileModal({ initialTab = 'profil', onClose }) {
   }
 
   async function save() {
-    setError(''); setBusy(true);
+    setError('');
+    // Contrôles de format avant l'envoi (email et téléphone facultatifs, mais valides s'ils sont remplis).
+    if (f.email_pro.trim() && !EMAIL_RE.test(f.email_pro.trim())) { setError('L’email professionnel n’est pas valide (ex. contact@exemple.com).'); setTab('pro'); return; }
+    if (f.phone.trim() && !PHONE_RE.test(f.phone.trim())) { setError('Le numéro de téléphone n’est pas valide (chiffres, espaces, + et - autorisés).'); setTab('pro'); return; }
+    setBusy(true);
     try {
       // Images choisies en base64 : on les envoie au serveur d'abord, pour
       // stocker une URL de fichier (et non l'image entière) dans le profil.
@@ -251,12 +286,34 @@ export default function EditProfileModal({ initialTab = 'profil', onClose }) {
                 <div className="settings-two">
                   <div className="field"><label>Poste / intitulé</label><input value={f.headline} onChange={(e) => set('headline', e.target.value)} placeholder="ex. Développeuse web" /></div>
                   <div className="field"><label>Entreprise</label><input value={f.company} onChange={(e) => set('company', e.target.value)} placeholder="ex. Studio Pulsar" /></div>
-                  <div className="field"><label>Localisation</label><input value={f.location} onChange={(e) => set('location', e.target.value)} placeholder="ex. Lyon, France" /></div>
-                  <div className="field"><label>Site / lien</label><input value={f.website} onChange={(e) => set('website', e.target.value)} placeholder="https://…" /></div>
-                  <div className="field"><label>Email professionnel</label><input value={f.email_pro} onChange={(e) => set('email_pro', e.target.value)} placeholder="contact@…" /></div>
-                  <div className="field"><label>Téléphone</label><input value={f.phone} onChange={(e) => set('phone', e.target.value)} placeholder="06 12 34 56 78" /></div>
+                  <div className="field">
+                    <label>Localisation</label>
+                    <input list="loc-suggest" value={f.location} onChange={(e) => set('location', e.target.value)} placeholder="Tapez une ville…" />
+                    <datalist id="loc-suggest">{LOCATIONS.map((l) => <option key={l} value={l} />)}</datalist>
+                  </div>
+                  <div className="field"><label>Site / lien</label><input type="url" value={f.website} onChange={(e) => set('website', e.target.value)} placeholder="https://…" /></div>
+                  <div className="field"><label>Email professionnel</label><input type="email" value={f.email_pro} onChange={(e) => set('email_pro', e.target.value)} placeholder="contact@exemple.com" /></div>
+                  <div className="field"><label>Téléphone</label><input type="tel" value={f.phone} onChange={(e) => set('phone', e.target.value)} placeholder="06 12 34 56 78" /></div>
                 </div>
-                <div className="field"><label>Compétences (séparées par des virgules)</label><input value={f.skills} onChange={(e) => set('skills', e.target.value)} placeholder="ex. React, Gestion de projet" /></div>
+                <div className="field">
+                  <label>Compétences</label>
+                  <div className="tags-input" onClick={(e) => { if (e.target.classList.contains('tags-input')) e.currentTarget.querySelector('.tag-draft')?.focus(); }}>
+                    {skillsList.map((s) => (
+                      <span className="tag-chip" key={s}>{s}<button type="button" title="Retirer" onClick={() => removeSkill(s)}><Icon name="xmark" /></button></span>
+                    ))}
+                    <input
+                      className="tag-draft" value={skillDraft}
+                      onChange={(e) => setSkillDraft(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ',') { e.preventDefault(); addSkill(skillDraft); }
+                        else if (e.key === 'Backspace' && !skillDraft && skillsList.length) removeSkill(skillsList[skillsList.length - 1]);
+                      }}
+                      onBlur={() => addSkill(skillDraft)}
+                      placeholder={skillsList.length ? 'Ajouter…' : 'ex. React, Gestion de projet'}
+                    />
+                  </div>
+                  <p className="field-hint">Tapez une compétence puis Entrée. Cliquez la croix pour la retirer.</p>
+                </div>
                 <div className="field"><label>CV résumé (en bref)</label><textarea rows={3} maxLength={800} value={f.cv_summary} onChange={(e) => set('cv_summary', e.target.value)} placeholder="Votre parcours en quelques lignes…" /></div>
                 <div className="field">
                   <label>CV joint (PDF ou image, 8 Mo max)</label>
