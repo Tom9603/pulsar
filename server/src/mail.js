@@ -59,7 +59,7 @@ function codeHtml(name, code) {
     </td></tr>`;
   return shell(
     'Votre code de confirmation',
-    `Bonjour ${name}, vous venez de créer un compte sur Pulsar, la messagerie de votre équipe.
+    `Bonjour ${name}, vous venez de créer un compte sur Pulsar.
      Saisissez le code ci-dessous dans l'application pour confirmer votre adresse et terminer votre inscription.`,
     body,
     "Vous recevez cet email parce qu'une inscription à Pulsar a été faite avec cette adresse. "
@@ -70,7 +70,7 @@ function codeHtml(name, code) {
 
 /** Version texte (messageries sans HTML, et meilleure délivrabilité). */
 const codeText = (name, code) =>
-  `Bonjour ${name},\n\nVous venez de créer un compte sur Pulsar, la messagerie de votre équipe.\n\nVotre code de confirmation : ${code}\n\nSaisissez-le dans l'application pour terminer votre inscription. Il est valable ${CODE_TTL_MIN} minutes et ne sert qu'une fois.\n\nSi vous n'êtes pas à l'origine de cette inscription, ignorez ce message : sans ce code, aucun compte ne sera activé. Ne communiquez ce code à personne.\n\nPulsar`;
+  `Bonjour ${name},\n\nVous venez de créer un compte sur Pulsar.\n\nVotre code de confirmation : ${code}\n\nSaisissez-le dans l'application pour terminer votre inscription. Il est valable ${CODE_TTL_MIN} minutes et ne sert qu'une fois.\n\nSi vous n'êtes pas à l'origine de cette inscription, ignorez ce message : sans ce code, aucun compte ne sera activé. Ne communiquez ce code à personne.\n\nPulsar`;
 
 /**
  * Palette des emails : volontairement CLAIRE et figée.

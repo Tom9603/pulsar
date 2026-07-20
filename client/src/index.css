@@ -741,7 +741,14 @@ input[type="file"]::file-selector-button:hover {
 .message.grouped .gutter-time { font-size: 10px; color: var(--text-faint); opacity: 0; }
 .message.grouped:hover .gutter-time { opacity: 1; }
 
-.typing-line { height: 24px; padding: 0 16px; font-size: 13px; color: var(--text-muted); display: flex; align-items: center; }
+.typing-line { min-height: 30px; padding: 4px 16px 10px; font-size: 13px; color: var(--text-muted); display: flex; align-items: center; }
+.typing-indicator { display: inline-flex; align-items: center; gap: 7px; animation: typing-in 0.18s ease; }
+.typing-dots { display: inline-flex; gap: 3px; }
+.typing-dots i { width: 4px; height: 4px; border-radius: 50%; background: currentColor; animation: typing-bounce 1.2s infinite ease-in-out both; }
+.typing-dots i:nth-child(2) { animation-delay: 0.15s; }
+.typing-dots i:nth-child(3) { animation-delay: 0.3s; }
+@keyframes typing-bounce { 0%, 80%, 100% { transform: translateY(0); opacity: 0.35; } 40% { transform: translateY(-3px); opacity: 1; } }
+@keyframes typing-in { from { opacity: 0; } to { opacity: 1; } }
 
 /* Message ciblé par la recherche : surbrillance brève */
 .message.flash { animation: msg-flash 1.6s ease; }
@@ -1486,7 +1493,9 @@ input[type="file"]::file-selector-button:hover {
 .friend-info { flex: 1; }
 .friend-name { font-weight: 600; }
 .friend-sub { font-size: 12px; color: var(--text-muted); }
-.friend-actions { display: flex; gap: 6px; }
+.friend-actions { display: flex; gap: 6px; opacity: 0; pointer-events: none; transition: opacity 0.12s ease; }
+.friend-row:hover .friend-actions,
+.friend-row:focus-within .friend-actions { opacity: 1; pointer-events: auto; }
 
 /* Recherche */
 .search-results { max-height: 50vh; overflow-y: auto; }
@@ -1934,7 +1943,7 @@ input[type="file"]::file-selector-button:hover {
   background: none; border: 0; padding: 0; cursor: pointer;
   color: var(--accent); font-size: 12.5px; font-weight: 600;
 }
-.task-detail-toggle:hover { text-decoration: underline; }
+.task-detail-toggle:hover { opacity: 0.78; }
 .task-detail-text {
   margin: 8px 0 0; padding: 10px 12px;
   background: var(--bg-input); border-radius: 8px;
@@ -2238,9 +2247,15 @@ input[type="file"]::file-selector-button:hover {
 .mic-meter { height: 10px; background: var(--bg-input); border-radius: 5px; margin-top: 10px; overflow: hidden; }
 .mic-meter-fill { height: 100%; background: var(--grad); }
 
-/* Scrollbars discrètes */
-::-webkit-scrollbar { width: 8px; height: 8px; }
-::-webkit-scrollbar-thumb { background: #0a0b0e; border-radius: 4px; }
+/* Scrollbars : discrètes au repos, bien visibles dès qu'on les survole. */
+::-webkit-scrollbar { width: 11px; height: 11px; }
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.16);
+  border: 2px solid transparent;
+  background-clip: padding-box;
+  border-radius: 6px;
+}
+::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.30); background-clip: padding-box; }
 ::-webkit-scrollbar-track { background: transparent; }
 
 /* ---------- Mise à jour ---------- */

@@ -34,7 +34,7 @@ export default function ChannelAccessModal({ channel, members, serverId, ownerId
             <label key={m.id} className="access-row">
               <input type="checkbox" checked={checked} disabled={busy || isOwnerMember} onChange={() => toggle(m)} />
               <Avatar user={m} size={28} />
-              <span className="access-name">{m.display_name}{isOwnerMember && <Icon name="crown" style={{ color: '#f0b232', marginLeft: 4 }} />}</span>
+              <span className="access-name">{m.display_name}{isOwnerMember && <Icon name="shield-halved" style={{ color: '#f0b232', marginLeft: 4 }} />}</span>
             </label>
           );
         })}

@@ -10,7 +10,7 @@ function ServerDetails({ sv, isOwner }) {
       <div className="hc-title">{sv.name}</div>
       <div className="hc-rows">
         <span className="hc-row">
-          <Icon name={isOwner ? 'crown' : 'user'} />
+          <Icon name={isOwner ? 'shield-halved' : 'user'} />
           {isOwner ? 'Vous êtes fondateur' : 'Membre'}
         </span>
         <span className="hc-row">

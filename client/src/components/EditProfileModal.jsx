@@ -41,7 +41,7 @@ const STATUSES = [
   { value: 'idle', label: 'Absent' },
   { value: 'dnd', label: 'Ne pas déranger' },
   { value: 'meeting', label: 'En réunion' },
-  { value: 'invisible', label: 'Invisible' },
+  { value: 'invisible', label: 'Hors ligne' },
 ];
 const EXPIRE = [
   { v: 0, l: 'Ne pas effacer' },

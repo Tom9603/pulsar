@@ -24,7 +24,7 @@ export default function MemberList({ members, onlineIds, ownerId, roles = [], on
           <CustomStatus user={m} className="cs-member" />
           {(m.id === ownerId || role) && (
             <span className="mbr-tags">
-              {m.id === ownerId && <span className="mbr-tag owner"><Icon name="crown" /> Fondateur</span>}
+              {m.id === ownerId && <span className="mbr-tag owner"><Icon name="shield-halved" /> Fondateur</span>}
               {role && <span className="mbr-tag" style={{ color: role.color, borderColor: `${role.color}66` }}>{role.name}</span>}
             </span>
           )}

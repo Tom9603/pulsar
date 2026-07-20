@@ -13,7 +13,7 @@ import { useConfirm } from '../context/ConfirmContext.jsx';
 const STATUS_LABEL = { online: 'En ligne', idle: 'Absent', dnd: 'Ne pas déranger', meeting: 'En réunion', invisible: 'Hors ligne' };
 const STATUS_OPTIONS = [
   { value: 'online', label: 'En ligne' }, { value: 'idle', label: 'Absent' },
-  { value: 'dnd', label: 'Ne pas déranger' }, { value: 'meeting', label: 'En réunion' }, { value: 'invisible', label: 'Invisible' },
+  { value: 'dnd', label: 'Ne pas déranger' }, { value: 'meeting', label: 'En réunion' }, { value: 'invisible', label: 'Hors ligne' },
 ];
 
 function memberSince(created) {

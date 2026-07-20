@@ -74,7 +74,7 @@ export default function MemberModal({ member, roles, server, canManageRoles, can
         <div>
           <div style={{ fontWeight: 700, fontSize: 18 }}>
             {member.display_name}
-            {isTargetOwner && <span title="Propriétaire"> <Icon name="crown" style={{ color: '#f0b232' }} /></span>}
+            {isTargetOwner && <span title="Fondateur"> <Icon name="shield-halved" style={{ color: '#f0b232' }} /></span>}
           </div>
           <div style={{ color: 'var(--text-muted)', fontSize: 13 }}>@{member.username}</div>
           {member.headline && <div style={{ color: 'var(--accent)', fontSize: 13, marginTop: 2 }}>{member.headline}</div>}

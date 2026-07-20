@@ -333,10 +333,14 @@ export default function ChatView({ channel, currentUser, canManage, members, onC
       </div>
 
       <div className="typing-line">
-        {typingNames.length > 0 &&
-          (typingNames.length === 1
-            ? `${typingNames[0]} est en train d’écrire…`
-            : `${typingNames.join(', ')} sont en train d’écrire…`)}
+        {typingNames.length > 0 && (
+          <span className="typing-indicator">
+            {typingNames.length === 1
+              ? `${typingNames[0]} est en train d’écrire`
+              : `${typingNames.join(', ')} sont en train d’écrire`}
+            <span className="typing-dots"><i /><i /><i /></span>
+          </span>
+        )}
       </div>
 
       <Composer

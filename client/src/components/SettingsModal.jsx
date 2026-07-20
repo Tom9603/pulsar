@@ -21,7 +21,7 @@ const STATUSES = [
   { value: 'idle', label: 'Absent' },
   { value: 'dnd', label: 'Ne pas déranger' },
   { value: 'meeting', label: 'En réunion' },
-  { value: 'invisible', label: 'Invisible' },
+  { value: 'invisible', label: 'Hors ligne' },
 ];
 
 const MENU = [
@@ -397,7 +397,7 @@ export default function SettingsModal({ onClose }) {
           {menu === 'privacy' && (
             <>
               <h2>Confidentialité</h2>
-              <p className="modal-sub">Choisissez qui peut vous contacter, et si vous apparaissez en ligne.</p>
+              <p className="modal-sub">Choisissez qui peut vous contacter. Pour masquer votre présence, passez votre statut sur « Hors ligne ».</p>
 
               <div className="appr-group">
                 <label>Qui peut m’envoyer des messages privés</label>
@@ -414,11 +414,6 @@ export default function SettingsModal({ onClose }) {
                   <button type="button" className={`appr-choice ${privacyFriend === 'none' ? 'active' : ''}`} onClick={() => setPrivacyFriend('none')}>Personne</button>
                 </div>
               </div>
-
-              <label className="settings-toggle">
-                <input type="checkbox" checked={hidePresence} onChange={(e) => setHidePresence(e.target.checked)} />
-                <span>Apparaître hors ligne (masquer mon statut en ligne)</span>
-              </label>
             </>
           )}
 
