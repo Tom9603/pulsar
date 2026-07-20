@@ -420,7 +420,7 @@ export default function AppLayout() {
     askConfirm({
       title: `Supprimer le salon ${ch ? `« ${ch.name} »` : ''} ?`,
       message: 'Tous les messages de ce salon seront définitivement effacés pour tous les membres. Cette action est irréversible.',
-      confirmLabel: 'Supprimer le salon', danger: true,
+      confirmLabel: 'Supprimer le salon', danger: true, requireText: 'supprimer',
       onConfirm: async () => { await api(`/channels/${channelId}`, { method: 'DELETE' }); await refreshDetail(activeServerId, activeChannelId !== channelId); },
     });
   }
@@ -635,6 +635,7 @@ export default function AppLayout() {
           message={confirmState.message}
           confirmLabel={confirmState.confirmLabel}
           danger={confirmState.danger}
+          requireText={confirmState.requireText}
           onConfirm={confirmState.onConfirm}
           onClose={() => setConfirmState(null)}
         />

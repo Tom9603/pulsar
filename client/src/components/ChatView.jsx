@@ -162,6 +162,7 @@ export default function ChatView({ channel, currentUser, canManage, members, onC
   const msgMenu = (m, isOwn) => ctx(() => m.deleted ? [] : [
     { label: 'Répondre', icon: 'reply', onClick: () => setReplyingTo(m) },
     { label: m.thread?.reply_count ? 'Ouvrir le fil' : 'Répondre dans un fil', icon: 'comments', onClick: () => setThreadId(m.id) },
+    { sep: true },
     onCreateTask && { label: 'Créer une tâche', icon: 'circle-check', onClick: () => taskFromMsg(m) },
     { label: savedByMsg?.get(m.id) ? 'Retirer des enregistrés' : 'Enregistrer le message', icon: 'bookmark', onClick: () => toggleSave(m) },
     canManage && { label: m.pinned ? 'Détacher' : 'Épingler', icon: 'thumbtack', onClick: () => pin(m) },

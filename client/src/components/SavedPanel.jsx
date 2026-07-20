@@ -3,6 +3,7 @@ import { api, mediaUrl, isAudio } from '../api.js';
 import { getSocket } from '../socket.js';
 import { renderRich } from '../richtext.jsx';
 import Icon from './Icon.jsx';
+import { useConfirm } from '../context/ConfirmContext.jsx';
 
 function reminderLabel(item) {
   if (!item.remind_at) return null;
@@ -25,6 +26,7 @@ const untilTomorrow9 = () => {
  *  `filter` : 'all' (défaut) · 'saved' (marque-pages sans rappel) · 'reminders' (avec rappel).
  *  `embedded` : sans en-tête (intégré au centre d'actions ou à une modale). */
 export default function SavedPanel({ currentUser, embedded, filter = 'all' }) {
+  const confirm = useConfirm();
   const [all, setAll] = useState([]);
   const [menuFor, setMenuFor] = useState(null);
   const [custom, setCustom] = useState('');
@@ -42,7 +44,13 @@ export default function SavedPanel({ currentUser, embedded, filter = 'all' }) {
     return () => socket.off('reminder:due', load);
   }, [load]);
 
-  const remove = async (id) => { await api(`/saved/${id}`, { method: 'DELETE' }); window.dispatchEvent(new Event('pulsar:saved-changed')); load(); };
+  const remove = async (id) => {
+    const ok = await confirm({ title: 'Retirer cet élément ?', message: 'Il sera retiré de vos messages enregistrés et de vos rappels. Le message d’origine, lui, reste en place.', confirmLabel: 'Retirer', danger: true });
+    if (!ok) return;
+    await api(`/saved/${id}`, { method: 'DELETE' });
+    window.dispatchEvent(new Event('pulsar:saved-changed'));
+    load();
+  };
   const setSecs = async (id, secs) => { await api(`/saved/${id}`, { method: 'PATCH', body: { remindInSeconds: secs } }); setMenuFor(null); load(); };
   const setAt = async (id, str) => {
     const epoch = Math.floor(new Date(str).getTime() / 1000);

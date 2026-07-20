@@ -35,6 +35,7 @@ export function ConfirmProvider({ children }) {
           message={state.options.message}
           confirmLabel={state.options.confirmLabel}
           danger={state.options.danger}
+          requireText={state.options.requireText}
           onConfirm={() => close(true)}
           onClose={() => close(false)}
         />
