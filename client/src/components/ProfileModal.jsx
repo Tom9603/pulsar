@@ -51,7 +51,7 @@ export default function ProfileModal({ userId, servers = [], onClose, onMessage,
   const rel = data.relationship;
   const banner = u.banner_url ? { background: `center/cover url(${mediaUrl(u.banner_url)})` } : { background: u.banner_color || 'linear-gradient(135deg, #241f3d, #10243a)' };
   const since = memberSince(u.created_at);
-  const hasExtra = !!(u.company || u.location || u.website || u.email_pro || u.phone || (u.skills || '').trim() || u.cv_summary || u.cv_url || u.about);
+  const hasExtra = !!(u.company || u.location || u.website || u.email_pro || u.phone || (u.skills || '').trim() || u.cv_summary || u.cv_url || u.about || (u.socials && u.socials !== '{}'));
   const openMutualServer = (s) => { setServerTip(null); onClose(); onOpenServer?.(s.id); };
 
   const act = async (fn) => { try { await fn(); load(); } catch (e) { setFlash(e.message); setTimeout(() => setFlash(''), 2500); } };

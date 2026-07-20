@@ -2036,6 +2036,13 @@ input[type="file"]::file-selector-button:hover {
 .pro-line { display: flex; flex-wrap: wrap; gap: 14px; font-size: 14px; color: var(--text); }
 .pro-contacts { display: flex; flex-wrap: wrap; gap: 12px; }
 .pro-contacts a { color: var(--accent); font-size: 13px; }
+.pro-socials { display: flex; flex-wrap: wrap; gap: 8px; }
+.pro-social {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 34px; height: 34px; border-radius: 9px; font-size: 15px;
+  background: var(--bg-active); color: var(--text);
+}
+.pro-social:hover { background: var(--bg-hover); }
 .pro-skills { display: flex; flex-wrap: wrap; gap: 6px; }
 .pro-skill { background: var(--grad-soft); border: 1px solid rgba(139, 92, 246, 0.3); color: var(--text); font-size: 12px; padding: 3px 10px; border-radius: 999px; }
 .pro-summary { font-size: 13px; color: var(--text-muted); line-height: 1.5; white-space: pre-wrap; }

@@ -30,6 +30,17 @@ const LOCATIONS = [
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PHONE_RE = /^[+0-9 ().-]{6,}$/;
 
+// Réseaux proposés. `icon` = icône Font Awesome « brands ».
+const SOCIALS = [
+  { key: 'linkedin', label: 'LinkedIn', icon: 'linkedin-in', ph: 'https://linkedin.com/in/…' },
+  { key: 'instagram', label: 'Instagram', icon: 'instagram', ph: 'https://instagram.com/…' },
+  { key: 'twitter', label: 'X (Twitter)', icon: 'x-twitter', ph: 'https://x.com/…' },
+  { key: 'facebook', label: 'Facebook', icon: 'facebook-f', ph: 'https://facebook.com/…' },
+  { key: 'github', label: 'GitHub', icon: 'github', ph: 'https://github.com/…' },
+  { key: 'youtube', label: 'YouTube', icon: 'youtube', ph: 'https://youtube.com/@…' },
+];
+const parseSocials = (raw) => { try { const o = JSON.parse(raw || '{}'); return o && typeof o === 'object' ? o : {}; } catch { return {}; } };
+
 // Photos de profil prêtes à l'emploi : dégradés sobres et modernes (aucune image enfantine).
 const PRESET_AVATARS = [
   { id: 'violet', from: '#8b5cf6', to: '#6366f1' },
@@ -91,6 +102,7 @@ export default function EditProfileModal({ initialTab = 'profil', onClose }) {
   const [statusMinutes, setStatusMinutes] = useState(0); // expiration à appliquer au statut personnalisé
   const [emojiOpen, setEmojiOpen] = useState(false);
   const [skillDraft, setSkillDraft] = useState('');
+  const [socials, setSocials] = useState(() => parseSocials(user.socials));
   const [lightbox, setLightbox] = useState(null); // image affichée en grand (crayon « Afficher »)
   const avatarInput = useRef(null);
   const bannerInput = useRef(null);
@@ -107,6 +119,7 @@ export default function EditProfileModal({ initialTab = 'profil', onClose }) {
     setSkillDraft('');
   };
   const removeSkill = (name) => set('skills', skillsList.filter((s) => s !== name).join(', '));
+  const setSocial = (key, val) => setSocials((s) => ({ ...s, [key]: val }));
 
   // Menu du crayon sur la photo de profil : afficher, changer, supprimer.
   const avatarMenu = (e) => {
@@ -172,7 +185,7 @@ export default function EditProfileModal({ initialTab = 'profil', onClose }) {
       if (avatar && avatar.startsWith('data:')) avatar = await uploadImage(avatar);
       const { user: updated } = await api('/users/me', {
         method: 'PATCH',
-        body: { ...f, banner_url: banner || null, avatar_url: avatar || null, cv_url: f.cv_url || null, cv_name: f.cv_name || null, custom_status_minutes: statusMinutes },
+        body: { ...f, banner_url: banner || null, avatar_url: avatar || null, cv_url: f.cv_url || null, cv_name: f.cv_name || null, custom_status_minutes: statusMinutes, socials },
       });
       updateUser(updated);
       onClose();
@@ -190,6 +203,7 @@ export default function EditProfileModal({ initialTab = 'profil', onClose }) {
           <div className="settings-menu-group">
             <button className={tab === 'profil' ? 'active' : ''} onClick={() => setTab('profil')}><Icon name="id-card" /> Fiche profil</button>
             <button className={tab === 'pro' ? 'active' : ''} onClick={() => setTab('pro')}><Icon name="briefcase" /> Fiche professionnelle</button>
+            <button className={tab === 'reseaux' ? 'active' : ''} onClick={() => setTab('reseaux')}><Icon name="share-nodes" /> Réseaux</button>
           </div>
         </aside>
 
@@ -320,6 +334,19 @@ export default function EditProfileModal({ initialTab = 'profil', onClose }) {
                   <input type="file" accept=".pdf,image/*" onChange={pickCv} />
                   {f.cv_url && <div className="cv-chip"><a href={mediaUrl(f.cv_url)} target="_blank" rel="noreferrer"><Icon name="file-lines" /> {f.cv_name || 'Voir le CV'}</a><button type="button" onClick={() => setF((s) => ({ ...s, cv_url: '', cv_name: '' }))}>Retirer</button></div>}
                 </div>
+              </>
+            )}
+
+            {tab === 'reseaux' && (
+              <>
+                <h2>Réseaux</h2>
+                <p className="modal-sub">Ajoutez les liens de vos profils. Ils apparaîtront sur votre carte de visite, avec leur icône.</p>
+                {SOCIALS.map((s) => (
+                  <div className="field social-field" key={s.key}>
+                    <label><Icon name={s.icon} brand /> {s.label}</label>
+                    <input type="url" value={socials[s.key] || ''} onChange={(e) => setSocial(s.key, e.target.value)} placeholder={s.ph} />
+                  </div>
+                ))}
               </>
             )}
           </div>

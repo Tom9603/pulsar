@@ -5,6 +5,16 @@ import Avatar from './Avatar.jsx';
 import Icon from './Icon.jsx';
 import { api, mediaUrl } from '../api.js';
 
+// Réseaux : icône Font Awesome « brands » + libellé.
+const SOCIAL_META = {
+  linkedin: { icon: 'linkedin-in', label: 'LinkedIn' },
+  instagram: { icon: 'instagram', label: 'Instagram' },
+  twitter: { icon: 'x-twitter', label: 'X (Twitter)' },
+  facebook: { icon: 'facebook-f', label: 'Facebook' },
+  github: { icon: 'github', label: 'GitHub' },
+  youtube: { icon: 'youtube', label: 'YouTube' },
+};
+
 /** Bloc « fiche professionnelle » d'un membre (affiché s'il a renseigné quelque chose). */
 export function ProCard({ u }) {
   const contacts = [
@@ -13,7 +23,10 @@ export function ProCard({ u }) {
     u.phone && { icon: 'phone', text: u.phone, href: `tel:${u.phone}` },
   ].filter(Boolean);
   const skills = (u.skills || '').split(',').map((s) => s.trim()).filter(Boolean);
-  const hasAny = u.company || u.location || contacts.length || skills.length || u.cv_summary || u.cv_url;
+  let socialsObj = {};
+  try { socialsObj = JSON.parse(u.socials || '{}') || {}; } catch { socialsObj = {}; }
+  const socialList = Object.entries(socialsObj).filter(([k, v]) => SOCIAL_META[k] && v);
+  const hasAny = u.company || u.location || contacts.length || skills.length || socialList.length || u.cv_summary || u.cv_url;
   if (!hasAny) return null;
 
   return (
@@ -27,6 +40,15 @@ export function ProCard({ u }) {
       {contacts.length > 0 && (
         <div className="pro-contacts">
           {contacts.map((c) => <a key={c.text} href={c.href} target="_blank" rel="noreferrer"><Icon name={c.icon} /> {c.text}</a>)}
+        </div>
+      )}
+      {socialList.length > 0 && (
+        <div className="pro-socials">
+          {socialList.map(([k, v]) => (
+            <a key={k} className="pro-social" href={/^https?:\/\//.test(v) ? v : `https://${v}`} target="_blank" rel="noreferrer" title={SOCIAL_META[k].label}>
+              <Icon name={SOCIAL_META[k].icon} brand />
+            </a>
+          ))}
         </div>
       )}
       {skills.length > 0 && (

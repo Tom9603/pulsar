@@ -40,6 +40,19 @@ router.patch('/me', (req, res) => {
   const nextBannerColor = b.banner_color === undefined ? current.banner_color : (/^#[0-9a-fA-F]{6}$/.test(b.banner_color || '') ? b.banner_color : null);
   const nextBannerUrl = b.banner_url === undefined ? current.banner_url : (b.banner_url || null);
 
+  // Réseaux : on ne garde que les clés connues, chaque valeur bornée. Stocké en JSON.
+  const SOCIAL_KEYS = ['linkedin', 'twitter', 'instagram', 'facebook', 'github', 'youtube'];
+  let nextSocials = current.socials;
+  if (b.socials !== undefined) {
+    const src = (b.socials && typeof b.socials === 'object') ? b.socials : {};
+    const clean = {};
+    for (const k of SOCIAL_KEYS) {
+      const v = String(src[k] || '').trim().slice(0, 200);
+      if (v) clean[k] = v;
+    }
+    nextSocials = Object.keys(clean).length ? JSON.stringify(clean) : null;
+  }
+
   // Confidentialité
   const nextPrivacyDm = DM_POLICIES.includes(b.privacy_dm) ? b.privacy_dm : current.privacy_dm;
   const nextPrivacyFriend = FRIEND_POLICIES.includes(b.privacy_friend) ? b.privacy_friend : current.privacy_friend;
@@ -61,12 +74,14 @@ router.patch('/me', (req, res) => {
     UPDATE users SET display_name = ?, avatar_color = ?, avatar_url = ?, about = ?, status = ?,
       headline = ?, company = ?, location = ?, website = ?, email_pro = ?, phone = ?, skills = ?,
       cv_url = ?, cv_name = ?, cv_summary = ?, pronouns = ?, banner_color = ?, banner_url = ?,
+      socials = ?,
       privacy_dm = ?, privacy_friend = ?, hide_presence = ?,
       custom_status = ?, custom_status_emoji = ?, custom_status_until = ?
     WHERE id = ?
   `).run(nextName, nextColor, nextAvatar, nextAbout, nextStatus,
     nextHeadline, nextCompany, nextLocation, nextWebsite, nextEmailPro, nextPhone, nextSkills,
     nextCvUrl, nextCvName, nextCvSummary, nextPronouns, nextBannerColor, nextBannerUrl,
+    nextSocials,
     nextPrivacyDm, nextPrivacyFriend, nextHide,
     nextCustom, nextCustomEmoji, nextCustomUntil, req.userId);
 

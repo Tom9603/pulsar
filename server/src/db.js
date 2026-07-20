@@ -353,6 +353,7 @@ ensure('friendships', 'message', 'TEXT'); // message d'accompagnement d'une dema
 ensure('users', 'pronouns', 'TEXT');      // pronoms (inclusivité)
 ensure('users', 'banner_url', 'TEXT');    // bannière (image/gif) derrière l'avatar
 ensure('users', 'banner_color', 'TEXT');  // bannière (couleur unie) si pas d'image
+ensure('users', 'socials', 'TEXT');       // réseaux (JSON : { linkedin, instagram, ... })
 ensure('tasks', 'due_notified', 'INTEGER NOT NULL DEFAULT 0'); // échéance déjà notifiée (une seule fois)
 
 // Index dépendant d'une colonne ajoutée par « ensure » : il doit venir après.
