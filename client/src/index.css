@@ -1737,9 +1737,11 @@ input[type="file"]::file-selector-button:hover {
 .topbar-voice button:hover { background: rgba(255, 255, 255, 0.16); }
 .topbar-icon { background: none; color: var(--text-muted); width: 38px; height: 38px; border-radius: 10px; font-size: 17px; }
 .topbar-icon:hover { background: var(--bg-hover); color: var(--text); }
-.topbar-user { display: flex; align-items: center; gap: 8px; padding: 4px 10px 4px 4px; border-radius: 20px; cursor: pointer; background: none; border: 0; color: var(--text); }
-.topbar-user:hover { background: var(--bg-hover); }
-.topbar-user .tu-name { font-size: 14px; font-weight: 600; }
+.topbar-user { display: flex; align-items: center; gap: 9px; padding: 4px 13px 4px 5px; border-radius: 22px; cursor: pointer; background: var(--bg-content-alt); border: 1px solid var(--border); color: var(--text); }
+.topbar-user:hover { background: var(--bg-hover); border-color: rgba(139, 92, 246, 0.4); }
+.tu-meta { display: flex; flex-direction: column; align-items: flex-start; line-height: 1.18; }
+.topbar-user .tu-name { font-size: 13.5px; font-weight: 600; }
+.tu-sub { font-size: 11px; color: var(--text-muted); max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 /* Séparateur vertical entre le groupe « outils » et le groupe « vous ». */
 .topbar-divider { width: 1px; align-self: center; height: 22px; background: var(--border); margin: 0 6px; flex-shrink: 0; }
 
@@ -2059,8 +2061,8 @@ input[type="file"]::file-selector-button:hover {
 .avatar-wrap.clickable:hover { filter: brightness(1.12); }
 
 /* Modale de profil */
-.modal-profile { width: 440px; max-width: 94vw; padding: 0; }
-.profile-banner { position: relative; height: 118px; border-radius: 18px 18px 0 0; }
+.modal-profile { width: 500px; max-width: 94vw; padding: 0; }
+.profile-banner { position: relative; height: 140px; border-radius: 18px 18px 0 0; }
 .profile-avatar-wrap { position: absolute; left: 22px; bottom: -34px; border-radius: 50%; border: 4px solid var(--bg-content-alt); }
 .profile-dots-wrap { position: absolute; top: 12px; right: 12px; }
 .profile-dots {
@@ -2076,7 +2078,7 @@ input[type="file"]::file-selector-button:hover {
 .profile-menu button { background: none; text-align: left; color: var(--text); font-size: 13px; padding: 8px 10px; border-radius: 8px; }
 .profile-menu button:hover { background: var(--bg-hover); }
 .profile-menu button.danger { color: var(--danger); }
-.profile-body { padding: 44px 24px 6px; }
+.profile-body { padding: 48px 28px 10px; }
 .profile-idline { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
 .profile-idline h2 { margin: 0; font-size: 20px; }
 .profile-pronouns { font-size: 12px; color: var(--text-muted); background: var(--bg-input); padding: 1px 8px; border-radius: 999px; }
@@ -2103,9 +2105,11 @@ input[type="file"]::file-selector-button:hover {
 .invite-server-row { display: flex; align-items: center; gap: 10px; width: 100%; text-align: left; background: none; color: var(--text); font-size: 14px; padding: 7px 8px; border-radius: 9px; }
 .invite-server-row:hover { background: var(--bg-hover); }
 /* Bas de carte : actions secondaires à gauche, « Fermer » toujours à droite */
-.profile-actions { display: flex; flex-direction: row; align-items: center; justify-content: space-between; gap: 10px; padding: 16px 20px; border-top: 1px solid var(--border); margin-top: 8px; }
+.profile-actions { display: flex; flex-direction: row; align-items: center; justify-content: space-between; gap: 10px; padding: 16px 24px; border-top: 1px solid var(--border); margin-top: 10px; background: var(--glass); border-radius: 0 0 18px 18px; }
 .pm-left { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-.profile-actions .btn { width: auto; justify-content: center; }
+.profile-actions .btn { width: auto; justify-content: center; min-height: 38px; padding: 8px 16px; }
+.profile-actions .pm-logout { color: var(--danger); }
+.profile-actions .pm-logout:hover { background: rgba(244, 63, 94, 0.12); }
 
 /* Ligne du haut : identité à gauche, action principale (Message privé / Modifier) à droite */
 .profile-toprow { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }

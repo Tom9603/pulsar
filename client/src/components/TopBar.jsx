@@ -5,6 +5,8 @@ import NotificationBell from './NotificationBell.jsx';
 import AudioControls from './AudioControls.jsx';
 import { useUpdate, openUpdate } from '../update.js';
 
+const STATUS_LABEL = { online: 'En ligne', idle: 'Absent', dnd: 'Ne pas déranger', meeting: 'En réunion', invisible: 'Hors ligne' };
+
 /** Barre du haut : retour, logo (→ accueil), barre vocale, notifications, profil et réglages. */
 export default function TopBar({
   user, onHome, onBack, onForward, canGoBack, canGoForward, onOpenSettings, onOpenProfile, onLogout,
@@ -66,8 +68,11 @@ export default function TopBar({
         <AudioControls />
         <button className="topbar-icon" title="Paramètres" onClick={onOpenSettings}><Icon name="gear" /></button>
         <button className="topbar-user" onClick={onOpenProfile} title="Mon profil">
-          <Avatar user={user} size={30} status={user.status} />
-          <span className="tu-name">{user.display_name}</span>
+          <Avatar user={user} size={34} status={user.status} />
+          <span className="tu-meta">
+            <span className="tu-name">{user.display_name}</span>
+            <span className="tu-sub">{user.headline || STATUS_LABEL[user.status] || 'En ligne'}</span>
+          </span>
         </button>
       </div>
     </header>

@@ -199,7 +199,7 @@ export default function ProfileModal({ userId, servers = [], onClose, onMessage,
             {self ? (
               <>
                 {canAdmin && <button className="btn btn-ghost pm-admin" onClick={() => onOpenAdmin?.()}><Icon name="shield-halved" /> Administration</button>}
-                <button className="btn btn-ghost" onClick={onLogout}><Icon name="right-from-bracket" /> Se déconnecter</button>
+                <button className="btn btn-ghost pm-logout" onClick={onLogout}><Icon name="right-from-bracket" /> Se déconnecter</button>
               </>
             ) : (
               <>
