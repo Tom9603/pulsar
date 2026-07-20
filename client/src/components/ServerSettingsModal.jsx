@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import Modal from './Modal.jsx';
-import { api, uploadImage } from '../api.js';
+import Icon from './Icon.jsx';
+import { api, uploadImage, mediaUrl } from '../api.js';
 
 const readAsDataURL = (file) =>
   new Promise((resolve, reject) => {
@@ -50,64 +51,87 @@ export default function ServerSettingsModal({ server, categories, channels = [],
     catch (err) { setError(err.message); } finally { setBusy(false); }
   }
 
+  const textChannels = channels.filter((c) => c.type === 'text');
+
   return (
-    <Modal onClose={onClose}>
+    <Modal onClose={onClose} className="modal-server-settings">
       <h2>Paramètres du serveur</h2>
       {error && <div className="error-msg">{error}</div>}
 
-      <div className="field">
-        <label>Nom du serveur</label>
-        <div style={{ display: 'flex', gap: 8 }}>
-          <input value={name} onChange={(e) => setName(e.target.value)} />
-          <button className="btn" style={{ width: 'auto', padding: '0 16px' }} onClick={saveName} disabled={busy}>OK</button>
-        </div>
-      </div>
-
-      <div className="field">
-        <label>Icône du serveur (image)</label>
-        <input type="file" accept="image/*" onChange={onIcon} disabled={busy} />
-      </div>
-
-      <div className="field">
-        <label>Catégories de salons</label>
-        {categories.length === 0 && <p style={{ color: 'var(--text-faint)', fontSize: 13 }}>Aucune catégorie.</p>}
-        {categories.map((c) => (
-          <div key={c.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '4px 0' }}>
-            <span>{c.name}</span>
-            <button className="btn btn-ghost" style={{ width: 'auto', padding: '2px 10px', fontSize: 12 }} onClick={() => delCategory(c.id)}>Supprimer</button>
-          </div>
-        ))}
-        <form onSubmit={addCategory} style={{ display: 'flex', gap: 8, marginTop: 8 }}>
-          <input value={newCat} onChange={(e) => setNewCat(e.target.value)} placeholder="Nouvelle catégorie" />
-          <button className="btn" style={{ width: 'auto', padding: '0 16px' }} disabled={busy}>Ajouter</button>
-        </form>
-      </div>
-
-      {categories.length > 0 && (
+      {/* Identité */}
+      <section className="ss-section">
+        <h3 className="ss-title">Identité</h3>
         <div className="field">
-          <label>Ranger les salons</label>
-          {channels.filter((c) => c.type === 'text').map((c) => (
-            <div key={c.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, padding: '4px 0' }}>
-              <span>{c.name}</span>
-              <select
-                value={c.category_id || ''}
-                disabled={busy}
-                onChange={async (e) => {
-                  setBusy(true);
-                  try { await api(`/servers/${server.id}/channels/${c.id}`, { method: 'PATCH', body: { category_id: e.target.value ? Number(e.target.value) : null } }); await onChanged(); }
-                  finally { setBusy(false); }
-                }}
-              >
-                <option value="">Sans catégorie</option>
-                {categories.map((cat) => <option key={cat.id} value={cat.id}>{cat.name}</option>)}
-              </select>
-            </div>
-          ))}
+          <label>Nom du serveur</label>
+          <div className="ss-inline">
+            <input value={name} onChange={(e) => setName(e.target.value)} />
+            <button className="btn ss-inline-btn" onClick={saveName} disabled={busy || name.trim() === server.name}>Enregistrer</button>
+          </div>
         </div>
+        <div className="field">
+          <label>Icône du serveur</label>
+          <div className="ss-icon-row">
+            <span className="ss-icon-preview" style={{ background: server.icon_url ? undefined : server.icon_color }}>
+              {server.icon_url ? <img src={mediaUrl(server.icon_url)} alt="" /> : server.name.charAt(0).toUpperCase()}
+            </span>
+            <label className="btn btn-ghost ss-icon-btn">
+              <Icon name="arrow-up-from-bracket" /> Changer l’icône
+              <input type="file" accept="image/*" hidden onChange={onIcon} disabled={busy} />
+            </label>
+          </div>
+          <p className="field-hint">Une image carrée fonctionne le mieux (2 Mo max).</p>
+        </div>
+      </section>
+
+      {/* Catégories */}
+      <section className="ss-section">
+        <h3 className="ss-title">Catégories</h3>
+        <p className="field-hint">Regroupez vos salons par thème pour vous y retrouver.</p>
+        {categories.length > 0 && (
+          <div className="ss-cats">
+            {categories.map((c) => (
+              <span key={c.id} className="ss-cat-chip">
+                {c.name}
+                <button type="button" title="Supprimer la catégorie" onClick={() => delCategory(c.id)} disabled={busy}><Icon name="xmark" /></button>
+              </span>
+            ))}
+          </div>
+        )}
+        <form onSubmit={addCategory} className="ss-add">
+          <input value={newCat} onChange={(e) => setNewCat(e.target.value)} placeholder="Nom d’une nouvelle catégorie" />
+          <button className="btn ss-inline-btn" disabled={busy || !newCat.trim()}>Ajouter</button>
+        </form>
+      </section>
+
+      {/* Rangement des salons */}
+      {categories.length > 0 && textChannels.length > 0 && (
+        <section className="ss-section">
+          <h3 className="ss-title">Ranger les salons</h3>
+          <p className="field-hint">Choisissez la catégorie de chaque salon.</p>
+          <div className="ss-arrange">
+            {textChannels.map((c) => (
+              <div key={c.id} className="ss-arrange-row">
+                <span className="ss-chan"><Icon name="align-left" /> {c.name}</span>
+                <select
+                  value={c.category_id || ''}
+                  disabled={busy}
+                  onChange={async (e) => {
+                    setBusy(true);
+                    try { await api(`/servers/${server.id}/channels/${c.id}`, { method: 'PATCH', body: { category_id: e.target.value ? Number(e.target.value) : null } }); await onChanged(); }
+                    finally { setBusy(false); }
+                  }}
+                >
+                  <option value="">Sans catégorie</option>
+                  {categories.map((cat) => <option key={cat.id} value={cat.id}>{cat.name}</option>)}
+                </select>
+              </div>
+            ))}
+          </div>
+        </section>
       )}
 
       <div className="modal-actions">
-        <button className="btn" onClick={onClose}>Fermer</button>
+        <button className="btn btn-ghost" onClick={onClose}>Fermer</button>
       </div>
     </Modal>
   );

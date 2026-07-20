@@ -2208,6 +2208,47 @@ input[type="file"]::file-selector-button:hover {
 .forward-empty { color: var(--text-muted); font-size: 13.5px; padding: 16px 6px; }
 .forward-sent { display: flex; align-items: center; gap: 9px; padding: 20px 6px; color: var(--online); font-size: 15px; font-weight: 600; }
 
+/* Modale des rôles : agrandie, à deux colonnes, pastilles bien rondes. */
+.modal-roles { width: 780px; }
+.roles-layout { display: flex; gap: 20px; margin-top: 6px; }
+.roles-list { width: 190px; flex-shrink: 0; display: flex; flex-direction: column; gap: 10px; }
+.roles-create { width: 100%; padding: 9px; font-size: 13.5px; display: inline-flex; align-items: center; justify-content: center; gap: 7px; }
+.roles-list-items { display: flex; flex-direction: column; gap: 3px; }
+.role-item { display: flex; align-items: center; gap: 10px; width: 100%; text-align: left; padding: 9px 11px; border-radius: 10px; background: none; color: var(--text); }
+.role-item:hover { background: var(--bg-hover); }
+.role-item.active { background: var(--bg-active); }
+.role-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
+.role-item-name { font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.roles-empty { color: var(--text-faint); font-size: 13px; padding: 4px; }
+.roles-editor { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.roles-editor-actions { display: flex; justify-content: space-between; gap: 10px; margin-top: 16px; }
+.roles-editor-actions .btn { width: auto; padding: 9px 18px; }
+.roles-hint { color: var(--text-muted); font-size: 14px; padding: 20px 0; }
+/* Pastilles de couleur : toujours parfaitement rondes, jamais écrasées. */
+.color-swatch { flex-shrink: 0; padding: 0; }
+
+/* Paramètres du serveur : sections claires, catégories en pastilles, rangement lisible. */
+.modal-server-settings { width: 620px; }
+.ss-section { margin-bottom: 22px; }
+.ss-section:last-of-type { margin-bottom: 0; }
+.ss-title { font-family: var(--font-display); font-size: 15px; font-weight: 700; margin-bottom: 10px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+.ss-inline { display: flex; gap: 8px; }
+.ss-inline-btn { width: auto; padding: 0 18px; flex-shrink: 0; }
+.ss-icon-row { display: flex; align-items: center; gap: 14px; }
+.ss-icon-preview { width: 56px; height: 56px; border-radius: 16px; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; font-size: 22px; font-weight: 700; color: #fff; overflow: hidden; }
+.ss-icon-preview img { width: 100%; height: 100%; object-fit: cover; }
+.ss-icon-btn { width: auto; padding: 9px 14px; display: inline-flex; align-items: center; gap: 8px; cursor: pointer; }
+.ss-cats { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+.ss-cat-chip { display: inline-flex; align-items: center; gap: 8px; padding: 6px 8px 6px 13px; border-radius: 999px; background: var(--bg-active); font-size: 13.5px; }
+.ss-cat-chip button { display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; border-radius: 50%; font-size: 9px; background: rgba(255, 255, 255, 0.1); color: var(--text-muted); }
+.ss-cat-chip button:hover { background: var(--danger); color: #fff; }
+.ss-add { display: flex; gap: 8px; }
+.ss-arrange { display: flex; flex-direction: column; gap: 8px; }
+.ss-arrange-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 12px; border-radius: 10px; background: var(--bg-content-alt); }
+.ss-chan { display: inline-flex; align-items: center; gap: 9px; font-size: 14px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ss-chan .fa-solid { color: var(--text-muted); font-size: 12px; }
+.ss-arrange-row select { flex-shrink: 0; background: var(--bg-input); border: 1px solid var(--border); color: var(--text); border-radius: 8px; padding: 6px 10px; font-size: 13px; }
+
 /* Compétences (et autres) sous forme d'étiquettes que l'on retire d'un clic. */
 .tags-input {
   display: flex; flex-wrap: wrap; gap: 7px; align-items: center;

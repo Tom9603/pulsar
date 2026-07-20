@@ -59,37 +59,30 @@ export default function RolesModal({ serverId, roles, onClose, onChanged }) {
   }
 
   return (
-    <Modal onClose={onClose}>
+    <Modal onClose={onClose} className="modal-roles">
       <h2>Rôles du serveur</h2>
       <p className="modal-sub">Créez des rôles et cochez les permissions à accorder aux membres qui les portent.</p>
       {error && <div className="error-msg">{error}</div>}
 
-      <div style={{ display: 'flex', gap: 16 }}>
+      <div className="roles-layout">
         {/* Liste des rôles */}
-        <div style={{ width: 150, flexShrink: 0 }}>
-          <button className="btn" style={{ padding: '8px', fontSize: 13, marginBottom: 8 }} onClick={createRole} disabled={busy}>
-            + Créer un rôle
+        <div className="roles-list">
+          <button className="btn roles-create" onClick={createRole} disabled={busy}>
+            <Icon name="plus" /> Créer un rôle
           </button>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+          <div className="roles-list-items">
             {roles.map((r) => (
-              <div
-                key={r.id}
-                onClick={() => setSelectedId(r.id)}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: 8, padding: '8px', borderRadius: 4, cursor: 'pointer',
-                  background: r.id === selectedId ? 'var(--bg-active)' : 'transparent',
-                }}
-              >
-                <span style={{ width: 12, height: 12, borderRadius: '50%', background: r.color }} />
-                <span style={{ fontSize: 14, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.name}</span>
-              </div>
+              <button key={r.id} className={`role-item ${r.id === selectedId ? 'active' : ''}`} onClick={() => setSelectedId(r.id)}>
+                <span className="role-dot" style={{ background: r.color }} />
+                <span className="role-item-name">{r.name}</span>
+              </button>
             ))}
-            {roles.length === 0 && <p style={{ color: 'var(--text-faint)', fontSize: 13 }}>Aucun rôle.</p>}
+            {roles.length === 0 && <p className="roles-empty">Aucun rôle pour l’instant.</p>}
           </div>
         </div>
 
         {/* Éditeur */}
-        <div style={{ flex: 1, minWidth: 0 }}>
+        <div className="roles-editor">
           {form ? (
             <>
               <div className="field">
@@ -100,7 +93,7 @@ export default function RolesModal({ serverId, roles, onClose, onChanged }) {
                 <label>Couleur</label>
                 <div className="color-swatches">
                   {COLORS.map((c) => (
-                    <div key={c} className={`color-swatch ${c === form.color ? 'selected' : ''}`} style={{ background: c }} onClick={() => setForm({ ...form, color: c })} />
+                    <button type="button" key={c} className={`color-swatch ${c === form.color ? 'selected' : ''}`} style={{ background: c }} title="Choisir cette couleur" onClick={() => setForm({ ...form, color: c })} />
                   ))}
                 </div>
               </div>
@@ -122,13 +115,13 @@ export default function RolesModal({ serverId, roles, onClose, onChanged }) {
                   })}
                 </div>
               </div>
-              <div className="modal-actions" style={{ marginTop: 12 }}>
-                <button className="btn btn-danger" style={{ width: 'auto', padding: '8px 16px' }} onClick={() => setConfirmDel(true)} disabled={busy}>Supprimer</button>
-                <button className="btn" style={{ width: 'auto', padding: '8px 16px' }} onClick={save} disabled={busy}>Enregistrer</button>
+              <div className="roles-editor-actions">
+                <button className="btn btn-danger" onClick={() => setConfirmDel(true)} disabled={busy}>Supprimer le rôle</button>
+                <button className="btn" onClick={save} disabled={busy}>Enregistrer</button>
               </div>
             </>
           ) : (
-            <p style={{ color: 'var(--text-muted)' }}>Sélectionnez un rôle ou créez-en un nouveau.</p>
+            <p className="roles-hint">Sélectionnez un rôle à gauche, ou créez-en un nouveau.</p>
           )}
         </div>
       </div>
