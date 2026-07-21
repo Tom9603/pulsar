@@ -189,6 +189,26 @@ export function sendPasswordChangedEmail(to, name) {
   );
 }
 
+/** Envoyé quand une inscription est tentée avec une adresse déjà utilisée.
+ *  Sert l'anti-énumération : le formulaire reste neutre, l'information passe par email. */
+export function sendExistingAccountEmail(to, name) {
+  const body = `
+    <tr><td align="center" style="padding:24px 32px 0;">
+      <p style="margin:0;color:${C.body};font-size:13.5px;line-height:1.6;">Une inscription vient d'être tentée avec cette adresse, mais un compte Pulsar existe déjà. Si c'était vous, connectez-vous directement. Si vous avez oublié votre mot de passe, utilisez « Mot de passe oublié » sur la page de connexion.</p>
+    </td></tr>`;
+  return send(
+    to,
+    'Vous avez déjà un compte Pulsar',
+    `Bonjour ${name},\n\nUne inscription vient d'être tentée avec cette adresse email, mais un compte Pulsar existe déjà.\n\nSi c'était vous, connectez-vous directement. Si vous avez oublié votre mot de passe, utilisez « Mot de passe oublié » sur la page de connexion.\n\nSi ce n'était pas vous, ignorez ce message : aucun nouveau compte n'a été créé.\n\nPulsar`,
+    shell(
+      'Vous avez déjà un compte',
+      `Bonjour ${name}, une inscription vient d'être tentée avec cette adresse, mais vous avez déjà un compte Pulsar.`,
+      body,
+      "Si ce n'était pas vous, ignorez ce message : aucun nouveau compte n'a été créé.",
+    ),
+  );
+}
+
 /** Envoie le code de confirmation. Ne fait rien si l'email n'est pas configuré. */
 export async function sendActivationCode(to, name, code) {
   if (!mailEnabled || !to) return false;

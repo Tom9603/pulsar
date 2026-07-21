@@ -117,6 +117,17 @@ router.delete('/me', (req, res) => {
   res.json({ ok: true });
 });
 
+/** Désactiver temporairement son compte (nécessite le mot de passe).
+ *  Le compte est réactivé automatiquement à la prochaine connexion. */
+router.post('/me/deactivate', (req, res) => {
+  const user = db.prepare('SELECT * FROM users WHERE id = ?').get(req.userId);
+  if (!user || !verifyPassword(req.body?.password || '', user.password_hash)) {
+    return res.status(403).json({ error: 'Mot de passe incorrect' });
+  }
+  db.prepare('UPDATE users SET deactivated = 1 WHERE id = ?').run(req.userId);
+  res.json({ ok: true });
+});
+
 /** Ids des amis acceptés d'un utilisateur. */
 function acceptedFriendIds(uid) {
   return db.prepare(`

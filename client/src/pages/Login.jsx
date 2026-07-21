@@ -59,8 +59,8 @@ export default function Login() {
         )}
 
         <div className="field">
-          <label>Nom d’utilisateur ou email</label>
-          <input value={username} onChange={(e) => setUsername(e.target.value)} autoFocus autoComplete="username" />
+          <label>Adresse email</label>
+          <input type="email" value={username} onChange={(e) => setUsername(e.target.value)} autoFocus autoComplete="email" placeholder="vous@exemple.com" />
         </div>
         <div className="field">
           <div className="field-head">

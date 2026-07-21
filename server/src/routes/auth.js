@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { randomInt, randomBytes } from 'node:crypto';
 import db from '../db.js';
 import { hashPassword, verifyPassword, issueToken, authMiddleware, publicUser } from '../auth.js';
-import { mailEnabled, sendActivationCode, sendResetEmail, sendPasswordChangedEmail, CODE_TTL_MIN, RESET_TTL_MIN } from '../mail.js';
+import { mailEnabled, sendActivationCode, sendResetEmail, sendPasswordChangedEmail, sendExistingAccountEmail, CODE_TTL_MIN, RESET_TTL_MIN } from '../mail.js';
 import { limit, take, reset, clientIp } from '../ratelimit.js';
 import { disconnectSessions } from '../socket.js';
 
@@ -54,7 +54,18 @@ router.post('/register', limit('register', 5, 3600, 'Trop de créations de compt
 
   const clean = username.trim();
   if (db.prepare('SELECT id FROM users WHERE username = ?').get(clean)) return res.status(409).json({ error: 'Ce nom d’utilisateur est déjà pris' });
-  if (db.prepare('SELECT id FROM users WHERE email = ?').get(cleanEmail)) return res.status(409).json({ error: 'Un compte existe déjà avec cet email' });
+
+  // Anti-énumération : si l'email est déjà utilisé, on ne le révèle PAS. Avec les
+  // emails actifs, on renvoie la même réponse neutre qu'une inscription normale et
+  // on prévient le vrai titulaire par email. Sans emails (dev), on reste explicite.
+  const emailOwner = db.prepare('SELECT id, display_name FROM users WHERE email = ?').get(cleanEmail);
+  if (emailOwner) {
+    if (mailEnabled) {
+      try { sendExistingAccountEmail(cleanEmail, emailOwner.display_name); } catch (e) { console.error('[mail] compte existant :', e.message); }
+      return res.json({ pending: true, email: cleanEmail });
+    }
+    return res.status(409).json({ error: 'Un compte existe déjà avec cet email' });
+  }
 
   const verified = mailEnabled ? 0 : 1; // sans email configuré : compte activé directement
   const info = db.prepare(
@@ -78,6 +89,11 @@ router.post('/login', limit('login', 10, 900, 'Trop de tentatives de connexion. 
     return res.status(403).json({ error: user.suspended_reason
       ? `Votre compte a été suspendu : ${user.suspended_reason}`
       : 'Votre compte a été suspendu. Contactez l’administrateur.' });
+  }
+  // Désactivation temporaire : la reconnexion réactive automatiquement le compte.
+  if (user.deactivated) {
+    db.prepare('UPDATE users SET deactivated = 0 WHERE id = ?').run(user.id);
+    user.deactivated = 0;
   }
   reset(`login:${clientIp(req)}`); // connexion réussie : on repart de zéro
   res.json({ token: issueToken(user, req), user: publicUser(user) });

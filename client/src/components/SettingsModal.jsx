@@ -78,6 +78,8 @@ export default function SettingsModal({ onClose }) {
   const [oldPw, setOldPw] = useState('');
   const [newPw, setNewPw] = useState('');
   const [delPw, setDelPw] = useState('');
+  const [deactivatePw, setDeactivatePw] = useState('');
+  const [confirmDeactivate, setConfirmDeactivate] = useState(false);
   const [accountMsg, setAccountMsg] = useState('');
   // Sessions actives (appareils connectés)
   const [sessions, setSessions] = useState([]);
@@ -186,6 +188,13 @@ export default function SettingsModal({ onClose }) {
   async function deleteAccount() {
     try {
       await api('/users/me', { method: 'DELETE', body: { password: delPw } });
+      logout();
+    } catch (e) { setAccountMsg(e.message); }
+  }
+
+  async function deactivateAccount() {
+    try {
+      await api('/users/me/deactivate', { method: 'POST', body: { password: deactivatePw } });
       logout();
     } catch (e) { setAccountMsg(e.message); }
   }
@@ -499,6 +508,13 @@ export default function SettingsModal({ onClose }) {
               </div>
 
               <div className="field" style={{ marginTop: 24, borderTop: '1px solid var(--border)', paddingTop: 16 }}>
+                <label>Désactiver temporairement mon compte</label>
+                <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 8 }}>Votre compte est mis en pause : vous n’apparaissez plus en ligne. Il se réactive automatiquement à votre prochaine connexion. Rien n’est supprimé.</p>
+                <input type="password" placeholder="Confirmez votre mot de passe" value={deactivatePw} onChange={(e) => setDeactivatePw(e.target.value)} />
+                <button className="btn btn-ghost" style={{ width: 'auto', padding: '8px 16px', marginTop: 8 }} onClick={() => setConfirmDeactivate(true)}>Désactiver mon compte</button>
+              </div>
+
+              <div className="field" style={{ marginTop: 24, borderTop: '1px solid var(--border)', paddingTop: 16 }}>
                 <label style={{ color: 'var(--danger)' }}>Suppression de compte</label>
                 <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 8 }}>Supprimer votre compte efface tout définitivement.</p>
                 <input type="password" placeholder="Confirmez votre mot de passe" value={delPw} onChange={(e) => setDelPw(e.target.value)} />
@@ -516,6 +532,16 @@ export default function SettingsModal({ onClose }) {
       </div>
 
       {termsTab && <TermsModal tab={termsTab} onClose={() => setTermsTab(null)} />}
+
+      {confirmDeactivate && (
+        <ConfirmModal
+          title="Désactiver le compte ?"
+          message="Votre compte sera mis en pause et vous serez déconnecté. Il se réactivera automatiquement dès votre prochaine connexion. Aucune donnée n’est supprimée."
+          confirmLabel="Désactiver"
+          onConfirm={deactivateAccount}
+          onClose={() => setConfirmDeactivate(false)}
+        />
+      )}
 
       {confirmDelAccount && (
         <ConfirmModal
