@@ -323,6 +323,13 @@ export default function AppLayout() {
       refreshConversations();
     },
   });
+  // Appel depuis une carte de contact : on confirme d'abord (clic facile par mégarde).
+  const callContact = (peer) => askConfirm({
+    title: `Appeler ${peer.display_name} ?`,
+    message: 'Un appel vocal va être lancé.',
+    confirmLabel: 'Appeler',
+    onConfirm: () => call.startCall(peer),
+  });
   const dmMenu = (peer) => ctx([
     { label: 'Ouvrir la conversation', icon: 'comment', onClick: () => openDm(peer) },
     { label: 'Appel vocal', icon: 'phone', onClick: () => call.startCall(peer) },
@@ -513,7 +520,7 @@ export default function AppLayout() {
           />
         )}
         {section === 'dm' && (
-          <DmSidebar conversations={dmConversations} activeUserId={activeDm?.id} onlineIds={onlineIds} onSelect={openDm} onStartDm={startDm} convMenu={dmMenu} />
+          <DmSidebar conversations={dmConversations} activeUserId={activeDm?.id} onlineIds={onlineIds} onSelect={openDm} onStartDm={startDm} convMenu={dmMenu} onCall={callContact} />
         )}
 
         <div className="pulsar-main">

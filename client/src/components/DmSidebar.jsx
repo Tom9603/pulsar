@@ -3,7 +3,7 @@ import Avatar from './Avatar.jsx';
 import Icon from './Icon.jsx';
 
 /** Barre latérale des messages privés : bouton Amis + liste des conversations. */
-export default function DmSidebar({ conversations, activeUserId, onlineIds, onSelect, onStartDm, onOpenFriends, friendsActive, onOpenSaved, savedActive, convMenu }) {
+export default function DmSidebar({ conversations, activeUserId, onlineIds, onSelect, onStartDm, onOpenFriends, friendsActive, onOpenSaved, savedActive, convMenu, onCall }) {
   const [username, setUsername] = useState('');
   const [error, setError] = useState('');
   const online = new Set(onlineIds);
@@ -50,18 +50,24 @@ export default function DmSidebar({ conversations, activeUserId, onlineIds, onSe
           <p className="dm-conv-empty">Aucune conversation. Saisissez un nom d’utilisateur ci-dessus pour commencer.</p>
         )}
         {conversations.map((c) => (
-          <button
-            key={c.id}
-            className={`dm-conv ${c.id === activeUserId ? 'active' : ''}`}
-            onClick={() => onSelect(c)}
-            onContextMenu={convMenu?.(c)}
-          >
-            <Avatar user={c} size={38} status={online.has(c.id) ? c.status : 'offline'} />
-            <div className="dm-conv-info">
-              <div className="dm-conv-name">{c.display_name}</div>
-              <div className="dm-conv-last">{c.last_content || '@' + c.username}</div>
-            </div>
-          </button>
+          <div className="dm-conv-wrap" key={c.id}>
+            <button
+              className={`dm-conv ${c.id === activeUserId ? 'active' : ''}`}
+              onClick={() => onSelect(c)}
+              onContextMenu={convMenu?.(c)}
+            >
+              <Avatar user={c} size={38} status={online.has(c.id) ? c.status : 'offline'} />
+              <div className="dm-conv-info">
+                <div className="dm-conv-name">{c.display_name}</div>
+                <div className="dm-conv-last">{c.last_content || '@' + c.username}</div>
+              </div>
+            </button>
+            {onCall && (
+              <button className="dm-conv-call" title={`Appeler ${c.display_name}`} onClick={(e) => { e.stopPropagation(); onCall(c); }}>
+                <Icon name="phone" />
+              </button>
+            )}
+          </div>
         ))}
       </div>
     </div>

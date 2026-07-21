@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import Icon from './Icon.jsx';
+import Avatar from './Avatar.jsx';
 import { ctx } from '../contextmenu.js';
 
 /** Liste des salons du serveur actif (textuels + vocaux, par catégorie) + menu du serveur. */
@@ -135,7 +136,13 @@ export default function ChannelSidebar({
             <div className="voice-occupants">
               {(voiceStates[c.id] || []).map((m) => (
                 <div className={`voice-occupant ${m.speaking ? 'speaking' : ''}`} key={m.socketId}>
-                  <span><Icon name={m.muted ? 'microphone-slash' : 'headphones'} /></span> {m.user.display_name}
+                  <Avatar user={m.user} size={22} />
+                  <span className="vo-name">{m.user.display_name}</span>
+                  <span className="vo-icons">
+                    {m.muted && <Icon name="microphone-slash" title="Micro coupé" />}
+                    {m.sharingScreen && <Icon name="display" title="Partage son écran" />}
+                    {m.handRaised && <Icon name="hand" title="A levé la main" />}
+                  </span>
                 </div>
               ))}
             </div>
