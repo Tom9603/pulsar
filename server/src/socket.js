@@ -800,50 +800,35 @@ export function setupSocket(io) {
     // ------------------------------------------------------------------
     // Tableau blanc partagé (dessin temps réel par salon)
     // ------------------------------------------------------------------
+    // On garde des OBJETS (formes déplaçables) et on synchronise l'état complet
+    // à chaque changement : simple, robuste, toujours cohérent entre les clients.
+    const sanitizeElements = (arr) => (Array.isArray(arr) ? arr.slice(0, 4000) : []);
+
     socket.on('board:get', ({ channelId }) => {
       if (!watchMember(channelId)) return;
-      socket.emit('board:init', { channelId: Number(channelId), strokes: boards.get(channelId) || [] });
+      socket.emit('board:init', { channelId: Number(channelId), elements: boards.get(channelId) || [] });
     });
 
-    socket.on('board:draw', ({ channelId, stroke }) => {
-      const channel = watchMember(channelId);
-      if (!channel || !stroke) return;
-      let hist = boards.get(channelId);
-      if (!hist) { hist = []; boards.set(channelId, hist); }
-      hist.push(stroke);
-      if (hist.length > 8000) hist.splice(0, hist.length - 8000); // plafond
-      socket.to('server:' + channel.server_id).emit('board:draw', { channelId: Number(channelId), stroke });
-    });
-
-    socket.on('board:clear', ({ channelId }) => {
+    socket.on('board:set', ({ channelId, elements }) => {
       const channel = watchMember(channelId);
       if (!channel) return;
-      boards.set(channelId, []);
-      io.to('server:' + channel.server_id).emit('board:clear', { channelId: Number(channelId) });
+      const els = sanitizeElements(elements);
+      boards.set(channelId, els);
+      socket.to('server:' + channel.server_id).emit('board:init', { channelId: Number(channelId), elements: els });
     });
 
     // Tableau blanc partagé en message privé (routé entre les 2 correspondants).
     socket.on('dmboard:get', ({ dmUserId }) => {
       const other = Number(dmUserId);
       if (!other) return;
-      socket.emit('dmboard:init', { dmUserId: other, strokes: dmBoards.get(dmKey(userId, other)) || [] });
+      socket.emit('dmboard:init', { dmUserId: other, elements: dmBoards.get(dmKey(userId, other)) || [] });
     });
-    socket.on('dmboard:draw', ({ dmUserId, stroke }) => {
-      const other = Number(dmUserId);
-      if (!other || !stroke) return;
-      const key = dmKey(userId, other);
-      let hist = dmBoards.get(key);
-      if (!hist) { hist = []; dmBoards.set(key, hist); }
-      hist.push(stroke);
-      if (hist.length > 8000) hist.splice(0, hist.length - 8000);
-      io.to('user:' + other).emit('dmboard:draw', { dmUserId: userId, stroke });
-    });
-    socket.on('dmboard:clear', ({ dmUserId }) => {
+    socket.on('dmboard:set', ({ dmUserId, elements }) => {
       const other = Number(dmUserId);
       if (!other) return;
-      dmBoards.set(dmKey(userId, other), []);
-      io.to('user:' + userId).emit('dmboard:clear', { dmUserId: other });
-      io.to('user:' + other).emit('dmboard:clear', { dmUserId: userId });
+      const els = sanitizeElements(elements);
+      dmBoards.set(dmKey(userId, other), els);
+      io.to('user:' + other).emit('dmboard:init', { dmUserId: userId, elements: els });
     });
 
     socket.on('disconnect', () => {
