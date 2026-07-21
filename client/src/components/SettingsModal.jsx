@@ -26,15 +26,16 @@ const STATUSES = [
 
 const MENU = [
   { group: 'Application', items: [
-    { id: 'appearance', icon: 'palette', label: 'Apparence' },
-    { id: 'notif', icon: 'bell', label: 'Notifications' },
-    { id: 'audio', icon: 'sliders', label: 'Audio et vocal' },
+    { id: 'appearance', icon: 'palette', label: 'Apparence', kw: 'thème couleur accent densité taille accessibilité animations mouvements contraste sombre clair affichage' },
+    { id: 'notif', icon: 'bell', label: 'Notifications', kw: 'notifications son bureau heures calmes alertes' },
+    { id: 'audio', icon: 'sliders', label: 'Audio et vocal', kw: 'audio vocal micro haut-parleur périphérique volume entrée sortie' },
   ] },
   { group: 'Compte', items: [
-    { id: 'privacy', icon: 'shield-halved', label: 'Confidentialité' },
-    { id: 'account', icon: 'lock', label: 'Sécurité et compte' },
+    { id: 'privacy', icon: 'shield-halved', label: 'Confidentialité', kw: 'confidentialité messages privés statut en ligne hors ligne contacter' },
+    { id: 'social', icon: 'user-group', label: 'Social', kw: 'social bloqués blocage débloquer' },
+    { id: 'account', icon: 'lock', label: 'Sécurité et compte', kw: 'sécurité compte mot de passe suppression supprimer désactiver sessions appareils données export' },
   ] },
-  { group: 'Aide', items: [{ id: 'about', icon: 'circle-info', label: 'À propos et aide' }] },
+  { group: 'Aide', items: [{ id: 'about', icon: 'circle-info', label: 'À propos et aide', kw: 'aide faq à propos version support' }] },
 ];
 
 // Questions fréquentes (réponses repliables).
@@ -85,6 +86,16 @@ export default function SettingsModal({ onClose }) {
   const [sessions, setSessions] = useState([]);
   const loadSessions = () => api('/sessions').then(({ sessions: s }) => setSessions(s)).catch(() => {});
   useEffect(() => { if (menu === 'account') loadSessions(); }, [menu]);
+
+  // Comptes bloqués (onglet Social)
+  const [blocked, setBlocked] = useState([]);
+  const [confirmUnblock, setConfirmUnblock] = useState(null);
+  const [settingsSearch, setSettingsSearch] = useState('');
+  const loadBlocked = () => api('/friends').then(({ blocked: b }) => setBlocked(b || [])).catch(() => {});
+  useEffect(() => { if (menu === 'social') loadBlocked(); }, [menu]);
+  async function unblock(u) {
+    try { await api(`/friends/${u.id}/block`, { method: 'DELETE' }); loadBlocked(); } catch { /* ignoré */ }
+  }
 
   async function revokeSession(s) {
     try {
@@ -206,14 +217,24 @@ export default function SettingsModal({ onClose }) {
       <div className="settings-layout">
         <aside className="settings-menu">
           <div className="settings-menu-title">Réglages</div>
-          {MENU.map((g) => (
-            <div key={g.group} className="settings-menu-group">
-              <div className="settings-menu-label">{g.group}</div>
-              {g.items.map((it) => (
-                <button key={it.id} className={menu === it.id ? 'active' : ''} onClick={() => setMenu(it.id)}><Icon name={it.icon} /> {it.label}</button>
-              ))}
-            </div>
-          ))}
+          <div className="settings-search">
+            <Icon name="magnifying-glass" />
+            <input value={settingsSearch} onChange={(e) => setSettingsSearch(e.target.value)} placeholder="Rechercher un réglage…" />
+          </div>
+          {(() => {
+            const q = settingsSearch.trim().toLowerCase();
+            const matches = (it) => !q || it.label.toLowerCase().includes(q) || (it.kw || '').includes(q);
+            const groups = MENU.map((g) => ({ ...g, items: g.items.filter(matches) })).filter((g) => g.items.length);
+            if (!groups.length) return <p className="settings-empty" style={{ padding: '4px 8px' }}>Aucun réglage trouvé.</p>;
+            return groups.map((g) => (
+              <div key={g.group} className="settings-menu-group">
+                <div className="settings-menu-label">{g.group}</div>
+                {g.items.map((it) => (
+                  <button key={it.id} className={menu === it.id ? 'active' : ''} onClick={() => setMenu(it.id)}><Icon name={it.icon} /> {it.label}</button>
+                ))}
+              </div>
+            ));
+          })()}
         </aside>
 
         <div className="settings-content">
@@ -476,6 +497,27 @@ export default function SettingsModal({ onClose }) {
             </>
           )}
 
+          {menu === 'social' && (
+            <>
+              <h2>Social</h2>
+              <p className="modal-sub">Gérez les personnes que vous avez bloquées.</p>
+              <div className="appr-group">
+                <label>Comptes bloqués{blocked.length > 0 ? ` · ${blocked.length}` : ''}</label>
+                {blocked.length === 0 && <p className="settings-empty">Vous n’avez bloqué personne pour l’instant.</p>}
+                {blocked.map((u) => (
+                  <div className="blocked-row" key={u.id}>
+                    <Avatar user={u} size={34} />
+                    <div className="blocked-info">
+                      <div className="blocked-name">{u.display_name}</div>
+                      <div className="blocked-sub">@{u.username}</div>
+                    </div>
+                    <button className="btn btn-ghost" style={{ width: 'auto', padding: '6px 14px', fontSize: 13 }} onClick={() => setConfirmUnblock(u)}>Débloquer</button>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+
           {menu === 'account' && (
             <>
               <h2>Sécurité et compte</h2>
@@ -544,6 +586,16 @@ export default function SettingsModal({ onClose }) {
       </div>
 
       {termsTab && <TermsModal tab={termsTab} onClose={() => setTermsTab(null)} />}
+
+      {confirmUnblock && (
+        <ConfirmModal
+          title={`Débloquer ${confirmUnblock.display_name} ?`}
+          message="Cette personne pourra de nouveau vous écrire et vous inviter, et pourra à nouveau être ajoutée à vos contacts."
+          confirmLabel="Débloquer"
+          onConfirm={() => unblock(confirmUnblock)}
+          onClose={() => setConfirmUnblock(null)}
+        />
+      )}
 
       {confirmDeactivate && (
         <ConfirmModal
