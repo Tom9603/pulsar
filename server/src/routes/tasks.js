@@ -16,7 +16,7 @@ function taskRow(id) {
     SELECT t.*,
            cu.display_name AS creator_name,
            au.display_name AS assignee_name, au.avatar_color AS assignee_color, au.avatar_url AS assignee_avatar,
-           s.name AS server_name,
+           s.name AS server_name, s.icon_url AS server_icon, s.icon_color AS server_color,
            c.name AS channel_name
     FROM tasks t
     JOIN users cu ON cu.id = t.creator_id
@@ -73,7 +73,7 @@ router.get('/', (req, res) => {
     SELECT t.*,
            cu.display_name AS creator_name,
            au.display_name AS assignee_name, au.avatar_color AS assignee_color, au.avatar_url AS assignee_avatar,
-           s.name AS server_name,
+           s.name AS server_name, s.icon_url AS server_icon, s.icon_color AS server_color,
            c.name AS channel_name
     FROM tasks t
     JOIN users cu ON cu.id = t.creator_id

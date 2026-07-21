@@ -2,6 +2,7 @@ import { useState } from 'react';
 import Avatar from './Avatar.jsx';
 import Icon from './Icon.jsx';
 import Segmented from './Segmented.jsx';
+import { mediaUrl } from '../api.js';
 
 const GROUPS = [
   { key: 'todo', label: 'À faire', icon: 'list-check' },
@@ -92,7 +93,14 @@ export default function TasksPanel({ tasks, currentUser, filter, onFilter, onTog
                       {due
                         ? <span className={`task-due ${due.overdue && t.status !== 'done' ? 'overdue' : ''}`}><Icon name={due.overdue && t.status !== 'done' ? 'triangle-exclamation' : 'calendar'} /> {due.txt}</span>
                         : <span className="task-due task-nodue"><Icon name="calendar" /> Sans échéance</span>}
-                      {t.server_name && <span className="task-src">{t.channel_name || t.server_name}</span>}
+                      {t.server_name && (
+                        <span className="task-src" title={`Serveur ${t.server_name}${t.channel_name ? ' · ' + t.channel_name : ''}`}>
+                          <span className="task-src-icon" style={{ background: t.server_icon ? undefined : (t.server_color || 'var(--accent)') }}>
+                            {t.server_icon ? <img src={mediaUrl(t.server_icon)} alt="" /> : t.server_name.charAt(0).toUpperCase()}
+                          </span>
+                          {t.channel_name ? `${t.server_name} · ${t.channel_name}` : t.server_name}
+                        </span>
+                      )}
                     </div>
                     {t.description && (
                       <div className="task-detail">

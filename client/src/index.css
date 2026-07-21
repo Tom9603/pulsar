@@ -1996,7 +1996,9 @@ input[type="file"]::file-selector-button:hover {
 .task-due { display: inline-flex; align-items: center; gap: 5px; color: var(--text-muted); }
 .task-due.overdue { color: var(--danger); font-weight: 600; }
 .task-due.task-nodue { color: var(--text-faint); }
-.task-src { background: var(--bg-input); padding: 1px 8px; border-radius: 6px; }
+.task-src { display: inline-flex; align-items: center; gap: 6px; background: var(--bg-input); padding: 2px 8px 2px 3px; border-radius: 999px; }
+.task-src-icon { width: 18px; height: 18px; border-radius: 6px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; overflow: hidden; color: #fff; font-size: 10px; font-weight: 700; }
+.task-src-icon img { width: 100%; height: 100%; object-fit: cover; }
 /* Détail dépliable de la tâche */
 .task-detail { margin-top: 8px; }
 .task-detail-toggle {
@@ -2418,6 +2420,35 @@ input[type="file"]::file-selector-button:hover {
 .fb-shots .fb-shot-add:hover { color: var(--text); border-color: rgba(139, 92, 246, 0.55); background: rgba(139, 92, 246, 0.05); }
 .feedback-done { text-align: center; padding: 20px 10px; }
 .feedback-done-ico { display: inline-flex; width: 56px; height: 56px; border-radius: 50%; background: var(--grad-soft); color: var(--accent); align-items: center; justify-content: center; font-size: 22px; margin-bottom: 12px; }
+
+/* Bouton Aide (ancré en bas du rail) + centre d'aide */
+.nav-help { margin-top: auto; }
+.modal-help { width: 560px; max-width: 94vw; display: flex; flex-direction: column; max-height: 84vh; }
+.help-head { flex-shrink: 0; }
+.help-head h2 { display: flex; align-items: center; gap: 10px; }
+.help-search { display: flex; align-items: center; gap: 9px; margin-bottom: 14px; padding: 9px 12px; border-radius: 10px; background: var(--bg-input); border: 1px solid var(--border); color: var(--text-muted); flex-shrink: 0; }
+.help-search input { flex: 1; min-width: 0; background: none; border: 0; color: var(--text); font-size: 14px; outline: none; }
+.help-search-clear { width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--text-muted); font-size: 11px; }
+.help-search-clear:hover { color: var(--text); background: var(--bg-hover); }
+.help-body { flex: 1; overflow-y: auto; min-height: 0; padding-right: 4px; }
+.help-group { margin-bottom: 18px; }
+.help-group-title { display: flex; align-items: center; gap: 9px; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; color: var(--text-muted); margin-bottom: 8px; }
+.help-group-title .fa-solid, .help-group-title .fa-regular, .help-group-title svg { color: var(--accent); }
+.help-item { border: 1px solid var(--border); border-radius: 11px; margin-bottom: 7px; overflow: hidden; background: var(--bg-content-alt); }
+.help-item.open { border-color: rgba(139, 92, 246, 0.4); }
+.help-q { display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; text-align: left; background: none; color: var(--text); font-size: 14px; font-weight: 600; padding: 12px 14px; }
+.help-q:hover { background: var(--bg-hover); }
+.help-q .fa-solid, .help-q .fa-regular, .help-q svg { color: var(--text-muted); font-size: 12px; transition: transform 0.18s; flex-shrink: 0; }
+.help-item.open .help-q .fa-solid, .help-item.open .help-q .fa-regular, .help-item.open .help-q svg { transform: rotate(180deg); }
+.help-a { padding: 0 14px 13px; font-size: 13.5px; line-height: 1.6; color: var(--text-muted); }
+.help-empty { text-align: center; padding: 30px 10px; color: var(--text-muted); }
+.help-empty .fa-solid, .help-empty .fa-regular, .help-empty svg { font-size: 26px; opacity: 0.5; margin-bottom: 10px; }
+.help-empty p { font-size: 14px; }
+.help-contact { flex-shrink: 0; display: flex; align-items: center; gap: 14px; margin-top: 14px; padding: 14px 16px; border-radius: 12px; background: var(--grad-soft); border: 1px solid rgba(139, 92, 246, 0.25); }
+.help-contact-text { flex: 1; display: flex; flex-direction: column; gap: 2px; }
+.help-contact-text strong { font-size: 14px; color: var(--text); }
+.help-contact-text span { font-size: 12.5px; color: var(--text-muted); }
+.help-contact .btn { flex-shrink: 0; width: auto; white-space: nowrap; padding: 10px 18px; font-size: 14px; display: inline-flex; align-items: center; gap: 8px; }
 
 /* Menu contextuel (clic droit personnalisé) */
 .context-menu {

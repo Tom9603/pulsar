@@ -43,6 +43,7 @@ import ProfileModal from '../components/ProfileModal.jsx';
 import EditProfileModal from '../components/EditProfileModal.jsx';
 import AdminPanel from '../components/AdminPanel.jsx';
 import FeedbackModal from '../components/FeedbackModal.jsx';
+import HelpModal from '../components/HelpModal.jsx';
 import SearchModal from '../components/SearchModal.jsx';
 import CallOverlay from '../components/CallOverlay.jsx';
 import Whiteboard from '../components/Whiteboard.jsx';
@@ -506,6 +507,7 @@ export default function AppLayout() {
           onSelectServer={openServer}
           onAddServer={() => setModal('create')}
           onFeedback={() => setModal('feedback')}
+          onHelp={() => setModal('help')}
           serverMenu={serverMenu}
           currentUserId={user.id}
         />
@@ -650,6 +652,7 @@ export default function AppLayout() {
       {adminOpen && user.platform_admin && <AdminPanel onClose={() => setAdminOpen(false)} />}
       {modal === 'editProfile' && <EditProfileModal onClose={() => setModal(null)} />}
       {modal === 'feedback' && <FeedbackModal onClose={() => setModal(null)} />}
+      {modal === 'help' && <HelpModal onClose={() => setModal(null)} onContact={() => setModal('feedback')} />}
       {aiAsk && (
         <AiConfirmModal
           title={`Rattrapage · ${aiAsk.channelName}`}
