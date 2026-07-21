@@ -114,10 +114,10 @@ router.delete('/users/:id', (req, res) => {
 router.get('/feedback', (req, res) => {
   const rows = db.prepare(`
     SELECT f.id, f.type, f.subject, f.message, f.area, f.screenshots, f.handled, f.created_at,
-           u.username, u.display_name
+           u.username, u.display_name, u.email
     FROM feedback f LEFT JOIN users u ON u.id = f.user_id
     ORDER BY f.id DESC LIMIT 200
-  `).all().map((f) => ({ ...f, screenshots: JSON.parse(f.screenshots || '[]') }));
+  `).all().map((f) => { try { return { ...f, screenshots: JSON.parse(f.screenshots || '[]') }; } catch { return { ...f, screenshots: [] }; } });
   res.json({ feedback: rows });
 });
 

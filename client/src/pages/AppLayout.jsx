@@ -630,7 +630,7 @@ export default function AppLayout() {
       {modal === 'create' && <CreateServerModal onClose={() => setModal(null)} onReady={handleServerReady} />}
       {modal === 'settings' && <SettingsModal onClose={() => setModal(null)} />}
       {modal === 'roles' && detail && <RolesModal serverId={detail.server.id} roles={detail.roles} onClose={() => setModal(null)} onChanged={() => refreshDetail(activeServerId, true)} />}
-      {modal === 'serverSettings' && detail && <ServerSettingsModal server={detail.server} categories={detail.categories || []} channels={detail.channels} onClose={() => setModal(null)} onChanged={() => refreshDetail(activeServerId, true)} />}
+      {modal === 'serverSettings' && detail && <ServerSettingsModal server={detail.server} categories={detail.categories || []} channels={detail.channels} onClose={() => setModal(null)} onChanged={() => { refreshDetail(activeServerId, true); refreshServers(); }} />}
       {searchOpen && detail && <SearchModal serverId={detail.server.id} onClose={() => setSearchOpen(false)} onJump={(channelId) => { setActiveChannelId(channelId); setSection('server'); }} />}
       {memberTarget && detail && (
         <MemberModal member={memberTarget} roles={detail.roles} server={detail.server} canManageRoles={can('MANAGE_ROLES')} canKick={can('KICK_MEMBERS')} currentUserId={user.id}

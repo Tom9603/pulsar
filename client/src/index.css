@@ -3050,7 +3050,8 @@ input[type="file"]::file-selector-button:hover {
 .ad-fb-msg { margin: 0; font-size: 14px; line-height: 1.55; white-space: pre-wrap; }
 .ad-fb-shots { display: flex; gap: 8px; flex-wrap: wrap; }
 .ad-fb-shots img { max-height: 120px; border-radius: 8px; border: 1px solid var(--border); }
-.ad-fb-toggle { width: auto; padding: 7px 14px; font-size: 13px; align-self: flex-start; }
+.ad-fb-toggle { width: auto; padding: 7px 14px; font-size: 13px; align-self: flex-start; display: inline-flex; align-items: center; gap: 7px; }
+.ad-fb-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
 
 /* Journal */
 .ad-log-row {

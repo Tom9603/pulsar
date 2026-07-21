@@ -258,14 +258,21 @@ function Feedback() {
               <span className="ad-report-meta">Par {f.display_name || 'anonyme'} · {formatTimeDate(f.created_at)}</span>
             </div>
             <p className="ad-fb-msg">{f.message}</p>
-            {f.screenshots?.length > 0 && (
+            {Array.isArray(f.screenshots) && f.screenshots.length > 0 && (
               <div className="ad-fb-shots">
                 {f.screenshots.map((u) => <img key={u} src={u} alt="" />)}
               </div>
             )}
-            <button className="btn btn-ghost ad-fb-toggle" onClick={() => toggle(f)}>
-              <Icon name={f.handled ? 'rotate-left' : 'check'} /> {f.handled ? 'Rouvrir' : 'Marquer traité'}
-            </button>
+            <div className="ad-fb-actions">
+              {f.email && (
+                <a className="btn btn-ghost ad-fb-toggle" href={`mailto:${f.email}?subject=${encodeURIComponent('Réponse à votre retour Pulsar' + (f.subject ? ' : ' + f.subject : ''))}`}>
+                  <Icon name="reply" /> Répondre par email
+                </a>
+              )}
+              <button className="btn btn-ghost ad-fb-toggle" onClick={() => toggle(f)}>
+                <Icon name={f.handled ? 'rotate-left' : 'check'} /> {f.handled ? 'Rouvrir' : 'Marquer traité'}
+              </button>
+            </div>
           </div>
         ))}
         {rows.length === 0 && <div className="ad-empty">Aucun retour pour l’instant.</div>}
