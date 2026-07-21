@@ -354,6 +354,18 @@ export default function SettingsModal({ onClose }) {
                   ))}
                 </div>
               </div>
+
+              <div className="appr-group">
+                <label>Accessibilité</label>
+                <label className="settings-toggle">
+                  <input type="checkbox" checked={!!appr.reduceMotion} onChange={(e) => changeAppr({ reduceMotion: e.target.checked })} />
+                  <span>Réduire les animations et les mouvements</span>
+                </label>
+                <label className="settings-toggle">
+                  <input type="checkbox" checked={!!appr.highContrast} onChange={(e) => changeAppr({ highContrast: e.target.checked })} />
+                  <span>Contraste élevé (textes et bordures plus marqués)</span>
+                </label>
+              </div>
             </>
           )}
 

@@ -47,6 +47,24 @@ body {
   overflow: hidden;
 }
 
+/* Accessibilité : mouvements réduits (coupe animations et transitions). */
+:root[data-motion="reduce"] *,
+:root[data-motion="reduce"] *::before,
+:root[data-motion="reduce"] *::after {
+  animation-duration: 0.001ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.001ms !important;
+  scroll-behavior: auto !important;
+}
+
+/* Accessibilité : contraste élevé (textes et bordures plus marqués). */
+:root[data-contrast="high"] {
+  --text: #ffffff;
+  --text-muted: #d2d2e2;
+  --text-faint: #a4a4bc;
+  --border: rgba(255, 255, 255, 0.24);
+}
+
 /* Halos cosmiques en fond de toute l'app */
 .pulsar-app {
   height: 100%;
