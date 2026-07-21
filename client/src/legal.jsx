@@ -9,10 +9,13 @@
 export const TERMS_VERSION = 1;
 export const TERMS_DATE = '17 juillet 2026';
 
+// Identité de l'éditeur. Pulsar est édité à titre individuel par Tom Ochietti ;
+// pour une adresse de contact dédiée (plutôt que l'email personnel), il suffit
+// de remplacer « contact » ci-dessous.
 export const EDITOR = {
-  name: '[à compléter : votre nom ou votre société]',
-  contact: '[à compléter : adresse email de contact]',
-  publisher: '[à compléter : directeur de la publication]',
+  name: 'Tom Ochietti',
+  contact: 'tom.ochietti@gmail.com',
+  publisher: 'Tom Ochietti',
   host: 'Hetzner Online GmbH, Industriestr. 25, 91710 Gunzenhausen, Allemagne',
   hostCountry: 'Allemagne (Union européenne)',
 };

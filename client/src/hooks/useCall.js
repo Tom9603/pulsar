@@ -14,6 +14,9 @@ export function useCall() {
   const [remoteStream, setRemoteStream] = useState(null);
   const [screenOn, setScreenOn] = useState(false);
   const [localScreenStream, setLocalScreenStream] = useState(null);
+  const [videoOn, setVideoOn] = useState(false);
+  const [localVideoStream, setLocalVideoStream] = useState(null);
+  const [remoteVideoKind, setRemoteVideoKind] = useState('none'); // 'none' | 'camera' | 'screen'
   const [remoteVolume, setRemoteVolume] = useState(1); // volume local du correspondant (utile pour un partage)
 
   const callId = useRef(null);
@@ -21,6 +24,7 @@ export function useCall() {
   const peerSid = useRef(null);
   const localStream = useRef(null);
   const screenStream = useRef(null);
+  const videoStream = useRef(null);
   const iceConfig = useRef(DEFAULT_ICE);
   const mutedRef = useRef(false);
   const statusRef = useRef('idle');
@@ -35,9 +39,13 @@ export function useCall() {
     if (pc.current) { pc.current.close(); pc.current = null; }
     if (localStream.current) { localStream.current.getTracks().forEach((t) => t.stop()); localStream.current = null; }
     if (screenStream.current) { screenStream.current.getTracks().forEach((t) => t.stop()); screenStream.current = null; }
+    if (videoStream.current) { videoStream.current.getTracks().forEach((t) => t.stop()); videoStream.current = null; }
     setRemoteStream(null);
     setLocalScreenStream(null);
     setScreenOn(false);
+    setLocalVideoStream(null);
+    setVideoOn(false);
+    setRemoteVideoKind('none');
     peerSid.current = null;
     callId.current = null;
   }, []);
@@ -111,37 +119,78 @@ export function useCall() {
     });
   }, []);
 
+  // Renégocie la connexion après avoir ajouté/retiré une piste, en indiquant au
+  // correspondant CE QUE l'on partage désormais (caméra, écran, ou rien) pour
+  // qu'il l'affiche avec le bon libellé.
+  const renegotiate = useCallback(async (mediaKind) => {
+    const p = pc.current; if (!p) return;
+    try {
+      const offer = await p.createOffer();
+      await p.setLocalDescription(offer);
+      socket.emit('call:signal', { targetSocketId: peerSid.current, data: { sdp: p.localDescription, mediaKind } });
+    } catch { /* ignore */ }
+  }, [socket]);
+
+  const stopStream = useCallback((ref) => {
+    const p = pc.current; const s = ref.current;
+    if (!s) return;
+    for (const track of s.getTracks()) {
+      const sender = p?.getSenders().find((sd) => sd.track === track);
+      if (sender && p) p.removeTrack(sender);
+      track.stop();
+    }
+    ref.current = null;
+  }, []);
+
   const toggleScreenRef = useRef(null);
+  const toggleCameraRef = useRef(null);
   const toggleScreen = useCallback(async () => {
     const p = pc.current;
     if (!p) return;
     if (screenStream.current) {
-      for (const track of screenStream.current.getTracks()) {
-        const sender = p.getSenders().find((s) => s.track === track);
-        if (sender) p.removeTrack(sender);
-        track.stop();
-      }
-      screenStream.current = null;
+      stopStream(screenStream);
       setLocalScreenStream(null);
       setScreenOn(false);
+      await renegotiate(videoStream.current ? 'camera' : 'none');
     } else {
       let disp;
       try { disp = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true }); }
       catch { return; }
+      // Écran et caméra sont exclusifs : on coupe la caméra si elle tournait.
+      if (videoStream.current) { stopStream(videoStream); setLocalVideoStream(null); setVideoOn(false); }
       screenStream.current = disp;
       for (const track of disp.getTracks()) p.addTrack(track, disp);
       const vt = disp.getVideoTracks()[0];
       if (vt) vt.onended = () => toggleScreenRef.current?.();
       setLocalScreenStream(disp);
       setScreenOn(true);
+      await renegotiate('screen');
     }
-    try {
-      const offer = await p.createOffer();
-      await p.setLocalDescription(offer);
-      socket.emit('call:signal', { targetSocketId: peerSid.current, data: { sdp: p.localDescription } });
-    } catch { /* ignore */ }
-  }, [socket]);
+  }, [socket, renegotiate, stopStream]);
   useEffect(() => { toggleScreenRef.current = toggleScreen; }, [toggleScreen]);
+
+  const toggleCamera = useCallback(async () => {
+    const p = pc.current;
+    if (!p) return;
+    if (videoStream.current) {
+      stopStream(videoStream);
+      setLocalVideoStream(null);
+      setVideoOn(false);
+      await renegotiate(screenStream.current ? 'screen' : 'none');
+    } else {
+      let cam;
+      try { cam = await navigator.mediaDevices.getUserMedia({ video: { width: { ideal: 640 }, height: { ideal: 480 } } }); }
+      catch { notify('Caméra inaccessible : autorisez la caméra pour l’activer.'); return; }
+      // Écran et caméra sont exclusifs : on coupe le partage d'écran s'il tournait.
+      if (screenStream.current) { stopStream(screenStream); setLocalScreenStream(null); setScreenOn(false); }
+      videoStream.current = cam;
+      for (const track of cam.getTracks()) p.addTrack(track, cam);
+      setLocalVideoStream(cam);
+      setVideoOn(true);
+      await renegotiate('camera');
+    }
+  }, [renegotiate, stopStream]);
+  useEffect(() => { toggleCameraRef.current = toggleCamera; }, [toggleCamera]);
 
   useEffect(() => {
     const onIncoming = ({ callId: id, from }) => {
@@ -156,6 +205,7 @@ export function useCall() {
     const onConnected = ({ peerSocketId }) => { setStatus('connected'); makePc(peerSocketId, false); };
     const onSignal = async ({ fromSocketId, data }) => {
       const p = pc.current || makePc(fromSocketId, false);
+      if (data.mediaKind !== undefined) setRemoteVideoKind(data.mediaKind);
       try {
         if (data.sdp) {
           await p.setRemoteDescription(data.sdp);
@@ -196,5 +246,5 @@ export function useCall() {
     };
   }, [socket, makePc, reset]);
 
-  return { status, peer, muted, remoteStream, screenOn, localScreenStream, remoteVolume, setRemoteVolume, startCall, accept, decline, cancel, hangup, toggleMute, toggleScreen };
+  return { status, peer, muted, remoteStream, screenOn, localScreenStream, videoOn, localVideoStream, remoteVideoKind, remoteVolume, setRemoteVolume, startCall, accept, decline, cancel, hangup, toggleMute, toggleScreen, toggleCamera };
 }
