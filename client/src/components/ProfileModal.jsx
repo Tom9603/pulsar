@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import Modal from './Modal.jsx';
 import Avatar from './Avatar.jsx';
@@ -6,7 +6,11 @@ import Icon from './Icon.jsx';
 import { ProCard } from './MemberModal.jsx';
 import FriendsListModal from './FriendsListModal.jsx';
 import CustomStatus from './CustomStatus.jsx';
-import { api, mediaUrl } from '../api.js';
+import AvatarPickerModal from './AvatarPickerModal.jsx';
+import { api, mediaUrl, uploadImage } from '../api.js';
+import { fileToImageDataUrl } from '../imagefile.js';
+import { openMenu } from '../contextmenu.js';
+import { assetToDataUrl } from '../avatars.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useConfirm } from '../context/ConfirmContext.jsx';
 
@@ -37,6 +41,9 @@ export default function ProfileModal({ userId, servers = [], onClose, onMessage,
   const [showContacts, setShowContacts] = useState(false);
   const [flash, setFlash] = useState('');
   const [serverTip, setServerTip] = useState(null); // { server, x, y } — mini-aperçu au survol
+  const [avatarPickerOpen, setAvatarPickerOpen] = useState(false);
+  const avatarInputRef = useRef(null);
+  const bannerInputRef = useRef(null);
 
   const load = useCallback(() => {
     api(`/users/${userId}`).then(setData).catch((e) => setErr(e.message));
@@ -76,10 +83,61 @@ export default function ProfileModal({ userId, servers = [], onClose, onMessage,
   const inviteToServer = (sid) => act(async () => { await api(`/servers/${sid}/invite-user`, { method: 'POST', body: { userId: u.id } }); setInvite(false); setFlash('Invitation envoyée.'); setTimeout(() => setFlash(''), 2500); });
   async function sendReport() { try { await api(`/users/${u.id}/report`, { method: 'POST', body: { reason: reportText.trim() } }); setReporting(false); setReportText(''); setFlash('Signalement envoyé. Merci.'); setTimeout(() => setFlash(''), 2500); } catch (e) { setFlash(e.message); } }
 
+  // --- Modifier photo / bannière DIRECTEMENT depuis le résumé (soi-même) ---
+  const patchMe = async (body) => { const { user } = await api('/users/me', { method: 'PATCH', body }); updateUser(user); await load(); };
+  const flashOk = (msg) => { setFlash(msg); setTimeout(() => setFlash(''), 2000); };
+  async function confirmReplacePhoto() {
+    if (u.avatar_source !== 'upload' || !u.avatar_url) return true;
+    return confirm({ title: 'Remplacer votre photo ?', message: 'Vous avez importé une photo depuis votre ordinateur. La remplacer la retirera de votre profil.', confirmLabel: 'Remplacer' });
+  }
+  async function onPickAvatarFile(e) {
+    const file = e.target.files?.[0]; e.target.value = '';
+    if (!file) return;
+    if (file.size > 1.5 * 1024 * 1024) { flashOk('Image trop lourde (1,5 Mo max).'); return; }
+    if (!(await confirmReplacePhoto())) return;
+    try { const url = await uploadImage(await fileToImageDataUrl(file, { max: 256, square: true })); await patchMe({ avatar_url: url, avatar_source: 'upload' }); flashOk('Photo mise à jour.'); }
+    catch (err) { flashOk(err.message); }
+  }
+  async function onPickAvatarPreset(assetUrl) {
+    if (!(await confirmReplacePhoto())) return;
+    try { const url = await uploadImage(await assetToDataUrl(assetUrl)); await patchMe({ avatar_url: url, avatar_source: 'preset' }); setAvatarPickerOpen(false); flashOk('Avatar mis à jour.'); }
+    catch (err) { flashOk(err.message); }
+  }
+  async function onPickBannerFile(e) {
+    const file = e.target.files?.[0]; e.target.value = '';
+    if (!file) return;
+    if (file.size > 3 * 1024 * 1024) { flashOk('Image trop lourde (3 Mo max).'); return; }
+    try { const url = await uploadImage(await fileToImageDataUrl(file, { max: 1280, square: false })); await patchMe({ banner_url: url }); flashOk('Bannière mise à jour.'); }
+    catch (err) { flashOk(err.message); }
+  }
+  const avatarMenu = (e) => {
+    e.preventDefault(); e.stopPropagation();
+    const items = [];
+    if (u.avatar_url) items.push({ label: 'Afficher la photo', icon: 'eye', onClick: () => setFull(false) || window.open(mediaUrl(u.avatar_url), '_blank') });
+    items.push({ label: u.avatar_url ? 'Changer la photo' : 'Ajouter une photo', icon: 'image', onClick: () => avatarInputRef.current?.click() });
+    items.push({ label: 'Choisir un avatar', icon: 'user-astronaut', onClick: () => setAvatarPickerOpen(true) });
+    if (u.avatar_url) items.push({ sep: true }, { label: 'Supprimer la photo', icon: 'trash', danger: true, onClick: () => patchMe({ avatar_url: null, avatar_source: null }) });
+    openMenu(e.clientX, e.clientY, items);
+  };
+  const bannerMenu = (e) => {
+    e.preventDefault(); e.stopPropagation();
+    const items = [];
+    items.push({ label: u.banner_url ? 'Changer la bannière' : 'Ajouter une bannière', icon: 'image', onClick: () => bannerInputRef.current?.click() });
+    if (u.banner_url) items.push({ sep: true }, { label: 'Retirer la bannière', icon: 'trash', danger: true, onClick: () => patchMe({ banner_url: null }) });
+    openMenu(e.clientX, e.clientY, items);
+  };
+
   return (
     <>
       <Modal onClose={onClose} className="modal-profile">
-        <div className="profile-banner" style={banner}>
+        <div className={`profile-banner ${self ? 'is-self-editable' : ''}`} style={banner}>
+          {self && (
+            <>
+              <input ref={avatarInputRef} type="file" accept="image/*" hidden onChange={onPickAvatarFile} />
+              <input ref={bannerInputRef} type="file" accept="image/*,image/gif" hidden onChange={onPickBannerFile} />
+              <button type="button" className="edit-pencil banner-pencil" title="Modifier la bannière" onClick={bannerMenu}><Icon name="pencil" /></button>
+            </>
+          )}
           {!self && (
             <div className="profile-dots-wrap">
               <button className="profile-dots" title="Plus d’options" onClick={() => setMenuOpen((v) => !v)}><Icon name="ellipsis" /></button>
@@ -94,7 +152,10 @@ export default function ProfileModal({ userId, servers = [], onClose, onMessage,
               )}
             </div>
           )}
-          <div className="profile-avatar-wrap"><Avatar user={u} size={84} status={STATUS_LABEL[u.status] ? u.status : 'offline'} /></div>
+          <div className="profile-avatar-wrap">
+            <Avatar user={u} size={84} status={STATUS_LABEL[u.status] ? u.status : 'offline'} />
+            {self && <button type="button" className="edit-pencil avatar-pencil" title="Modifier la photo" onClick={avatarMenu}><Icon name="pencil" /></button>}
+          </div>
         </div>
 
         <div className="profile-body">
@@ -232,6 +293,8 @@ export default function ProfileModal({ userId, servers = [], onClose, onMessage,
         <FriendsListModal userId={u.id} title={self ? 'Vos contacts' : `Contacts de ${u.display_name}`}
           onOpenProfile={(id) => { setShowContacts(false); onOpenProfile(id); }} onClose={() => setShowContacts(false)} />
       )}
+
+      {avatarPickerOpen && <AvatarPickerModal onPick={onPickAvatarPreset} onClose={() => setAvatarPickerOpen(false)} />}
     </>
   );
 }

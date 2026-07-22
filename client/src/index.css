@@ -2261,6 +2261,11 @@ input[type="checkbox"]:focus-visible { box-shadow: 0 0 0 3px color-mix(in srgb, 
 .edit-pencil:hover { background: rgba(10, 11, 14, 0.92); }
 .banner-pencil { top: 10px; right: 10px; }
 .avatar-pencil { top: -3px; right: -3px; }
+/* Dans le RÉSUMÉ du profil (soi-même), les crayons n'apparaissent qu'au survol. */
+.profile-banner.is-self-editable .banner-pencil,
+.profile-avatar-wrap .avatar-pencil { opacity: 0; transition: opacity 0.15s ease; }
+.profile-banner.is-self-editable:hover .banner-pencil,
+.profile-avatar-wrap:hover .avatar-pencil { opacity: 1; }
 
 /* Emoji du statut personnalisé : bouton + sélecteur, l'emoji est facultatif. */
 .cs-emoji-wrap { position: relative; flex-shrink: 0; }
