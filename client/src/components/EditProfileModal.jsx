@@ -269,9 +269,11 @@ export default function EditProfileModal({ initialTab = 'profil', onClose }) {
                 {/* Photo de profil : votre image d'abord, puis des visuels prêts. */}
                 <div className="field">
                   <label>Photo de profil</label>
-                  <div className="import-row">
+                  <button type="button" className="btn pick-avatar-cta" onClick={() => setAvatarPickerOpen(true)}>
+                    <Icon name="user-astronaut" /> Choisir un avatar dans la galerie
+                  </button>
+                  <div className="import-row import-row-sub">
                     <button type="button" className="btn btn-ghost import-btn" onClick={() => avatarInput.current?.click()}><Icon name="arrow-up-from-bracket" /> Importer votre image</button>
-                    <button type="button" className="btn btn-ghost import-btn" onClick={() => setAvatarPickerOpen(true)}><Icon name="user-astronaut" /> Choisir un avatar</button>
                     {f.avatar_url && <button type="button" className="btn btn-ghost import-btn" onClick={() => { setPickedAvatar(null); setAvatarSource(null); set('avatar_url', ''); }}>Retirer</button>}
                   </div>
                 </div>

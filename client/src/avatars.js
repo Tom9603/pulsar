@@ -4,13 +4,13 @@
 const modules = import.meta.glob('./assets/avatars/*.png', { eager: true, query: '?url', import: 'default' });
 
 const GROUP_LABELS = {
+  real: 'Réalistes',
   people: 'Personnes',
   sketch: 'Personnages dessinés',
   illus: 'Illustrations',
   robot: 'Robots',
-  shape: 'Formes colorées',
 };
-const GROUP_ORDER = ['people', 'sketch', 'illus', 'robot', 'shape'];
+const GROUP_ORDER = ['real', 'people', 'sketch', 'illus', 'robot'];
 
 const byGroup = {};
 for (const path of Object.keys(modules).sort()) {

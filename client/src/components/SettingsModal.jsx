@@ -537,6 +537,9 @@ export default function SettingsModal({ onClose }) {
                 <button className="btn btn-ghost" onClick={() => setTermsTab('terms')}>Conditions générales d’utilisation</button>
                 <button className="btn btn-ghost" onClick={() => setTermsTab('privacy')}>Politique de confidentialité</button>
               </div>
+
+              <h3 className="about-sub">Crédits</h3>
+              <p className="about-credit">Avatars prêts à l’emploi fournis par <a href="https://www.dicebear.com" target="_blank" rel="noreferrer">DiceBear</a> — collections sous licences CC0 et CC BY 4.0 (dont « Micah » par Micah Lanier).</p>
             </>
           )}
 
