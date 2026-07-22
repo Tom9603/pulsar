@@ -8,7 +8,8 @@ import { fileToImageDataUrl } from '../imagefile.js';
 import { openMenu } from '../contextmenu.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useConfirm } from '../context/ConfirmContext.jsx';
-import { PRESET_AVATARS, assetToDataUrl } from '../avatars.js';
+import { assetToDataUrl } from '../avatars.js';
+import AvatarPickerModal from './AvatarPickerModal.jsx';
 
 const BANNERS = ['#1e1b4b', '#0f172a', '#3b0764', '#082f49', '#4a044e', '#1a2e05', '#450a0a', '#111827'];
 
@@ -75,6 +76,7 @@ export default function EditProfileModal({ initialTab = 'profil', onClose }) {
   const [busy, setBusy] = useState(false);
   const [pickedAvatar, setPickedAvatar] = useState(null); // avatar prêt-à-l'emploi sélectionné (pour le surlignage)
   const [avatarSource, setAvatarSource] = useState(user.avatar_source || null); // 'upload' | 'preset' | null : origine de la photo actuelle
+  const [avatarPickerOpen, setAvatarPickerOpen] = useState(false);
   // On ne confirme que si la photo affichée a été IMPORTÉE depuis l'ordinateur
   // (remplacer un modèle ou l'absence de photo se fait sans friction).
   async function confirmReplacePhoto() {
@@ -94,11 +96,14 @@ export default function EditProfileModal({ initialTab = 'profil', onClose }) {
   const bannerInput = useRef(null);
   const set = (k, v) => setF((s) => ({ ...s, [k]: v }));
   async function pickPreset(url) {
-    if (!(await confirmReplacePhoto())) return;
+    if (!(await confirmReplacePhoto())) return false;
     setPickedAvatar(url);
     setAvatarSource('preset');
-    try { set('avatar_url', await assetToDataUrl(url)); } catch { /* ignoré */ }
+    try { set('avatar_url', await assetToDataUrl(url)); } catch { return false; }
+    return true;
   }
+  // Depuis la modale de choix : on applique, et on ne la ferme que si c'est validé.
+  async function pickFromModal(url) { if (await pickPreset(url)) setAvatarPickerOpen(false); }
   const srcOf = (url) => (url.startsWith('data:') ? url : mediaUrl(url));
 
   // Compétences en étiquettes : stockées en chaîne « a, b, c » (compat serveur),
@@ -203,28 +208,27 @@ export default function EditProfileModal({ initialTab = 'profil', onClose }) {
         </aside>
 
         <div className="settings-content">
+          {/* Aperçu du profil : en-tête FIXE (hors défilement), pour voir en
+              direct ce que l'on modifie, sans fond ni contour autour. */}
+          {tab === 'profil' && (
+            <div className="edit-preview-fixed">
+              <div className="edit-banner-preview" style={{ background: f.banner_url ? `center/cover url(${srcOf(f.banner_url)})` : (f.banner_color || 'var(--bg-content-alt)') }}>
+                <button type="button" className="edit-pencil banner-pencil" title="Modifier la bannière" onClick={bannerMenu}><Icon name="pencil" /></button>
+                <div className="edit-avatar-wrap">
+                  <Avatar user={preview} size={72} status={f.status} />
+                  <button type="button" className="edit-pencil avatar-pencil" title="Modifier la photo" onClick={avatarMenu}><Icon name="pencil" /></button>
+                </div>
+              </div>
+            </div>
+          )}
           <div className="settings-scroll">
             {error && <div className="error-msg">{error}</div>}
 
             {tab === 'profil' && (
               <>
-                <h2>Fiche profil</h2>
-
                 {/* Champs d'import cachés, déclenchés par les crayons ou les boutons. */}
                 <input ref={avatarInput} type="file" accept="image/*" hidden onChange={(e) => pickImage('avatar_url', 1.5, e)} />
                 <input ref={bannerInput} type="file" accept="image/*,image/gif" hidden onChange={(e) => pickImage('banner_url', 3, e)} />
-
-                {/* Aperçu collé en haut : il reste visible pendant le défilement,
-                    pour voir en direct ce que l'on modifie. */}
-                <div className="edit-preview-sticky">
-                  <div className="edit-banner-preview" style={{ background: f.banner_url ? `center/cover url(${srcOf(f.banner_url)})` : (f.banner_color || 'var(--bg-content-alt)') }}>
-                    <button type="button" className="edit-pencil banner-pencil" title="Modifier la bannière" onClick={bannerMenu}><Icon name="pencil" /></button>
-                    <div className="edit-avatar-wrap">
-                      <Avatar user={preview} size={72} status={f.status} />
-                      <button type="button" className="edit-pencil avatar-pencil" title="Modifier la photo" onClick={avatarMenu}><Icon name="pencil" /></button>
-                    </div>
-                  </div>
-                </div>
 
                 <div className="settings-two">
                   <div className="field"><label>Nom affiché</label><input value={f.display_name} onChange={(e) => set('display_name', e.target.value)} /></div>
@@ -267,15 +271,8 @@ export default function EditProfileModal({ initialTab = 'profil', onClose }) {
                   <label>Photo de profil</label>
                   <div className="import-row">
                     <button type="button" className="btn btn-ghost import-btn" onClick={() => avatarInput.current?.click()}><Icon name="arrow-up-from-bracket" /> Importer votre image</button>
-                    {f.avatar_url && <button type="button" className="btn btn-ghost import-btn" onClick={() => { setPickedAvatar(null); set('avatar_url', ''); }}>Retirer</button>}
-                  </div>
-                  <p className="field-hint">Ou choisissez un avatar prêt à l’emploi&nbsp;:</p>
-                  <div className="avatar-presets">
-                    {PRESET_AVATARS.map((url) => (
-                      <button type="button" key={url} className={`avatar-preset ${pickedAvatar === url ? 'selected' : ''}`} title="Choisir cet avatar" onClick={() => pickPreset(url)}>
-                        <img src={url} alt="" />
-                      </button>
-                    ))}
+                    <button type="button" className="btn btn-ghost import-btn" onClick={() => setAvatarPickerOpen(true)}><Icon name="user-astronaut" /> Choisir un avatar</button>
+                    {f.avatar_url && <button type="button" className="btn btn-ghost import-btn" onClick={() => { setPickedAvatar(null); setAvatarSource(null); set('avatar_url', ''); }}>Retirer</button>}
                   </div>
                 </div>
 
@@ -359,6 +356,7 @@ export default function EditProfileModal({ initialTab = 'profil', onClose }) {
         </div>
       </div>
     </Modal>
+    {avatarPickerOpen && <AvatarPickerModal onPick={pickFromModal} onClose={() => setAvatarPickerOpen(false)} />}
     {lightbox && (
       <div className="img-lightbox" role="button" title="Fermer" onClick={() => setLightbox(null)}>
         <img src={lightbox} alt="" />

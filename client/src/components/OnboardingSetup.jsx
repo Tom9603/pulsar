@@ -6,7 +6,8 @@ import Avatar from './Avatar.jsx';
 import { api, uploadImage } from '../api.js';
 import { fileToImageDataUrl } from '../imagefile.js';
 import { useAuth } from '../context/AuthContext.jsx';
-import { PRESET_AVATARS, assetToDataUrl } from '../avatars.js';
+import { assetToDataUrl } from '../avatars.js';
+import AvatarPickerModal from './AvatarPickerModal.jsx';
 
 const TOTAL = 3;
 
@@ -22,6 +23,7 @@ export default function OnboardingSetup({ onDone }) {
   const [avatarUrl, setAvatarUrl] = useState(user.avatar_url || '');
   const [pickedAvatar, setPickedAvatar] = useState(null); // avatar prêt-à-l'emploi sélectionné (pour le surlignage)
   const [avatarSource, setAvatarSource] = useState(user.avatar_source || null); // 'upload' | 'preset' : origine de la photo
+  const [avatarPickerOpen, setAvatarPickerOpen] = useState(false);
   const [about, setAbout] = useState(user.about || '');
   const [sound, setSound] = useState(() => localStorage.getItem('pulsar_sound') !== '0');
   const [desktop, setDesktop] = useState(() => localStorage.getItem('pulsar_desktop') === '1');
@@ -32,6 +34,7 @@ export default function OnboardingSetup({ onDone }) {
     setPickedAvatar(url);
     setAvatarSource('preset');
     try { setAvatarUrl(await assetToDataUrl(url)); } catch { /* ignoré */ }
+    setAvatarPickerOpen(false);
   }
 
   async function pickImage(e) {
@@ -59,6 +62,7 @@ export default function OnboardingSetup({ onDone }) {
   const preview = { display_name: displayName, avatar_color: user.avatar_color, avatar_url: avatarUrl };
 
   return (
+    <>
     <Modal className="onboarding onboarding-setup" onClose={() => {}} escapable={false}>
       <div className="ob-head">
         <div className="obs-head-title"><Logo size={30} /><span>Personnalisons votre expérience</span></div>
@@ -71,17 +75,13 @@ export default function OnboardingSetup({ onDone }) {
             <h2>Bienvenue sur Pulsar</h2>
             <p className="ob-text">Prenons un instant pour personnaliser votre espace. Tout reste modifiable plus tard.</p>
             <div className="obs-avatar"><Avatar user={preview} size={76} /></div>
-            <div className="obs-presets">
-              {PRESET_AVATARS.map((url) => (
-                <button type="button" key={url} className={`avatar-preset ${pickedAvatar === url ? 'selected' : ''}`} title="Choisir cet avatar" onClick={() => pickPreset(url)}>
-                  <img src={url} alt="" />
-                </button>
-              ))}
+            <div className="obs-avatar-actions">
+              <button type="button" className="btn btn-ghost import-btn" onClick={() => setAvatarPickerOpen(true)}><Icon name="user-astronaut" /> Choisir un avatar</button>
+              <label className="btn btn-ghost import-btn">
+                <Icon name="arrow-up-from-bracket" /> Importer une photo
+                <input type="file" accept="image/*" hidden onChange={pickImage} />
+              </label>
             </div>
-            <label className="btn btn-ghost import-btn obs-import">
-              <Icon name="arrow-up-from-bracket" /> Importer une photo
-              <input type="file" accept="image/*" hidden onChange={pickImage} />
-            </label>
             <div className="field"><label>Nom affiché</label><input value={displayName} onChange={(e) => setDisplayName(e.target.value)} maxLength={60} /></div>
             <div className="field"><label>Bio (facultatif)</label><textarea rows={2} maxLength={300} value={about} onChange={(e) => setAbout(e.target.value)} placeholder="Présentez-vous en quelques mots…" /></div>
           </>
@@ -115,5 +115,7 @@ export default function OnboardingSetup({ onDone }) {
           : <button className="btn" onClick={() => setStep((v) => v + 1)}>Suivant</button>}
       </div>
     </Modal>
+    {avatarPickerOpen && <AvatarPickerModal onPick={pickPreset} onClose={() => setAvatarPickerOpen(false)} />}
+    </>
   );
 }

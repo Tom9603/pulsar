@@ -1097,6 +1097,15 @@ input[type="file"]::file-selector-button:hover {
 .avatar-preset.selected { border-color: #fff; box-shadow: 0 0 0 2px var(--accent); }
 .field-hint { color: var(--text-muted); font-size: 12.5px; margin-top: 8px; }
 
+/* Modale de choix d'avatar : rangée par STYLE, en sections. */
+.modal-avatar-picker { width: 640px; max-width: 94vw; display: flex; flex-direction: column; max-height: 84vh; }
+.avatar-picker-body { flex: 1; overflow-y: auto; min-height: 0; padding-right: 4px; margin-top: 4px; }
+.avatar-group { margin-bottom: 20px; }
+.avatar-group-title { display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; color: var(--text-muted); margin-bottom: 12px; }
+.avatar-group-title span { font-size: 11px; font-weight: 600; color: var(--text-faint); background: var(--bg-input); padding: 1px 8px; border-radius: 999px; }
+.avatar-picker-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(56px, 1fr)); gap: 12px; }
+.obs-avatar-actions { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-bottom: 14px; }
+
 .invite-box {
   display: flex;
   gap: 8px;
@@ -2207,9 +2216,9 @@ input[type="file"]::file-selector-button:hover {
 .server-tip-icon img { width: 100%; height: 100%; object-fit: cover; }
 .server-tip-name { font-weight: 600; font-size: 14px; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .server-tip-sub { font-size: 11.5px; color: var(--text-muted); }
-/* L'aperçu (bannière + avatar) reste collé en haut au défilement : on voit en
-   direct ce que l'on modifie. Le fond opaque masque le contenu qui passe dessous. */
-.edit-preview-sticky { position: sticky; top: 0; z-index: 5; background: var(--bg-content-alt); padding-top: 6px; padding-bottom: 16px; margin-bottom: 2px; }
+/* Aperçu (bannière + avatar) en EN-TÊTE FIXE, hors de la zone de défilement :
+   il reste visible pendant qu'on modifie, sans fond ni contour autour. */
+.edit-preview-fixed { flex-shrink: 0; padding: 26px 26px 0; }
 .edit-banner-preview { position: relative; height: 116px; border-radius: 12px; display: flex; align-items: flex-end; padding: 12px; }
 .edit-avatar-wrap { position: relative; display: inline-flex; }
 
