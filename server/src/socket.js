@@ -659,10 +659,8 @@ export function setupSocket(io) {
       if (!toUserId || toUserId === userId) return;
       const callee = db.prepare('SELECT * FROM users WHERE id = ?').get(toUserId);
       if (!callee) return;
-      if (!onlineUsers.get(toUserId)?.size) {
-        socket.emit('call:unavailable', { reason: 'offline' });
-        return;
-      }
+      // On autorise l'appel MÊME si la personne est hors ligne : ça sonne, et si
+      // elle ne se connecte pas à temps, l'appel se termine en « pas de réponse ».
       const callId = `${userId}-${toUserId}-${Date.now()}`;
       activeCalls.set(callId, { callerId: userId, calleeId: toUserId, callerSocketId: socket.id, calleeSocketId: null });
       io.to('user:' + toUserId).emit('call:incoming', { callId, from: user });

@@ -59,11 +59,19 @@ export function useCall() {
     setRemoteVolume(1);
   }, [teardown]);
 
+  // On tente le micro, mais s'il manque on lance QUAND MÊME l'appel (sans piste
+  // micro : on entend l'autre, il ne nous entend pas), en le signalant.
   async function getMic() {
-    const s = await navigator.mediaDevices.getUserMedia({ audio: true });
-    localStream.current = s;
-    s.getAudioTracks().forEach((t) => (t.enabled = !mutedRef.current));
-    return s;
+    try {
+      const s = await navigator.mediaDevices.getUserMedia({ audio: true });
+      localStream.current = s;
+      s.getAudioTracks().forEach((t) => (t.enabled = !mutedRef.current));
+      return s;
+    } catch {
+      localStream.current = null;
+      notify('Aucun micro détecté : vous entendez votre correspondant, mais il ne vous entend pas.');
+      return null;
+    }
   }
 
   const makePc = useCallback((peerSocketId, initiator) => {
@@ -89,23 +97,16 @@ export function useCall() {
 
   const startCall = useCallback(async (target) => {
     if (statusRef.current !== 'idle') return;
-    try { await getMic(); } catch { notify('Micro inaccessible : autorise le microphone pour appeler.'); return; }
+    await getMic(); // ne bloque plus l'appel si le micro manque
     setPeer(target);
     setStatus('calling');
     socket.emit('call:invite', { toUserId: target.id });
   }, [socket]);
 
   const accept = useCallback(async () => {
-    try {
-      await getMic();
-    } catch {
-      notify('Micro inaccessible.');
-      socket.emit('call:decline', { callId: callId.current });
-      reset();
-      return;
-    }
+    await getMic(); // on accepte même sans micro (on entend, on n'est pas entendu)
     socket.emit('call:accept', { callId: callId.current });
-  }, [socket, reset]);
+  }, [socket]);
 
   const decline = useCallback(() => { socket.emit('call:decline', { callId: callId.current }); reset(); }, [socket, reset]);
   const cancel = useCallback(() => { socket.emit('call:cancel', { callId: callId.current }); reset(); }, [socket, reset]);
