@@ -52,7 +52,7 @@ export default function DmSidebar({ conversations, activeUserId, onlineIds, onSe
         {conversations.map((c) => (
           <div className="dm-conv-wrap" key={c.id}>
             <button
-              className={`dm-conv ${c.id === activeUserId ? 'active' : ''}`}
+              className={`dm-conv ${c.id === activeUserId ? 'active' : ''} ${c.unread ? 'unread' : ''}`}
               onClick={() => onSelect(c)}
               onContextMenu={convMenu?.(c)}
             >
@@ -61,6 +61,7 @@ export default function DmSidebar({ conversations, activeUserId, onlineIds, onSe
                 <div className="dm-conv-name">{c.display_name}</div>
                 <div className="dm-conv-last">{c.last_content || '@' + c.username}</div>
               </div>
+              {c.unread && c.id !== activeUserId && <span className="dm-conv-unread" title="Non lu" />}
             </button>
             {onCall && (
               <button className="dm-conv-call" title={`Appeler ${c.display_name}`} onClick={(e) => { e.stopPropagation(); onCall(c); }}>

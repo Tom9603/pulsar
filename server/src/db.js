@@ -224,6 +224,13 @@ db.exec(`
     PRIMARY KEY (user_id, peer_id)
   );
 
+  CREATE TABLE IF NOT EXISTS dm_reads (
+    user_id      INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    peer_id      INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    last_read_id INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (user_id, peer_id)
+  );
+
   CREATE TABLE IF NOT EXISTS polls (
     id         INTEGER PRIMARY KEY AUTOINCREMENT,
     channel_id INTEGER NOT NULL REFERENCES channels(id) ON DELETE CASCADE,

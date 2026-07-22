@@ -40,7 +40,7 @@ const SECTIONS = [
 ];
 
 /** Rail de navigation : sections de l'app (Accueil, Messages, Contacts, À faire) + serveurs. */
-export default function NavRail({ section, servers, activeServerId, hasUnreadDm, todoCount = 0, onSection, onSelectServer, onAddServer, onFeedback, onHelp, serverMenu, currentUserId }) {
+export default function NavRail({ section, servers, activeServerId, hasUnreadDm, dmUnreadCount = 0, todoCount = 0, onSection, onSelectServer, onAddServer, onFeedback, onHelp, serverMenu, currentUserId }) {
   return (
     <nav className="navrail">
       {SECTIONS.map((s) => (
@@ -51,7 +51,8 @@ export default function NavRail({ section, servers, activeServerId, hasUnreadDm,
         >
           <span className="nav-ico">
             <Icon name={s.icon} />
-            {s.id === 'dm' && hasUnreadDm && <span className="nav-dot" />}
+            {s.id === 'dm' && dmUnreadCount > 0 && <span className="nav-count">{dmUnreadCount > 9 ? '9+' : dmUnreadCount}</span>}
+            {s.id === 'dm' && dmUnreadCount === 0 && hasUnreadDm && <span className="nav-dot" />}
             {s.id === 'saved' && todoCount > 0 && <span className="nav-count">{todoCount}</span>}
           </span>
           <span className="nav-label">{s.label}</span>

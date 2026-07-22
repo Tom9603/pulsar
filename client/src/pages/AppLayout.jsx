@@ -189,6 +189,7 @@ export default function AppLayout() {
   const refreshConversations = useCallback(async () => {
     const { conversations } = await api('/dms');
     setDmConversations(conversations);
+    setHasUnreadDm(conversations.some((c) => c.unread)); // badge persistant, calculé côté serveur
     return conversations;
   }, []);
 
@@ -279,7 +280,12 @@ export default function AppLayout() {
   const openMessages = () => { setSection('dm'); setHasUnreadDm(false); refreshConversations(); };
   const openFriends = () => setSection('friends');
   const openSaved = () => setSection('saved');
-  function openDm(target) { setActiveDm(target); setSection('dm'); setHasUnreadDm(false); }
+  function openDm(target) {
+    setActiveDm(target); setSection('dm');
+    // Marque la conversation comme lue (badge de non-lus), et met à jour l'état local.
+    setDmConversations((list) => list.map((c) => (c.id === target.id ? { ...c, unread: false } : c)));
+    api(`/dms/${target.id}/read`, { method: 'POST' }).then(refreshConversations).catch(() => {});
+  }
   function onSection(id) { ({ home: goHome, dm: openMessages, friends: openFriends, saved: openSaved }[id] || goHome)(); }
   function openServerChannel(serverId, channelId) {
     getSocket().emit('server:subscribe', { serverId });
@@ -518,6 +524,7 @@ export default function AppLayout() {
           servers={visibleServers}
           activeServerId={activeServerId}
           hasUnreadDm={hasUnreadDm}
+          dmUnreadCount={dmConversations.filter((c) => c.unread).length}
           todoCount={todoCount}
           onSection={onSection}
           onSelectServer={openServer}

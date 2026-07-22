@@ -2450,6 +2450,10 @@ input[type="checkbox"]:focus-visible { box-shadow: 0 0 0 3px color-mix(in srgb, 
 .dm-conv-info { min-width: 0; flex: 1; }
 .dm-conv-name { font-weight: 600; font-size: 14px; }
 .dm-conv-last { font-size: 12px; color: var(--text-faint); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* Conversation avec des messages non lus : nom plus marqué + pastille. */
+.dm-conv.unread .dm-conv-name { color: var(--text); font-weight: 700; }
+.dm-conv.unread .dm-conv-last { color: var(--text-muted); }
+.dm-conv-unread { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); width: 9px; height: 9px; border-radius: 50%; background: var(--accent); flex-shrink: 0; }
 
 /* Modale des tâches d'un serveur */
 .modal-server-tasks { width: 560px; max-width: 94vw; }

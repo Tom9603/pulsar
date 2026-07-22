@@ -16,7 +16,10 @@ router.get('/', (req, res) => {
         ORDER BY d.id DESC LIMIT 1) AS last_content,
       (SELECT MAX(id) FROM dm_messages d
         WHERE (d.sender_id = @me AND d.recipient_id = u.id)
-           OR (d.sender_id = u.id AND d.recipient_id = @me)) AS last_id
+           OR (d.sender_id = u.id AND d.recipient_id = @me)) AS last_id,
+      -- Non-lu : un message reçu de l'interlocuteur plus récent que ma dernière lecture.
+      (COALESCE((SELECT MAX(id) FROM dm_messages d WHERE d.sender_id = u.id AND d.recipient_id = @me), 0)
+        > COALESCE((SELECT last_read_id FROM dm_reads WHERE user_id = @me AND peer_id = u.id), 0)) AS unread
     FROM users u
     WHERE u.id IN (
       SELECT recipient_id FROM dm_messages WHERE sender_id = @me
@@ -31,7 +34,22 @@ router.get('/', (req, res) => {
     ORDER BY last_id DESC
   `).all({ me: req.userId });
 
-  res.json({ conversations: rows });
+  res.json({ conversations: rows.map((c) => ({ ...c, unread: !!c.unread })) });
+});
+
+/** Marquer une conversation comme lue (jusqu'au dernier message). */
+router.post('/:userId/read', (req, res) => {
+  const peerId = Number(req.params.userId);
+  if (!peerId) return res.status(400).json({ error: 'Destinataire invalide' });
+  const last = db.prepare(`
+    SELECT MAX(id) AS m FROM dm_messages
+    WHERE (sender_id = @me AND recipient_id = @peer) OR (sender_id = @peer AND recipient_id = @me)
+  `).get({ me: req.userId, peer: peerId });
+  db.prepare(`
+    INSERT INTO dm_reads (user_id, peer_id, last_read_id) VALUES (?, ?, ?)
+    ON CONFLICT(user_id, peer_id) DO UPDATE SET last_read_id = excluded.last_read_id
+  `).run(req.userId, peerId, last?.m || 0);
+  res.json({ ok: true });
 });
 
 /** « Supprimer la conversation » côté de l'utilisateur : masquée jusqu'au prochain
