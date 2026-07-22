@@ -8,15 +8,15 @@
   --bg-content: #060609;
   --bg-content-alt: #14141f;
   --bg-input: #17172080;
-  --bg-hover: rgba(255, 255, 255, 0.045);
-  --bg-active: rgba(139, 92, 246, 0.11);
+  --bg-hover: rgba(255, 255, 255, 0.05);
+  --bg-active: rgba(139, 92, 246, 0.10);
 
   --accent: #8b5cf6;
   --accent-2: #3b82f6;
   --accent-hover: #9d70ff;
   --nebula: #7c5cff;
   --grad: linear-gradient(135deg, #8b5cf6 0%, #3b82f6 100%);
-  --grad-soft: linear-gradient(135deg, rgba(139, 92, 246, 0.18), rgba(59, 130, 246, 0.18));
+  --grad-soft: linear-gradient(135deg, rgba(139, 92, 246, 0.11), rgba(59, 130, 246, 0.10));
   --danger: #f43f5e;
   --danger-hover: #e11d48;
 
@@ -71,8 +71,8 @@ body {
   display: flex;
   flex-direction: column;
   background:
-    radial-gradient(1200px 700px at 12% 0%, rgba(139, 92, 246, 0.13), transparent 60%),
-    radial-gradient(1100px 650px at 100% 115%, rgba(59, 130, 246, 0.12), transparent 60%),
+    radial-gradient(1300px 760px at 8% -6%, rgba(139, 92, 246, 0.06), transparent 62%),
+    radial-gradient(1200px 720px at 106% 112%, rgba(59, 130, 246, 0.055), transparent 62%),
     var(--bg-app);
 }
 .pulsar-body { flex: 1; display: flex; min-height: 0; }
@@ -125,27 +125,28 @@ button *, a *, [role="button"] *, .nav-item *, .nav-server * { cursor: inherit; 
 .auth-card h1 { font-size: 24px; margin-bottom: 4px; text-align: center; }
 .auth-card .subtitle { text-align: center; }
 .auth-card .subtitle { color: var(--text-muted); margin-bottom: 24px; font-size: 14px; }
-.field { margin-bottom: 16px; }
+.field { margin-bottom: 20px; }
 .field label {
   display: block;
   font-size: 12px;
   font-weight: 700;
   text-transform: uppercase;
   color: var(--text-muted);
-  margin-bottom: 6px;
+  margin-bottom: 8px;
   letter-spacing: 0.4px;
 }
 .field input, .field textarea, .field select {
   width: 100%;
-  padding: 10px 12px;
+  padding: 11px 14px;
   background: var(--bg-input);
-  border: 1px solid transparent;
-  border-radius: 6px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
   color: var(--text);
   font-size: 15px;
   outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
-.field input:focus, .field textarea:focus, .field select:focus { border-color: var(--accent); }
+.field input:focus, .field textarea:focus, .field select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 16%, transparent); }
 .field textarea { resize: none; max-height: 160px; overflow-y: auto; line-height: 1.4; }
 textarea { resize: none; }
 
@@ -1090,7 +1091,7 @@ input[type="checkbox"]:focus-visible { box-shadow: 0 0 0 3px color-mix(in srgb, 
 }
 .sched-textarea:focus { outline: none; border-color: var(--accent); }
 .modal .modal-sub { color: var(--text-muted); font-size: 14px; margin-bottom: 20px; }
-.modal-actions { display: flex; justify-content: flex-end; gap: 12px; margin-top: 24px; }
+.modal-actions { display: flex; justify-content: flex-end; gap: 12px; margin-top: 28px; }
 .modal-actions .btn { width: auto; padding: 10px 20px; }
 .modal-close { position: absolute; }
 
@@ -1381,36 +1382,40 @@ input[type="checkbox"]:focus-visible { box-shadow: 0 0 0 3px color-mix(in srgb, 
 
 .call-bar {
   position: fixed;
-  top: 12px;
+  top: 14px;
   left: 50%;
   transform: translateX(-50%);
   z-index: 150;
-  background: var(--bg-content-alt);
-  border: 1px solid rgba(0, 0, 0, 0.3);
+  background: rgba(22, 22, 32, 0.62);
+  backdrop-filter: blur(20px) saturate(150%);
+  -webkit-backdrop-filter: blur(20px) saturate(150%);
+  border: 1px solid rgba(255, 255, 255, 0.09);
   border-radius: 24px;
-  padding: 8px 16px;
+  padding: 9px 16px;
   display: flex;
   align-items: center;
   gap: 12px;
-  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 10px 34px rgba(0, 0, 0, 0.34);
   font-size: 14px;
 }
-.call-bar.connected { border-color: var(--online); }
+.call-bar.connected { border-color: rgba(34, 197, 94, 0.4); }
 .call-live-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--online); animation: pulse 1.5s infinite; }
-.call-icon { background: var(--bg-active); width: 34px; height: 34px; border-radius: 50%; font-size: 15px; }
-.call-icon:hover { background: var(--bg-hover); }
+.call-icon { background: rgba(255, 255, 255, 0.09); width: 36px; height: 36px; border-radius: 50%; font-size: 15px; transition: background 0.15s ease; }
+.call-icon:hover { background: rgba(255, 255, 255, 0.16); }
 .call-icon.on { background: rgba(59, 130, 246, 0.25); color: var(--accent-2); }
 
 /* Panneau vidéo d'un appel privé (partage d'écran) */
 .call-video {
   position: fixed; top: 60px; right: 20px; z-index: 150; width: min(46vw, 520px);
-  background: #000; border: 1px solid var(--border); border-radius: 14px; overflow: hidden;
-  box-shadow: 0 16px 44px rgba(0, 0, 0, 0.6);
+  background: #000; border: 1px solid rgba(255, 255, 255, 0.09); border-radius: 18px; overflow: hidden;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.55);
 }
 .call-video video { display: block; width: 100%; max-height: 60vh; object-fit: contain; background: #000; }
 .call-video-tag {
-  position: absolute; top: 8px; left: 8px; display: inline-flex; align-items: center; gap: 6px;
-  background: rgba(59, 130, 246, 0.9); color: #fff; font-size: 11px; font-weight: 600; padding: 3px 9px; border-radius: 999px;
+  position: absolute; top: 10px; left: 10px; display: inline-flex; align-items: center; gap: 6px;
+  background: rgba(0, 0, 0, 0.45); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  color: #fff; font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 999px;
 }
 .call-video-vol {
   position: absolute; bottom: 8px; right: 8px; display: flex; align-items: center; gap: 7px;
@@ -1824,8 +1829,9 @@ input[type="checkbox"]:focus-visible { box-shadow: 0 0 0 3px color-mix(in srgb, 
 .brand-row .brand-word { font-size: 19px; letter-spacing: 5px; padding-left: 5px; }
 .topbar-voice {
   display: flex; align-items: center; gap: 8px;
-  background: var(--bg-active); color: var(--accent);
-  border: 1px solid rgba(139, 92, 246, 0.4);
+  background: rgba(255, 255, 255, 0.06); color: var(--text);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
   padding: 5px 12px; border-radius: 20px; font-size: 13px; font-weight: 600;
 }
 .topbar-voice .tv-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--online); flex-shrink: 0; }
@@ -2140,7 +2146,7 @@ input[type="checkbox"]:focus-visible { box-shadow: 0 0 0 3px color-mix(in srgb, 
 .settings-content .modal-actions { margin: 0; padding: 14px 26px; border-top: 1px solid var(--border); background: var(--glass); }
 .settings-two { display: grid; grid-template-columns: 1fr 1fr; gap: 0 16px; }
 .settings-two .field { min-width: 0; }
-.settings-toggle { display: flex; align-items: center; gap: 12px; padding: 12px 0; font-size: 14px; color: var(--text); cursor: pointer; border-bottom: 1px solid var(--border); }
+.settings-toggle { display: flex; align-items: center; gap: 12px; padding: 14px 0; font-size: 14px; color: var(--text); cursor: pointer; border-bottom: 1px solid var(--border); }
 .settings-toggle input { width: 18px; height: 18px; accent-color: var(--accent); }
 .cv-chip { display: flex; align-items: center; gap: 10px; margin-top: 8px; }
 .cv-chip a { color: var(--accent); font-size: 13px; font-weight: 600; }
