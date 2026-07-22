@@ -21,6 +21,7 @@ export default function OnboardingSetup({ onDone }) {
   const [displayName, setDisplayName] = useState(user.display_name || '');
   const [avatarUrl, setAvatarUrl] = useState(user.avatar_url || '');
   const [pickedAvatar, setPickedAvatar] = useState(null); // avatar prêt-à-l'emploi sélectionné (pour le surlignage)
+  const [avatarSource, setAvatarSource] = useState(user.avatar_source || null); // 'upload' | 'preset' : origine de la photo
   const [about, setAbout] = useState(user.about || '');
   const [sound, setSound] = useState(() => localStorage.getItem('pulsar_sound') !== '0');
   const [desktop, setDesktop] = useState(() => localStorage.getItem('pulsar_desktop') === '1');
@@ -29,13 +30,14 @@ export default function OnboardingSetup({ onDone }) {
   const last = step === TOTAL - 1;
   async function pickPreset(url) {
     setPickedAvatar(url);
+    setAvatarSource('preset');
     try { setAvatarUrl(await assetToDataUrl(url)); } catch { /* ignoré */ }
   }
 
   async function pickImage(e) {
     const file = e.target.files?.[0];
     if (!file) return;
-    try { setPickedAvatar(null); setAvatarUrl(await fileToImageDataUrl(file, { max: 256, square: true })); } catch { /* ignoré */ }
+    try { setPickedAvatar(null); setAvatarSource('upload'); setAvatarUrl(await fileToImageDataUrl(file, { max: 256, square: true })); } catch { /* ignoré */ }
   }
 
   async function finish() {
@@ -47,7 +49,7 @@ export default function OnboardingSetup({ onDone }) {
       if (avatar && avatar.startsWith('data:')) avatar = await uploadImage(avatar);
       const { user: updated } = await api('/users/me', {
         method: 'PATCH',
-        body: { display_name: displayName.trim() || user.display_name, avatar_url: avatar || null, about, setup_completed: true },
+        body: { display_name: displayName.trim() || user.display_name, avatar_url: avatar || null, avatar_source: avatar ? avatarSource : null, about, setup_completed: true },
       });
       updateUser(updated);
     } catch { /* on n'empêche jamais d'entrer dans l'app */ }

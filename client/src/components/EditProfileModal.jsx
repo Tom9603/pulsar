@@ -7,6 +7,7 @@ import { api, uploadImage, uploadFile, mediaUrl } from '../api.js';
 import { fileToImageDataUrl } from '../imagefile.js';
 import { openMenu } from '../contextmenu.js';
 import { useAuth } from '../context/AuthContext.jsx';
+import { useConfirm } from '../context/ConfirmContext.jsx';
 import { PRESET_AVATARS, assetToDataUrl } from '../avatars.js';
 
 const BANNERS = ['#1e1b4b', '#0f172a', '#3b0764', '#082f49', '#4a044e', '#1a2e05', '#450a0a', '#111827'];
@@ -59,6 +60,7 @@ const EXPIRE = [
 /** Modale « Modifier le profil » : onglets Fiche profil + Fiche professionnelle. */
 export default function EditProfileModal({ initialTab = 'profil', onClose }) {
   const { user, updateUser } = useAuth();
+  const confirm = useConfirm();
   const [tab, setTab] = useState(initialTab);
   const [f, setF] = useState({
     display_name: user.display_name, pronouns: user.pronouns || '', status: user.status,
@@ -72,6 +74,17 @@ export default function EditProfileModal({ initialTab = 'profil', onClose }) {
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [pickedAvatar, setPickedAvatar] = useState(null); // avatar prêt-à-l'emploi sélectionné (pour le surlignage)
+  const [avatarSource, setAvatarSource] = useState(user.avatar_source || null); // 'upload' | 'preset' | null : origine de la photo actuelle
+  // On ne confirme que si la photo affichée a été IMPORTÉE depuis l'ordinateur
+  // (remplacer un modèle ou l'absence de photo se fait sans friction).
+  async function confirmReplacePhoto() {
+    if (avatarSource !== 'upload' || !f.avatar_url) return true;
+    return confirm({
+      title: 'Remplacer votre photo ?',
+      message: 'Vous avez importé une photo depuis votre ordinateur. La remplacer la retirera de votre profil.',
+      confirmLabel: 'Remplacer',
+    });
+  }
   const [statusMinutes, setStatusMinutes] = useState(0); // expiration à appliquer au statut personnalisé
   const [emojiOpen, setEmojiOpen] = useState(false);
   const [skillDraft, setSkillDraft] = useState('');
@@ -81,7 +94,9 @@ export default function EditProfileModal({ initialTab = 'profil', onClose }) {
   const bannerInput = useRef(null);
   const set = (k, v) => setF((s) => ({ ...s, [k]: v }));
   async function pickPreset(url) {
+    if (!(await confirmReplacePhoto())) return;
     setPickedAvatar(url);
+    setAvatarSource('preset');
     try { set('avatar_url', await assetToDataUrl(url)); } catch { /* ignoré */ }
   }
   const srcOf = (url) => (url.startsWith('data:') ? url : mediaUrl(url));
@@ -103,7 +118,7 @@ export default function EditProfileModal({ initialTab = 'profil', onClose }) {
     const items = [];
     if (f.avatar_url) items.push({ label: 'Afficher la photo', icon: 'eye', onClick: () => setLightbox(srcOf(f.avatar_url)) });
     items.push({ label: f.avatar_url ? 'Changer la photo' : 'Ajouter une photo', icon: 'image', onClick: () => avatarInput.current?.click() });
-    if (f.avatar_url) items.push({ sep: true }, { label: 'Supprimer la photo', icon: 'trash', danger: true, onClick: () => { setPickedAvatar(null); set('avatar_url', ''); } });
+    if (f.avatar_url) items.push({ sep: true }, { label: 'Supprimer la photo', icon: 'trash', danger: true, onClick: () => { setPickedAvatar(null); setAvatarSource(null); set('avatar_url', ''); } });
     openMenu(e.clientX, e.clientY, items);
   };
   // Menu du crayon sur la bannière : afficher, changer, supprimer.
@@ -120,7 +135,11 @@ export default function EditProfileModal({ initialTab = 'profil', onClose }) {
     const file = e.target.files?.[0];
     if (!file) return;
     if (file.size > maxMo * 1024 * 1024) { setError(`Image trop lourde (${maxMo} Mo max).`); return; }
-    if (key === 'avatar_url') setPickedAvatar(null);
+    if (key === 'avatar_url') {
+      if (!(await confirmReplacePhoto())) { e.target.value = ''; return; }
+      setPickedAvatar(null);
+      setAvatarSource('upload');
+    }
     setError('');
     try {
       // Conversion en format universel (le HEIC des iPhone devient du JPEG) et
@@ -161,7 +180,7 @@ export default function EditProfileModal({ initialTab = 'profil', onClose }) {
       if (avatar && avatar.startsWith('data:')) avatar = await uploadImage(avatar);
       const { user: updated } = await api('/users/me', {
         method: 'PATCH',
-        body: { ...f, banner_url: banner || null, avatar_url: avatar || null, cv_url: f.cv_url || null, cv_name: f.cv_name || null, custom_status_minutes: statusMinutes, socials },
+        body: { ...f, banner_url: banner || null, avatar_url: avatar || null, avatar_source: avatarSource, cv_url: f.cv_url || null, cv_name: f.cv_name || null, custom_status_minutes: statusMinutes, socials },
       });
       updateUser(updated);
       onClose();

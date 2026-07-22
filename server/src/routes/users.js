@@ -21,6 +21,11 @@ router.patch('/me', (req, res) => {
   const nextName = (display_name ?? '').toString().trim() || current.display_name;
   const nextColor = /^#[0-9a-fA-F]{6}$/.test(avatar_color || '') ? avatar_color : current.avatar_color;
   const nextAvatar = avatar_url === undefined ? current.avatar_url : (avatar_url || null);
+  // Origine de la photo : sert à savoir s'il faut confirmer avant de la remplacer.
+  let nextAvatarSource;
+  if (avatar_url === undefined) nextAvatarSource = current.avatar_source;      // avatar inchangé
+  else if (!avatar_url) nextAvatarSource = null;                               // photo retirée
+  else nextAvatarSource = ['upload', 'preset'].includes(b.avatar_source) ? b.avatar_source : (current.avatar_source || null);
   const nextAbout = about === undefined ? current.about : String(about).slice(0, 300);
   const nextStatus = STATUSES.includes(status) ? status : current.status;
 
@@ -73,14 +78,14 @@ router.patch('/me', (req, res) => {
   }
 
   db.prepare(`
-    UPDATE users SET display_name = ?, avatar_color = ?, avatar_url = ?, about = ?, status = ?,
+    UPDATE users SET display_name = ?, avatar_color = ?, avatar_url = ?, avatar_source = ?, about = ?, status = ?,
       headline = ?, company = ?, location = ?, website = ?, email_pro = ?, phone = ?, skills = ?,
       cv_url = ?, cv_name = ?, cv_summary = ?, pronouns = ?, banner_color = ?, banner_url = ?,
       socials = ?, setup_completed = ?,
       privacy_dm = ?, privacy_friend = ?, hide_presence = ?,
       custom_status = ?, custom_status_emoji = ?, custom_status_until = ?
     WHERE id = ?
-  `).run(nextName, nextColor, nextAvatar, nextAbout, nextStatus,
+  `).run(nextName, nextColor, nextAvatar, nextAvatarSource, nextAbout, nextStatus,
     nextHeadline, nextCompany, nextLocation, nextWebsite, nextEmailPro, nextPhone, nextSkills,
     nextCvUrl, nextCvName, nextCvSummary, nextPronouns, nextBannerColor, nextBannerUrl,
     nextSocials, nextSetup,
