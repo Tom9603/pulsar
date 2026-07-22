@@ -1,7 +1,6 @@
 import { useEffect, useRef } from 'react';
 import Avatar from './Avatar.jsx';
 import Icon from './Icon.jsx';
-import Soundboard from './Soundboard.jsx';
 
 /** Élément vidéo lié à un MediaStream (caméra locale/distante ou partage d'écran). */
 function VideoStream({ stream, muted, mirror }) {
@@ -90,8 +89,6 @@ export default function VoiceView({
           <button className="voice-btn join" onClick={onJoin}>Rejoindre le salon vocal</button>
         )}
       </div>
-
-      {connected && <Soundboard channelId={channel.id} serverId={channel.server_id} />}
 
       <p className="voice-note" style={{ fontSize: 12, opacity: 0.7 }}>
         <Icon name="headphones" /> Audio, vidéo et partage d’écran en temps réel (WebRTC). Autorisez le micro (et la caméra) à la première utilisation.

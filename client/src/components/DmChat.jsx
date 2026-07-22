@@ -16,7 +16,6 @@ import ReminderButton from './ReminderButton.jsx';
 import ConfirmModal from './ConfirmModal.jsx';
 import WatchTogether from './WatchTogether.jsx';
 import Whiteboard from './Whiteboard.jsx';
-import DmTasksModal from './DmTasksModal.jsx';
 import { ctx } from '../contextmenu.js';
 import { userColor } from '../usercolor.js';
 import { formatTime, formatTimeDate } from '../datetime.js';
@@ -41,8 +40,7 @@ export default function DmChat({ peer, currentUser, onlineIds, onCall, onOpenPro
   const [showSearch, setShowSearch] = useState(false);
   const [searchQ, setSearchQ] = useState('');
   const [boardOpen, setBoardOpen] = useState(false);
-  const [tasksOpen, setTasksOpen] = useState(false);
-  useEffect(() => { setWatchOpen(false); setShowSearch(false); setSearchQ(''); setBoardOpen(false); setTasksOpen(false); }, [peer.id]);
+  useEffect(() => { setWatchOpen(false); setShowSearch(false); setSearchQ(''); setBoardOpen(false); }, [peer.id]);
   const searchHits = searchQ.trim().length < 2 ? [] : messages.filter((m) => !m.deleted && (m.content || '').toLowerCase().includes(searchQ.trim().toLowerCase()));
   function jumpToMessage(id) {
     const el = scrollRef.current?.querySelector(`[data-mid="${id}"]`);
@@ -151,19 +149,15 @@ export default function DmChat({ peer, currentUser, onlineIds, onCall, onOpenPro
         <span className="clickable" onClick={() => onOpenProfile?.(peer.id)}>{peer.display_name}</span>
         <span className="topic">@{peer.username}</span>
         <span className="spacer" />
-        <button className="header-btn" title="Tâches partagées" onClick={() => setTasksOpen(true)}><Icon name="list-check" /></button>
         <button className="header-btn" title="Tableau blanc partagé" onClick={() => setBoardOpen(true)}><Icon name="palette" /></button>
         <button className={`header-btn ${showSearch ? 'active' : ''}`} title="Rechercher dans la conversation" onClick={() => setShowSearch((v) => !v)}><Icon name="magnifying-glass" /></button>
-        <button className="header-btn" title="Appel vocal" onClick={() => onCall(peer)}><Icon name="phone" /></button>
+        <button className={`header-btn ${showPins ? 'active' : ''}`} title="Messages épinglés" onClick={togglePins}><Icon name="thumbtack" /></button>
+        <button className="header-btn header-call" title="Appel vocal" onClick={() => onCall(peer)}><Icon name="phone" /> Appeler</button>
       </div>
 
       {boardOpen && (
         <Whiteboard dmUserId={peer.id} onClose={() => setBoardOpen(false)}
           onPublish={(url) => send({ content: '', attachmentUrl: url, attachmentName: 'tableau-blanc.png' })} />
-      )}
-      {tasksOpen && (
-        <DmTasksModal peer={peer} currentUser={currentUser} onClose={() => setTasksOpen(false)}
-          onNewTask={() => onCreateTask?.({ peer: { id: peer.id, display_name: peer.display_name } })} />
       )}
 
       {showSearch && (
@@ -193,7 +187,6 @@ export default function DmChat({ peer, currentUser, onlineIds, onCall, onOpenPro
       <div className="content-body">
         <div className="chat-area">
           <WatchTogether dmUserId={peer.id} open={watchOpen} onClose={() => setWatchOpen(false)} />
-          <button className="chat-pins-btn" title="Messages épinglés" onClick={togglePins}><Icon name="thumbtack" /></button>
           {showPins && (
             <div className="pins-panel">
               <div className="pins-head">Messages épinglés <button onClick={() => setShowPins(false)}><Icon name="xmark" /></button></div>

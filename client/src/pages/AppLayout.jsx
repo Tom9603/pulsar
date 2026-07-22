@@ -39,6 +39,7 @@ import MemberModal from '../components/MemberModal.jsx';
 import ServerSettingsModal from '../components/ServerSettingsModal.jsx';
 import ChannelAccessModal from '../components/ChannelAccessModal.jsx';
 import ServerTasksModal from '../components/ServerTasksModal.jsx';
+import DmTasksModal from '../components/DmTasksModal.jsx';
 import ProfileModal from '../components/ProfileModal.jsx';
 import EditProfileModal from '../components/EditProfileModal.jsx';
 import AdminPanel from '../components/AdminPanel.jsx';
@@ -88,6 +89,7 @@ export default function AppLayout() {
   const [tourOpen, setTourOpen] = useState(() => user.setup_completed && !onboardingHidden()); // présentation, après la perso
   const [whiteboardOpen, setWhiteboardOpen] = useState(false);
   const [serverTasksOpen, setServerTasksOpen] = useState(false);
+  const [dmTasksOpen, setDmTasksOpen] = useState(false);
   const [memberTarget, setMemberTarget] = useState(null);
   const [accessChannel, setAccessChannel] = useState(null);
   const [profileTarget, setProfileTarget] = useState(null); // id d'utilisateur
@@ -478,6 +480,12 @@ export default function AppLayout() {
 
   // ---- Tâches ----
   const openTaskFromMessage = (prefill) => setTaskModal({ prefill, members: detail?.members || [] });
+  // Bouton « Tâches » de la barre du haut : contextuel (serveur, conversation, ou centre des tâches).
+  const openTasks = () => {
+    if (section === 'server' && detail) setServerTasksOpen(true);
+    else if (section === 'dm' && activeDm) setDmTasksOpen(true);
+    else onSection('saved');
+  };
   const openNewTask = () => setTaskModal({ prefill: {}, members: [] });
   const editTask = (task) => setTaskModal({ task });
   const toggleTask = async (task) => { await api(`/tasks/${task.id}`, { method: 'PATCH', body: { status: task.status === 'done' ? 'todo' : 'done' } }); refreshTasks(); };
@@ -516,6 +524,7 @@ export default function AppLayout() {
         onOpenSaved={() => setSavedModal('saved')}
         onOpenReminders={() => setSavedModal('reminders')}
         onOpenQuickSearch={() => setQuickOpen(true)}
+        onOpenTasks={openTasks}
       />
 
       <div className="pulsar-body">
@@ -583,7 +592,6 @@ export default function AppLayout() {
                   {ai.enabled && activeChannel.type === 'text' && (
                     <button className="header-btn header-ai" title="Rattrapage : résumé IA des nouveaux messages" onClick={() => setAiAsk({ channelId: activeChannel.id, channelName: activeChannel.name })}><Icon name="wand-magic-sparkles" /></button>
                   )}
-                  <button className="header-btn" title="Tâches du serveur" onClick={() => setServerTasksOpen(true)}><Icon name="list-check" /></button>
                   <button className="header-btn" title="Tableau blanc partagé" onClick={() => setWhiteboardOpen(true)}><Icon name="palette" /></button>
                   <button className="header-btn" title="Rechercher" onClick={() => setSearchOpen(true)}><Icon name="magnifying-glass" /></button>
                   <button className={`header-btn ${showMembers ? 'active' : ''}`} title="Membres" onClick={() => setShowMembers((v) => !v)}><Icon name="users" /></button>
@@ -628,6 +636,10 @@ export default function AppLayout() {
       {serverTasksOpen && detail && (
         <ServerTasksModal serverId={detail.server.id} serverName={detail.server.name}
           onOpenTask={(t) => { setServerTasksOpen(false); editTask(t); }} onClose={() => setServerTasksOpen(false)} />
+      )}
+      {dmTasksOpen && activeDm && (
+        <DmTasksModal peer={activeDm} currentUser={user} onClose={() => setDmTasksOpen(false)}
+          onNewTask={() => { setDmTasksOpen(false); openTaskFromMessage({ peer: { id: activeDm.id, display_name: activeDm.display_name } }); }} />
       )}
 
       {taskModal && (
