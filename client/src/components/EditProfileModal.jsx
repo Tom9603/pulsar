@@ -214,11 +214,15 @@ export default function EditProfileModal({ initialTab = 'profil', onClose }) {
                 <input ref={avatarInput} type="file" accept="image/*" hidden onChange={(e) => pickImage('avatar_url', 1.5, e)} />
                 <input ref={bannerInput} type="file" accept="image/*,image/gif" hidden onChange={(e) => pickImage('banner_url', 3, e)} />
 
-                <div className="edit-banner-preview" style={{ background: f.banner_url ? `center/cover url(${srcOf(f.banner_url)})` : (f.banner_color || 'var(--bg-content-alt)') }}>
-                  <button type="button" className="edit-pencil banner-pencil" title="Modifier la bannière" onClick={bannerMenu}><Icon name="pencil" /></button>
-                  <div className="edit-avatar-wrap">
-                    <Avatar user={preview} size={72} status={f.status} />
-                    <button type="button" className="edit-pencil avatar-pencil" title="Modifier la photo" onClick={avatarMenu}><Icon name="pencil" /></button>
+                {/* Aperçu collé en haut : il reste visible pendant le défilement,
+                    pour voir en direct ce que l'on modifie. */}
+                <div className="edit-preview-sticky">
+                  <div className="edit-banner-preview" style={{ background: f.banner_url ? `center/cover url(${srcOf(f.banner_url)})` : (f.banner_color || 'var(--bg-content-alt)') }}>
+                    <button type="button" className="edit-pencil banner-pencil" title="Modifier la bannière" onClick={bannerMenu}><Icon name="pencil" /></button>
+                    <div className="edit-avatar-wrap">
+                      <Avatar user={preview} size={72} status={f.status} />
+                      <button type="button" className="edit-pencil avatar-pencil" title="Modifier la photo" onClick={avatarMenu}><Icon name="pencil" /></button>
+                    </div>
                   </div>
                 </div>
 

@@ -2207,7 +2207,10 @@ input[type="file"]::file-selector-button:hover {
 .server-tip-icon img { width: 100%; height: 100%; object-fit: cover; }
 .server-tip-name { font-weight: 600; font-size: 14px; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .server-tip-sub { font-size: 11.5px; color: var(--text-muted); }
-.edit-banner-preview { position: relative; height: 116px; border-radius: 12px; display: flex; align-items: flex-end; padding: 12px; margin-bottom: 18px; }
+/* L'aperçu (bannière + avatar) reste collé en haut au défilement : on voit en
+   direct ce que l'on modifie. Le fond opaque masque le contenu qui passe dessous. */
+.edit-preview-sticky { position: sticky; top: 0; z-index: 5; background: var(--bg-content-alt); padding-top: 6px; padding-bottom: 16px; margin-bottom: 2px; }
+.edit-banner-preview { position: relative; height: 116px; border-radius: 12px; display: flex; align-items: flex-end; padding: 12px; }
 .edit-avatar-wrap { position: relative; display: inline-flex; }
 
 /* Crayon-raccourci sur la photo et la bannière (afficher / changer / supprimer). */
