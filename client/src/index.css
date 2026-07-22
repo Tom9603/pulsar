@@ -25,6 +25,9 @@
   --text-faint: #78788f;
   --border: rgba(255, 255, 255, 0.07);
   --glass: rgba(20, 20, 31, 0.55);
+  /* Verre dépoli du châssis (rail, colonnes, barre du haut) façon iOS. */
+  --glass-chrome: rgba(17, 17, 26, 0.5);
+  --glass-blur: 22px;
 
   --online: #22c55e;
   --idle: #f0b232;
@@ -382,7 +385,9 @@ input[type="checkbox"]:focus-visible { box-shadow: 0 0 0 3px color-mix(in srgb, 
   width: 250px;
   height: 100%;
   flex-shrink: 0;
-  background: var(--bg-sidebar);
+  background: var(--glass-chrome);
+  backdrop-filter: blur(var(--glass-blur)) saturate(150%);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(150%);
   border-right: 1px solid var(--border);
   display: flex;
   flex-direction: column;
@@ -1027,7 +1032,7 @@ input[type="checkbox"]:focus-visible { box-shadow: 0 0 0 3px color-mix(in srgb, 
 .voice-btn.leave { background: var(--danger); color: #fff; }
 
 /* Liste des membres */
-.member-list { width: 248px; background: var(--bg-sidebar); border-left: 1px solid var(--border); overflow-y: auto; padding: 10px 10px 16px; }
+.member-list { width: 248px; background: var(--glass-chrome); backdrop-filter: blur(var(--glass-blur)) saturate(150%); -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(150%); border-left: 1px solid var(--border); overflow-y: auto; padding: 10px 10px 16px; }
 .mbr-head { display: flex; align-items: center; justify-content: space-between; padding: 8px 8px 12px; font-size: 13px; font-weight: 600; color: var(--text); }
 .mbr-head > span:first-child { display: inline-flex; align-items: center; gap: 8px; }
 .mbr-head .fa-solid { color: var(--text-muted); }
@@ -1805,8 +1810,9 @@ input[type="checkbox"]:focus-visible { box-shadow: 0 0 0 3px color-mix(in srgb, 
   align-items: center;
   gap: 10px;
   padding: 0 16px;
-  background: rgba(10, 10, 17, 0.6);
-  backdrop-filter: blur(18px);
+  background: var(--glass-chrome);
+  backdrop-filter: blur(var(--glass-blur)) saturate(150%);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(150%);
   border-bottom: 1px solid var(--border);
   z-index: 20;
 }
@@ -1859,7 +1865,9 @@ input[type="checkbox"]:focus-visible { box-shadow: 0 0 0 3px color-mix(in srgb, 
 .navrail {
   width: 86px;
   flex-shrink: 0;
-  background: var(--bg-rail);
+  background: var(--glass-chrome);
+  backdrop-filter: blur(var(--glass-blur)) saturate(150%);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(150%);
   border-right: 1px solid var(--border);
   display: flex;
   flex-direction: column;
@@ -2907,6 +2915,7 @@ input[type="checkbox"]:focus-visible { box-shadow: 0 0 0 3px color-mix(in srgb, 
   --text-faint: #9799ab;
   --border: rgba(30, 30, 55, 0.11);
   --glass: rgba(255, 255, 255, 0.72);
+  --glass-chrome: rgba(255, 255, 255, 0.6);
 }
 :root[data-theme="light"] .message:hover { background: rgba(30, 30, 55, 0.05); }
 :root[data-theme="light"] .message .msg-author { color: var(--text); }
