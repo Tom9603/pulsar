@@ -64,9 +64,14 @@ export default function OnboardingSetup({ onDone }) {
   return (
     <>
     <Modal className="onboarding onboarding-setup" onClose={() => {}} escapable={false}>
-      <div className="ob-head">
-        <div className="obs-head-title"><Logo size={30} /><span>Personnalisons votre expérience</span></div>
-        <span className="ob-count">{step + 1} sur {TOTAL}</span>
+      {/* En-tête sur deux lignes : la marque et l'étape en haut, le titre
+          en dessous. Tout tenait sur une seule ligne et s'étouffait. */}
+      <div className="ob-head obs-head">
+        <div className="obs-head-brand">
+          <Logo size={30} />
+          <span className="ob-count">{step + 1} sur {TOTAL}</span>
+        </div>
+        <span className="obs-head-title">Personnalisons votre expérience</span>
       </div>
 
       <div className="obs-body">

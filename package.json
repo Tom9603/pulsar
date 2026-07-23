@@ -1,6 +1,6 @@
 {
   "name": "pulsar",
-  "version": "0.22.2",
+  "version": "0.22.3",
   "private": true,
   "description": "Pulsar — messagerie temps réel (serveurs, vocal, DM) + features signature",
   "author": "Tom <tom.ochietti@gmail.com>",
