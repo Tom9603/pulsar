@@ -364,7 +364,13 @@ export function setupSocket(io) {
 
     socket.on('server:subscribe', ({ serverId }) => {
       const member = db.prepare('SELECT 1 FROM server_members WHERE server_id = ? AND user_id = ?').get(serverId, userId);
-      if (member) socket.join('server:' + serverId);
+      if (!member) return;
+      socket.join('server:' + serverId);
+      // On renvoie l'occupation des salons vocaux : l'affichage reste juste
+      // même après une reconnexion ou un changement d'écran.
+      for (const { id } of db.prepare("SELECT id FROM channels WHERE server_id = ? AND type = 'voice'").all(serverId)) {
+        socket.emit('voice:state', { channelId: id, members: roomMembers(id) });
+      }
     });
 
     // ------------------------------------------------------------------

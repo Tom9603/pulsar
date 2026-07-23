@@ -36,7 +36,7 @@ const SECTIONS = [
   { id: 'home', icon: 'house', label: 'Accueil' },
   { id: 'dm', icon: 'comment', label: 'Messages' },
   { id: 'friends', icon: 'user-group', label: 'Contacts' },
-  { id: 'saved', icon: 'circle-check', label: 'Tasks' },
+  { id: 'saved', icon: 'circle-check', label: 'Tâches' },
 ];
 
 /** Rail de navigation : sections de l'app (Accueil, Messages, Contacts, À faire) + serveurs. */

@@ -207,7 +207,7 @@ export default function DmChat({ peer, currentUser, onlineIds, onCall, onOpenPro
               ))}
             </div>
           )}
-          <div className="messages" ref={scrollRef}>
+          <div className="messages dm-thread" ref={scrollRef}>
             <div className="spacer-top" />
             <div className="msg-welcome">
               <Avatar user={peer} size={64} onClick={() => onOpenProfile?.(peer.id)} />
@@ -225,7 +225,7 @@ export default function DmChat({ peer, currentUser, onlineIds, onCall, onOpenPro
               const isReminderMsg = !m.deleted && !isTaskMsg && reminderMsgIds?.has(m.id);
               const isSavedMsg = !m.deleted && !isTaskMsg && !isReminderMsg && savedMsgIds?.has(m.id);
               return (
-                <div className={`message ${grouped ? 'grouped' : ''} ${m.pinned && !m.deleted ? 'pinned' : ''} ${m.reply_to && !m.deleted ? 'is-reply' : ''} ${m.deleted ? 'is-deleted' : ''} ${isTaskMsg ? 'is-task' : ''} ${isReminderMsg ? 'is-reminder' : ''} ${isSavedMsg ? 'is-saved' : ''}`} key={m.id} data-mid={m.id} onContextMenu={msgMenu(m, isOwn)}>
+                <div className={`message ${isOwn ? 'own' : 'theirs'} ${grouped ? 'grouped' : ''} ${m.pinned && !m.deleted ? 'pinned' : ''} ${m.reply_to && !m.deleted ? 'is-reply' : ''} ${m.deleted ? 'is-deleted' : ''} ${isTaskMsg ? 'is-task' : ''} ${isReminderMsg ? 'is-reminder' : ''} ${isSavedMsg ? 'is-saved' : ''}`} key={m.id} data-mid={m.id} onContextMenu={msgMenu(m, isOwn)}>
                   {(isTaskMsg || isReminderMsg || isSavedMsg) && (
                     <span className={`msg-mark ${isTaskMsg ? 'task' : isReminderMsg ? 'reminder' : 'saved'}`} title={isTaskMsg ? 'Vous avez créé une tâche depuis ce message' : isReminderMsg ? 'Vous vous êtes fait un rappel sur ce message' : 'Vous avez enregistré ce message'}>
                       <Icon name={isTaskMsg ? 'circle-check' : isReminderMsg ? 'clock' : 'bookmark'} />

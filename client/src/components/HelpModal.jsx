@@ -20,7 +20,7 @@ const FAQ = [
       { q: 'Comment épingler un message important ?', a: 'Survolez le message, ouvrez son menu (les trois points), puis « Épingler ». Les messages épinglés restent accessibles en haut du salon et un clic vous y ramène.' },
       { q: 'Comment transférer un message ailleurs ?', a: 'Dans le menu du message, choisissez « Transférer », puis sélectionnez le salon ou le contact de destination. Le message part avec son contenu et ses éventuelles pièces jointes.' },
       { q: 'Comment retrouver un message plus tard ?', a: 'Vous pouvez l\'enregistrer (l\'icône marque-page) pour le ranger dans vos messages enregistrés, ou poser un rappel (l\'icône horloge) pour être notifié au bon moment.' },
-      { q: 'Comment transformer un message en tâche ?', a: 'Dans le menu du message, choisissez « Créer une tâche ». Le message devient une tâche que vous retrouvez dans « Tasks », avec une échéance et un responsable si besoin.' },
+      { q: 'Comment transformer un message en tâche ?', a: 'Dans le menu du message, choisissez « Créer une tâche ». Le message devient une tâche que vous retrouvez dans « Tâches », avec une échéance et un responsable si besoin.' },
     ],
   },
   {
@@ -32,7 +32,7 @@ const FAQ = [
   },
   {
     theme: 'Tâches et organisation', icon: 'list-check', items: [
-      { q: 'Où retrouver toutes mes tâches ?', a: 'Dans « Tasks », à gauche. Vous y voyez vos tâches personnelles et celles de vos serveurs, avec des filtres pour vous concentrer sur ce qui compte aujourd\'hui.' },
+      { q: 'Où retrouver toutes mes tâches ?', a: 'Dans « Tâches », à gauche. Vous y voyez vos tâches personnelles et celles de vos serveurs, avec des filtres pour vous concentrer sur ce qui compte aujourd\'hui.' },
       { q: 'Comment fonctionne le tableau blanc ?', a: 'Dans un serveur, l\'icône du tableau blanc ouvre un espace de dessin partagé. Vous pouvez ensuite publier votre tableau dans le salon en une image.' },
     ],
   },

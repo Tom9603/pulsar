@@ -208,12 +208,13 @@ function ChannelRow({ channel, active, connected, canManage, canDelete, onSelect
       ])}>
       <span className="hash"><Icon name={channel.type === 'voice' ? 'volume-high' : channel.private ? 'lock' : 'align-left'} /></span>
       <span className="name">{channel.name}</span>
-      {channel.client_label && <span className="channel-tag" title={`Projet / client : ${channel.client_label}`}>{channel.client_label}</span>}
-      {connected && <span title="Connecté au vocal" style={{ color: 'var(--online)', fontSize: 11 }}>●</span>}
-      {channel.mentions > 0 && <span className="mention-badge">{channel.mentions}</span>}
-      {canManage && channel.private && onManageAccess && (
+      {/* Le libellé peut valoir 0 en base : on ne teste que la présence d'un vrai texte. */}
+      {channel.client_label ? <span className="channel-tag" title={`Projet / client : ${channel.client_label}`}>{channel.client_label}</span> : null}
+      {connected ? <span title="Connecté au vocal" style={{ color: 'var(--online)', fontSize: 11 }}>●</span> : null}
+      {channel.mentions > 0 ? <span className="mention-badge">{channel.mentions}</span> : null}
+      {canManage && channel.private && onManageAccess ? (
         <button className="del" title="Gérer l’accès" onClick={(e) => { e.stopPropagation(); onManageAccess(); }}><Icon name="user-gear" /></button>
-      )}
+      ) : null}
       {canDelete && (
         <button className="del" title="Supprimer le salon" onClick={(e) => { e.stopPropagation(); onDelete(); }}><Icon name="xmark" /></button>
       )}

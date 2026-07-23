@@ -1,41 +1,81 @@
 @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap');
 
 :root {
-  /* Charte Pulsar · noir profond + dégradé violet→bleu (« signal qui pulse ») */
-  --bg-app: #060609;
-  --bg-rail: #0a0a11;
-  --bg-sidebar: #0b0b12;
-  --bg-content: #060609;
-  --bg-content-alt: #14141f;
-  --bg-input: #17172080;
-  --bg-hover: rgba(255, 255, 255, 0.05);
-  --bg-active: rgba(139, 92, 246, 0.10);
+  /* ------------------------------------------------------------------
+     Charte Pulsar, refondue façon iOS : des fonds neutres et profonds,
+     des matières translucides, et le violet de la marque gardé comme
+     touche d'accent (jamais comme fond général).
+     ------------------------------------------------------------------ */
 
+  /* Fonds : gris neutres empilés (base → surface → surface haute) */
+  --bg-app: #08080a;
+  --bg-rail: #0e0e11;
+  --bg-sidebar: #101013;
+  --bg-content: #0b0b0e;
+  --bg-content-alt: #1a1a1e;
+  --bg-elevated: #1c1c1f;
+  --bg-elevated-2: #262629;
+
+  /* Remplissages translucides (champs, pastilles, survols) */
+  --fill-1: rgba(122, 122, 134, 0.24);
+  --fill-2: rgba(122, 122, 134, 0.18);
+  --fill-3: rgba(122, 122, 134, 0.12);
+  --bg-input: var(--fill-3);
+  --bg-hover: rgba(255, 255, 255, 0.06);
+  --bg-press: rgba(255, 255, 255, 0.10);
+  --bg-active: rgba(139, 92, 246, 0.16);
+
+  /* Accents : le violet Pulsar, employé par touches */
   --accent: #8b5cf6;
   --accent-2: #3b82f6;
   --accent-hover: #9d70ff;
   --nebula: #7c5cff;
-  --grad: linear-gradient(135deg, #8b5cf6 0%, #3b82f6 100%);
+  --grad: linear-gradient(135deg, #8b5cf6 0%, #6d7dfb 100%);
   --grad-soft: linear-gradient(135deg, rgba(139, 92, 246, 0.11), rgba(59, 130, 246, 0.10));
-  --danger: #f43f5e;
-  --danger-hover: #e11d48;
+  --danger: #ff453a;
+  --danger-hover: #e5352b;
 
-  --text: #e8e8f0;
-  --text-muted: #adadc2;
-  --text-faint: #78788f;
-  --border: rgba(255, 255, 255, 0.07);
-  --glass: rgba(20, 20, 31, 0.55);
-  /* Verre dépoli du châssis (rail, colonnes, barre du haut) façon iOS. */
-  --glass-chrome: rgba(17, 17, 26, 0.5);
-  --glass-blur: 22px;
+  /* Textes : hiérarchie à trois niveaux */
+  --text: #f2f2f7;
+  --text-muted: rgba(235, 235, 245, 0.62);
+  --text-faint: rgba(235, 235, 245, 0.34);
 
-  --online: #22c55e;
-  --idle: #f0b232;
-  --dnd: #f43f5e;
-  --offline: #6b7280;
+  /* Traits de séparation très fins */
+  --border: rgba(255, 255, 255, 0.09);
+  --sep: rgba(255, 255, 255, 0.07);
 
-  --radius: 12px;
-  --font-display: 'Space Grotesk', system-ui, -apple-system, sans-serif;
+  /* Matières translucides (le « verre » du châssis et des panneaux) */
+  --glass: rgba(28, 28, 32, 0.72);
+  --glass-chrome: rgba(20, 20, 24, 0.62);
+  --glass-blur: 30px;
+  --mat-thin: rgba(30, 30, 34, 0.55);
+  --mat-thick: rgba(24, 24, 28, 0.86);
+
+  /* Ombres douces et basses */
+  --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.28);
+  --shadow-2: 0 6px 20px rgba(0, 0, 0, 0.32);
+  --shadow-3: 0 24px 60px rgba(0, 0, 0, 0.5);
+
+  /* Statuts */
+  --online: #30d158;
+  --idle: #ffd60a;
+  --dnd: #ff453a;
+  --offline: #8e8e93;
+
+  /* Rayons : l'échelle continue d'iOS */
+  --r-xs: 8px;
+  --r-sm: 11px;
+  --r-md: 14px;
+  --r-lg: 18px;
+  --r-xl: 22px;
+  --r-2xl: 28px;
+  --r-pill: 999px;
+  --radius: var(--r-md);
+
+  /* Typographie : la pile système (SF Pro sur Mac et iOS) */
+  --font-ui: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro Display', 'Inter', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --font-display: var(--font-ui);
+  --font-brand: 'Space Grotesk', var(--font-ui);
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -43,11 +83,15 @@
 html, body, #root { height: 100%; }
 
 body {
-  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-  font-weight: 450;
+  font-family: var(--font-ui);
+  font-weight: 400;
+  letter-spacing: -0.01em;
   background: var(--bg-app);
   color: var(--text);
   overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
 }
 
 /* Accessibilité : mouvements réduits (coupe animations et transitions). */
@@ -81,10 +125,14 @@ body {
 .pulsar-body { flex: 1; display: flex; min-height: 0; }
 .pulsar-main { flex: 1; display: flex; min-width: 0; }
 
-h1, h2, h3, .content-header > span, .sidebar-header > span, .brand-word, .voice-title {
+/* Titres façon iOS : graisse marquée et interlettrage resserré. */
+h1, h2, h3, .content-header > span, .sidebar-header > span, .voice-title {
   font-family: var(--font-display);
-  letter-spacing: 0.2px;
+  font-weight: 700;
+  letter-spacing: -0.022em;
 }
+/* Seule la marque garde la police d'origine. */
+.brand-word { font-family: var(--font-brand); letter-spacing: 0.2px; }
 
 button { font-family: inherit; cursor: pointer; border: none; color: inherit; }
 input, textarea { font-family: inherit; }
@@ -2910,20 +2958,37 @@ input[type="checkbox"]:focus-visible { box-shadow: 0 0 0 3px color-mix(in srgb, 
 
 /* --- Thème clair --- */
 :root[data-theme="light"] {
-  --bg-app: #f3f4f8;
-  --bg-rail: #e7e9f0;
-  --bg-sidebar: #edeff4;
+  --bg-app: #f2f2f7;
+  --bg-rail: #ebebf0;
+  --bg-sidebar: #f2f2f7;
   --bg-content: #ffffff;
-  --bg-content-alt: #eef0f5;
-  --bg-input: #ffffff;
-  --bg-hover: rgba(30, 30, 55, 0.05);
-  --bg-active: rgba(139, 92, 246, 0.14);
-  --text: #1b1c28;
-  --text-muted: #5a5c6e;
-  --text-faint: #9799ab;
-  --border: rgba(30, 30, 55, 0.11);
-  --glass: rgba(255, 255, 255, 0.72);
-  --glass-chrome: rgba(255, 255, 255, 0.6);
+  --bg-content-alt: #f2f2f7;
+  --bg-elevated: #ffffff;
+  --bg-elevated-2: #ffffff;
+
+  --fill-1: rgba(118, 118, 128, 0.16);
+  --fill-2: rgba(118, 118, 128, 0.12);
+  --fill-3: rgba(118, 118, 128, 0.08);
+  --bg-input: var(--fill-3);
+  --bg-hover: rgba(60, 60, 67, 0.06);
+  --bg-press: rgba(60, 60, 67, 0.10);
+  --bg-active: rgba(139, 92, 246, 0.13);
+
+  --text: #10101a;
+  --text-muted: rgba(60, 60, 67, 0.64);
+  --text-faint: rgba(60, 60, 67, 0.34);
+
+  --border: rgba(60, 60, 67, 0.16);
+  --sep: rgba(60, 60, 67, 0.12);
+
+  --glass: rgba(255, 255, 255, 0.78);
+  --glass-chrome: rgba(248, 248, 252, 0.68);
+  --mat-thin: rgba(255, 255, 255, 0.6);
+  --mat-thick: rgba(252, 252, 255, 0.9);
+
+  --shadow-1: 0 1px 2px rgba(20, 20, 40, 0.06);
+  --shadow-2: 0 6px 20px rgba(20, 20, 40, 0.10);
+  --shadow-3: 0 24px 60px rgba(20, 20, 40, 0.16);
 }
 :root[data-theme="light"] .message:hover { background: rgba(30, 30, 55, 0.05); }
 :root[data-theme="light"] .message .msg-author { color: var(--text); }
@@ -3196,3 +3261,455 @@ input[type="checkbox"]:focus-visible { box-shadow: 0 0 0 3px color-mix(in srgb, 
 }
 .ad-log-when { color: var(--text-faint); font-size: 12.5px; }
 .ad-log-who { font-weight: 600; }
+
+/* ============================================================
+   REFONTE iOS · couche finale
+   Reprend tout le projet avec le langage visuel d'iOS : matières
+   translucides, rayons continus, contrôles pleins et arrondis,
+   typographie système, séparateurs très fins et rythme régulier.
+   Le violet Pulsar reste présent, mais par touches.
+   ============================================================ */
+
+/* ---------- 1. Rythme général ---------- */
+:root {
+  --gap-1: 4px;
+  --gap-2: 8px;
+  --gap-3: 12px;
+  --gap-4: 16px;
+  --gap-5: 24px;
+  --gap-6: 32px;
+}
+
+/* Barres de défilement discrètes, façon iOS. */
+* { scrollbar-width: thin; scrollbar-color: rgba(140, 140, 160, 0.35) transparent; }
+*::-webkit-scrollbar { width: 9px; height: 9px; }
+*::-webkit-scrollbar-track { background: transparent; }
+*::-webkit-scrollbar-thumb { background: rgba(140, 140, 160, 0.3); border-radius: 999px; border: 2px solid transparent; background-clip: content-box; }
+*::-webkit-scrollbar-thumb:hover { background: rgba(140, 140, 160, 0.5); background-clip: content-box; }
+
+/* ---------- 2. Châssis translucide ---------- */
+.topbar, .navrail, .channel-sidebar, .member-list {
+  background: var(--glass-chrome);
+  backdrop-filter: blur(var(--glass-blur)) saturate(180%);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(180%);
+}
+.topbar { border-bottom: 1px solid var(--sep); height: 64px; }
+.navrail, .channel-sidebar { border-right: 1px solid var(--sep); }
+.member-list { border-left: 1px solid var(--sep); }
+
+/* Barre du haut : trois zones qui se partagent la place sans jamais se
+   chevaucher, même quand la pastille du salon vocal apparaît. */
+.topbar-left { flex: 1 1 0; min-width: 0; }
+.topbar-center { flex: 0 1 auto; min-width: 0; align-items: center; gap: 6px; }
+.topbar-right { flex: 1 1 0; min-width: 0; }
+.topbar-center .topbar-search { width: min(340px, 34vw); min-width: 120px; }
+.topbar-voice { min-width: 0; flex-shrink: 1; }
+.topbar-voice .tv-name { max-width: 120px; }
+
+/* Titre de navigation façon iOS : compact, gras, bien centré. */
+.content-header {
+  border-bottom: 1px solid var(--sep);
+  background: var(--glass-chrome);
+  backdrop-filter: blur(var(--glass-blur)) saturate(180%);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(180%);
+}
+.content-header > span:first-of-type { font-size: 17px; font-weight: 700; }
+
+/* ---------- 3. Boutons ---------- */
+.btn {
+  border-radius: var(--r-sm);
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  padding: 12px 16px;
+  box-shadow: none;
+  transition: opacity 0.12s ease, background 0.12s ease;
+}
+.btn:hover { filter: none; opacity: 0.88; }
+.btn:active { filter: none; opacity: 0.72; }
+.btn-ghost { border-radius: var(--r-sm); font-weight: 500; }
+.btn-ghost:hover { opacity: 1; }
+
+/* Boutons discrets du châssis : pastilles pleines très légères. */
+.topbar-icon, .header-btn, .topbar-arrow {
+  border-radius: var(--r-sm);
+  transition: background 0.12s ease, color 0.12s ease;
+}
+.topbar-icon { width: 36px; height: 36px; font-size: 16px; }
+.topbar-icon:hover, .header-btn:hover { background: var(--fill-3); color: var(--text); }
+.topbar-icon:active, .header-btn:active { background: var(--fill-2); }
+.topbar-arrow { background: var(--fill-3); border: none; height: 26px; width: 32px; }
+.topbar-arrow:hover { background: var(--fill-2); }
+.topbar-user { background: var(--fill-3); border: none; border-radius: var(--r-pill); }
+.topbar-user:hover { background: var(--fill-2); border: none; border-color: transparent; }
+.topbar-search {
+  background: var(--fill-3); border: none; border-radius: var(--r-sm);
+  padding: 8px 12px; font-size: 13.5px;
+}
+.topbar-search:hover { background: var(--fill-2); border: none; color: var(--text); }
+.topbar-search kbd { border: none; background: var(--fill-2); }
+
+/* ---------- 4. Champs de saisie ---------- */
+.field input, .field textarea, .field select,
+.sched-textarea, .confirm-text-input {
+  background: var(--fill-3);
+  border: 1px solid transparent;
+  border-radius: var(--r-sm);
+  font-size: 15px;
+  transition: background 0.12s ease, border-color 0.12s ease;
+}
+.field input:focus, .field textarea:focus, .field select:focus,
+.sched-textarea:focus, .confirm-text-input:focus {
+  border-color: color-mix(in srgb, var(--accent) 55%, transparent);
+  box-shadow: none;
+  background: var(--fill-2);
+}
+.field label {
+  font-size: 12.5px; font-weight: 600; text-transform: none;
+  letter-spacing: -0.005em; color: var(--text-muted); margin-bottom: 7px;
+}
+
+/* ---------- 5. Interrupteurs façon iOS ---------- */
+.settings-toggle {
+  justify-content: space-between;
+  gap: var(--gap-4);
+  padding: 13px 0;
+  border-bottom: 1px solid var(--sep);
+  font-size: 15px;
+}
+.settings-toggle span { flex: 1; min-width: 0; }
+.settings-toggle input[type="checkbox"] {
+  appearance: none; -webkit-appearance: none;
+  position: relative; flex-shrink: 0; order: 2;
+  width: 46px; height: 28px; border-radius: var(--r-pill);
+  background: var(--fill-1); border: none; cursor: pointer;
+  transition: background 0.2s ease;
+  display: block;
+}
+.settings-toggle input[type="checkbox"]::after {
+  content: ''; position: absolute; top: 2px; left: 2px;
+  width: 24px; height: 24px; border-radius: 50%;
+  background: #fff; box-shadow: var(--shadow-1);
+  transition: transform 0.2s ease;
+  transform: none; color: transparent; font-size: 0;
+}
+.settings-toggle input[type="checkbox"]:checked { background: var(--online); border: none; }
+.settings-toggle input[type="checkbox"]:checked::after { transform: translateX(18px); }
+.settings-toggle input[type="checkbox"]:hover { border: none; }
+
+/* ---------- 6. Contrôles segmentés ---------- */
+.tab-row, .ad-tabs, .adm-tabs, .tm-tabs, .ac-tabs, .appr-choices, .fb-types {
+  gap: 2px;
+  padding: 3px;
+  background: var(--fill-3);
+  border: none;
+  border-radius: var(--r-sm);
+  display: inline-flex;
+  flex-wrap: wrap;
+}
+.tab-row { margin-bottom: var(--gap-5); }
+.tab-row button, .ad-tabs button, .adm-tabs button, .tm-tabs button,
+.ac-tabs button, .appr-choice, .fb-type {
+  border: none;
+  border-radius: calc(var(--r-sm) - 3px);
+  padding: 7px 14px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text-muted);
+  background: transparent;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+.tab-row button:hover, .appr-choice:hover, .fb-type:hover { color: var(--text); background: var(--fill-3); }
+.tab-row button.active, .ad-tabs button.active, .adm-tabs button.active,
+.tm-tabs button.active, .ac-tabs button.active,
+.appr-choice.active, .fb-type.active {
+  background: var(--bg-elevated);
+  color: var(--text);
+  border: none;
+  box-shadow: var(--shadow-1);
+}
+
+/* ---------- 7. Feuilles (fenêtres modales) ---------- */
+.modal-backdrop {
+  background: rgba(0, 0, 0, 0.42);
+  backdrop-filter: blur(14px) saturate(140%);
+  -webkit-backdrop-filter: blur(14px) saturate(140%);
+}
+.modal {
+  background: var(--mat-thick);
+  backdrop-filter: blur(40px) saturate(180%);
+  -webkit-backdrop-filter: blur(40px) saturate(180%);
+  border: 1px solid var(--sep);
+  border-radius: var(--r-2xl);
+  padding: 28px;
+  box-shadow: var(--shadow-3);
+}
+.modal h2 { font-size: 22px; letter-spacing: -0.024em; }
+.modal .modal-sub { font-size: 14.5px; margin-bottom: var(--gap-5); }
+.modal-actions { margin-top: var(--gap-6); gap: var(--gap-2); }
+.modal-actions .btn { border-radius: var(--r-sm); padding: 11px 22px; }
+.modal-x { background: var(--fill-2); border: none; width: 30px; height: 30px; }
+.modal-x:hover { background: var(--fill-1); border: none; color: var(--text); }
+
+/* Menus et panneaux flottants : même matière que les feuilles. */
+.context-menu, .notif-panel, .audio-menu, .profile-menu, .server-menu,
+.composer-more, .quick-panel, .pins-panel, .save-pop, .emoji-pop, .mention-pop, .hovercard {
+  background: var(--mat-thick);
+  backdrop-filter: blur(30px) saturate(180%);
+  -webkit-backdrop-filter: blur(30px) saturate(180%);
+  border: 1px solid var(--sep);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-2);
+}
+
+/* ---------- 8. Listes groupées (réglages) ---------- */
+.sm-item { border-radius: var(--r-sm); font-size: 14.5px; }
+.appr-group { margin-bottom: var(--gap-5); }
+.appr-group > label:not(.settings-toggle) {
+  text-transform: none;
+  font-size: 12.5px;
+  font-weight: 600;
+  letter-spacing: -0.005em;
+  color: var(--text-muted);
+  margin-bottom: var(--gap-3);
+}
+.appr-accent { border-radius: 50%; box-shadow: var(--shadow-1); }
+
+/* ---------- 9. Messages privés en bulles ---------- */
+.dm-thread .message { padding: 2px 18px; gap: 10px; align-items: flex-end; }
+.dm-thread .message:hover { background: transparent; }
+.dm-thread .message:not(.grouped) { margin-top: var(--gap-4); }
+.dm-thread .message .msg-body {
+  flex: 0 1 auto;
+  max-width: min(68%, 620px);
+  width: fit-content;
+  background: var(--bg-elevated);
+  border-radius: var(--r-lg);
+  padding: 9px 14px;
+  box-shadow: var(--shadow-1);
+}
+.dm-thread .message .msg-head { margin-bottom: 2px; }
+.dm-thread .message .msg-author { font-size: 13px; }
+.dm-thread .message .msg-text { font-size: 15px; line-height: 1.38; }
+.dm-thread .message .gutter { width: 34px; }
+
+/* Mes messages : à droite, dans la couleur Pulsar. */
+.dm-thread .message.own { flex-direction: row-reverse; }
+.dm-thread .message.own .msg-body {
+  background: var(--grad);
+  color: #fff;
+}
+.dm-thread .message.own .msg-text,
+.dm-thread .message.own .msg-author { color: #fff; }
+.dm-thread .message.own .msg-time,
+.dm-thread .message.own .msg-edited { color: rgba(255, 255, 255, 0.75); }
+.dm-thread .message.own .avatar { display: none; }
+.dm-thread .message.own .gutter { display: none; }
+.dm-thread .message.own .msg-head { display: none; }
+.dm-thread .message.own .reply-preview { color: rgba(255, 255, 255, 0.85); }
+.dm-thread .message.own .msg-actions { right: auto; left: 12px; }
+.dm-thread .message .reactions { margin-top: 6px; }
+.dm-thread .message.own .reaction-chip { background: rgba(255, 255, 255, 0.22); color: #fff; border-color: transparent; }
+.dm-thread .message.own .msg-tombstone { color: rgba(255, 255, 255, 0.8); }
+.dm-thread .message.is-deleted .msg-body { background: var(--fill-3); box-shadow: none; }
+.dm-thread .msg-welcome { text-align: center; padding: 24px 16px 8px; }
+.dm-thread .msg-welcome .avatar { margin: 0 auto; }
+
+/* ---------- 10. Détails ---------- */
+.reaction-chip { border-radius: var(--r-pill); border: 1px solid var(--sep); background: var(--fill-3); }
+.reaction-chip.reacted { background: var(--bg-active); border-color: color-mix(in srgb, var(--accent) 50%, transparent); color: var(--accent); }
+.msg-actions {
+  background: var(--mat-thick);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border: 1px solid var(--sep);
+  border-radius: var(--r-md);
+  box-shadow: var(--shadow-2);
+  padding: 3px;
+}
+.msg-actions button { border-radius: var(--r-xs); }
+.channel-item, .nav-item, .dm-conv, .mbr, .contact-row, .friend-row {
+  border-radius: var(--r-sm);
+  transition: background 0.12s ease, color 0.12s ease;
+}
+.channel-category, .cat-header, .mbr-head, .settings-menu-label, .help-group-title {
+  text-transform: uppercase;
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--text-faint);
+}
+.composer-inner {
+  border-radius: var(--r-xl);
+  background: var(--fill-3);
+  border: 1px solid var(--sep);
+}
+.about-card, .quick-tile, .server-card, .pro-card, .adm-card, .task-item { border-radius: var(--r-lg); }
+
+/* Séparateurs : un seul trait très fin partout. */
+.sess-item + .sess-item, .notif-what, .quiet-block, .am-sep { border-color: var(--sep); }
+
+/* ---------- 11. Le violet, par touches seulement ---------- */
+.pulsar-app {
+  background:
+    radial-gradient(1200px 700px at 6% -8%, rgba(139, 92, 246, 0.05), transparent 60%),
+    radial-gradient(1100px 660px at 108% 110%, rgba(59, 130, 246, 0.04), transparent 60%),
+    var(--bg-app);
+}
+
+/* ---------- 12. Espacements réguliers ---------- */
+.ss-section, .settings-two { margin-bottom: var(--gap-5); }
+label { line-height: 1.35; }
+
+/* ---------- 13. Réglages fins de la refonte iOS ---------- */
+
+/* Conversation privée : en tête à tête, le nom de la personne est déjà dans
+   l'en-tête. On ne garde que l'heure, discrète, au-dessus de la bulle. */
+.dm-thread .message .msg-author { display: none; }
+.dm-thread .message .msg-head { margin: 0 0 4px 2px; }
+.dm-thread .message .msg-time { font-size: 11.5px; color: var(--text-faint); }
+.dm-thread .message.grouped { padding-top: 1px; padding-bottom: 1px; }
+.dm-thread .message .reply-preview { margin-bottom: 4px; }
+/* La pièce jointe seule n'a pas besoin d'un fond de bulle. */
+.dm-thread .message .msg-body:has(> .msg-image) { background: none; box-shadow: none; padding: 0; }
+
+/* Colonnes latérales : noms de salons et de sections bien lisibles,
+   en clair comme en sombre. */
+.channel-item .name { color: var(--text-muted); font-size: 14.5px; font-weight: 500; }
+.channel-item:hover .name { color: var(--text); }
+.channel-item.active .name, .channel-item.unread .name { color: var(--text); font-weight: 600; }
+.channel-item .hash { color: var(--text-faint); }
+.channel-item.active .hash { color: var(--accent); }
+
+/* Sélection façon iOS : pastille pleine et neutre, accent réservé au texte. */
+.channel-item.active, .nav-item.active, .dm-conv.active {
+  background: var(--fill-3);
+}
+.channel-item:hover:not(.active), .dm-conv:hover:not(.active) { background: var(--bg-hover); }
+
+/* Barre d'envoi : champ plein, arrondi, sans bordure marquée. */
+.composer { padding: 12px 18px 18px; }
+.composer-inner { padding: 6px 8px 6px 16px; }
+.composer-inner textarea, .composer-inner input { font-size: 15px; }
+
+/* En-têtes de section : de l'air au-dessus, pas de texte collé. */
+.channel-category, .cat-header { margin-top: 18px; margin-bottom: 6px; padding-left: 8px; }
+.channel-category:first-of-type { margin-top: 6px; }
+
+/* Cases à cocher classiques : arrondi iOS, coche nette. */
+input[type="checkbox"]:not(.settings-toggle input) { border-radius: 7px; }
+
+/* Curseurs et champs de temps alignés sur la même matière. */
+.quiet-time input[type="time"], .am-section select {
+  background: var(--fill-3); border: 1px solid transparent; border-radius: var(--r-xs);
+}
+
+/* Écran d'accueil : cartes façon liste groupée iOS. */
+.quick-tile, .server-card, .dm-card {
+  background: var(--bg-elevated);
+  border: 1px solid var(--sep);
+  box-shadow: var(--shadow-1);
+  transition: background 0.12s ease;
+}
+.quick-tile:hover, .server-card:hover, .dm-card:hover { background: var(--bg-elevated-2); }
+.home-hero h1 { font-size: 30px; letter-spacing: -0.03em; }
+
+/* Écrans d'authentification : même matière que les feuilles. */
+.auth-card {
+  background: var(--mat-thick);
+  backdrop-filter: blur(40px) saturate(180%);
+  -webkit-backdrop-filter: blur(40px) saturate(180%);
+  border: 1px solid var(--sep);
+  border-radius: var(--r-2xl);
+  box-shadow: var(--shadow-3);
+}
+
+/* Barres flottantes d'appel et de vocal : verre posé sur l'image. */
+.call-bar, .voice-controls, .watch-bar, .board-toolbar {
+  background: var(--mat-thick);
+  backdrop-filter: blur(30px) saturate(180%);
+  -webkit-backdrop-filter: blur(30px) saturate(180%);
+  border: 1px solid var(--sep);
+  border-radius: var(--r-pill);
+  box-shadow: var(--shadow-2);
+}
+.voice-btn, .call-btn { border-radius: var(--r-pill); font-weight: 600; }
+.voice-tile, .call-video { border-radius: var(--r-xl); }
+
+/* Thème clair : le châssis reste lisible sur fond blanc. */
+:root[data-theme="light"] .topbar-voice { background: var(--fill-2); border-color: transparent; }
+:root[data-theme="light"] .topbar-voice button { background: var(--fill-1); }
+:root[data-theme="light"] .msg-actions { background: rgba(255, 255, 255, 0.92); }
+:root[data-theme="light"] .dm-thread .message .msg-body { background: #ffffff; border: 1px solid var(--sep); }
+:root[data-theme="light"] .dm-thread .message.own .msg-body { border-color: transparent; }
+
+/* ---------- 14. Lisibilité et sélection ---------- */
+
+/* Rail de navigation : l'élément actif se teinte du violet Pulsar,
+   comme un onglet sélectionné sur iOS. */
+.nav-item { color: var(--text-muted); }
+.nav-item.active { background: var(--fill-2); color: var(--accent); }
+.nav-item.active .nav-label { font-weight: 600; }
+.nav-label { font-size: 10.5px; letter-spacing: 0; }
+
+/* On remonte le contraste des textes secondaires : ils portent aussi des
+   informations utiles (dates, aperçus, aides), ils doivent rester lisibles. */
+:root { --text-muted: rgba(235, 235, 245, 0.68); --text-faint: rgba(235, 235, 245, 0.44); }
+:root[data-theme="light"] { --text-muted: rgba(50, 50, 60, 0.72); --text-faint: rgba(50, 50, 60, 0.48); }
+
+/* ---------- 15. Textes forcés en blanc : on repasse par la variable ----------
+   Plusieurs éléments étaient écrits en blanc en dur, donc illisibles sur le
+   thème clair. Ils suivent maintenant la couleur de texte du thème. */
+.home-today { color: var(--text) !important; }
+.poll-q { color: var(--text); }
+.channel-item.active { color: var(--text); }
+.channel-item.unread .name { color: var(--text); }
+.message .msg-author { color: var(--text); }
+.friends-entry:hover, .friends-entry.active { color: var(--text); background: var(--fill-2); }
+.contact-msg:hover { color: var(--text); }
+.voice-lower:hover { color: var(--text); }
+.color-swatch.selected, .avatar-preset.selected, .board-color.active { border-color: var(--text); }
+
+/* Fonds « blanc translucide » en dur : même correctif, via les remplissages. */
+.topbar-voice { background: var(--fill-2); border: 1px solid var(--sep); }
+.topbar-voice button { background: var(--fill-1); }
+.topbar-voice button:hover { background: var(--fill-1); filter: brightness(1.15); }
+.topbar-voice.tv-away button.tv-return { background: var(--fill-2); }
+.topbar-voice.tv-away button.tv-return:hover { background: var(--fill-1); }
+.topbar-voice .tv-back { background: var(--fill-1); color: var(--text); }
+.topbar-search kbd, .qs-keys kbd { background: var(--fill-2); color: var(--text-faint); }
+
+/* Zone de messages d'un salon : survol neutre dans les deux thèmes. */
+.message:hover { background: var(--bg-hover); }
+.dm-thread .message:hover { background: transparent; }
+
+/* Thème clair : mes bulles gardent la couleur Pulsar (la règle générale des
+   bulles blanches ne doit pas les repeindre). */
+:root[data-theme="light"] .dm-thread .message.own .msg-body { background: var(--grad); border-color: transparent; }
+
+/* ---------- 16. Derniers ajustements iOS ---------- */
+
+/* Listes déroulantes : même matière que les champs, chevron discret. */
+select, .field select, .am-section select {
+  appearance: none; -webkit-appearance: none;
+  background-color: var(--fill-3);
+  background-image: linear-gradient(45deg, transparent 50%, currentColor 50%), linear-gradient(135deg, currentColor 50%, transparent 50%);
+  background-position: right 15px center, right 10px center;
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
+  border: 1px solid transparent;
+  border-radius: var(--r-sm);
+  color: var(--text);
+  padding: 9px 32px 9px 12px;
+  font-size: 14px;
+  cursor: pointer;
+}
+select:focus { outline: none; border-color: color-mix(in srgb, var(--accent) 55%, transparent); }
+
+/* Barre de commandes du vocal : elle passe parfois sur deux lignes,
+   un arrondi large est plus juste qu'une pastille. */
+.voice-controls { border-radius: var(--r-2xl); padding: 12px 16px; }
+
+/* Bandeau et vignettes : arrondis cohérents avec les feuilles. */
+.profile-banner, .edit-banner-preview { border-radius: var(--r-lg) var(--r-lg) 0 0; }
+.msg-image, .fb-shot { border-radius: var(--r-md); }

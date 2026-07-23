@@ -31,7 +31,7 @@ export default function DmSidebar({ conversations, activeUserId, onlineIds, onSe
         <div className={`friends-entry ${friendsActive ? 'active' : ''}`} onClick={onOpenFriends}><Icon name="user-group" /> Contacts</div>
       )}
       {onOpenSaved && (
-        <div className={`friends-entry ${savedActive ? 'active' : ''}`} onClick={onOpenSaved}><Icon name="circle-check" /> Tasks</div>
+        <div className={`friends-entry ${savedActive ? 'active' : ''}`} onClick={onOpenSaved}><Icon name="circle-check" /> Tâches</div>
       )}
 
       <form onSubmit={start} style={{ padding: '10px 8px' }}>

@@ -35,7 +35,7 @@ export default function HomeView({ user, servers, dmConversations, onlineIds, on
 
         <div className="home-quick">
           <button className="quick-tile" onClick={onOpenFriends}><span><Icon name="user-group" /></span> Contacts</button>
-          <button className="quick-tile" onClick={onOpenSaved}><span><Icon name="circle-check" /></span> Tasks</button>
+          <button className="quick-tile" onClick={onOpenSaved}><span><Icon name="circle-check" /></span> Tâches</button>
           <button className="quick-tile add" onClick={onAddServer}><span><Icon name="plus" /></span> Nouveau serveur</button>
         </div>
 

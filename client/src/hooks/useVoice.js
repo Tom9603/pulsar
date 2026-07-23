@@ -34,6 +34,7 @@ export function useVoice() {
   const audioCtx = useRef(null);
   const rafId = useRef(null);
   const iceConfig = useRef(DEFAULT_ICE);
+  const joinedChannel = useRef(null); // salon vocal choisi, conservé pour se remettre en place après une coupure
 
   const socket = getSocket();
 
@@ -176,7 +177,15 @@ export function useVoice() {
       raw = await navigator.mediaDevices.getUserMedia({ audio: a.inDevice ? { deviceId: { exact: a.inDevice } } : true });
     } catch {
       try { raw = await navigator.mediaDevices.getUserMedia({ audio: true }); }
-      catch { notify('Micro inaccessible : autorisez le microphone dans votre navigateur pour parler.'); return; }
+      catch { raw = null; }
+    }
+    // Sans micro on rejoint quand même : on entend les autres, ils ne nous entendent pas.
+    if (!raw) {
+      notify('Aucun micro détecté : vous entendez les autres, mais ils ne vous entendent pas.');
+      socket.emit('voice:join', { channelId });
+      joinedChannel.current = channelId;
+      setConnectedChannelId(channelId);
+      return;
     }
     rawStream.current = raw;
     // Volume d'entrée : on route le micro dans un GainNode (repli sur le flux brut en cas d'échec).
@@ -195,12 +204,14 @@ export function useVoice() {
     stream.getAudioTracks().forEach((t) => (t.enabled = !mutedRef.current));
     startSpeakingDetection(stream);
     socket.emit('voice:join', { channelId });
+    joinedChannel.current = channelId;
     setConnectedChannelId(channelId);
   }, [connectedChannelId, socket, teardown, startSpeakingDetection]);
 
   const leave = useCallback(() => {
     socket.emit('voice:leave');
     if (speakingRef.current) socket.emit('voice:speaking', { speaking: false });
+    joinedChannel.current = null;
     teardown();
     setConnectedChannelId(null);
   }, [socket, teardown]);
@@ -336,13 +347,27 @@ export function useVoice() {
     };
     const onPeerLeft = ({ socketId }) => removePeer(socketId);
 
+    // Reconnexion (veille de l'ordinateur, coupure réseau, redémarrage du serveur) :
+    // le serveur nous a retirés du salon, on s'y remet aussitôt. Le nom reste donc
+    // affiché dans le salon vocal tant que la personne n'a pas quitté elle-même.
+    const onReconnect = () => {
+      const channelId = joinedChannel.current;
+      if (channelId == null) return;
+      for (const id of [...pcs.current.keys()]) removePeer(id); // les anciens pairs n'existent plus
+      socket.emit('voice:join', { channelId });
+      socket.emit('voice:mute', { muted: mutedRef.current });
+      if (screenStream.current) socket.emit('voice:screen', { sharing: true });
+    };
+
     socket.on('voice:peers', onPeers);
     socket.on('voice:signal', onSignal);
     socket.on('voice:peer-left', onPeerLeft);
+    socket.on('connect', onReconnect);
     return () => {
       socket.off('voice:peers', onPeers);
       socket.off('voice:signal', onSignal);
       socket.off('voice:peer-left', onPeerLeft);
+      socket.off('connect', onReconnect);
     };
   }, [socket, createPeer, removePeer]);
 
