@@ -22,29 +22,39 @@ function UserChip({ user, onOpenProfile }) {
   ].filter(Boolean);
 
   const [i, setI] = useState(0);
-  const [visible, setVisible] = useState(true);
+  const [prev, setPrev] = useState(null); // ligne sortante, le temps du glissement
 
   useEffect(() => {
     if (details.length < 2) { setI(0); return undefined; }
-    // Fondu court avant de changer de ligne : le défilement reste lisible.
     const tick = setInterval(() => {
-      setVisible(false);
-      setTimeout(() => { setI((n) => (n + 1) % details.length); setVisible(true); }, 220);
+      setI((n) => { setPrev(n); return (n + 1) % details.length; });
     }, 2000);
     return () => clearInterval(tick);
   }, [details.length]);
+
+  // La ligne sortante disparaît une fois son glissement terminé.
+  useEffect(() => {
+    if (prev === null) return undefined;
+    const t = setTimeout(() => setPrev(null), 420);
+    return () => clearTimeout(t);
+  }, [prev]);
 
   const statut = STATUS_LABEL[user.status] || 'En ligne';
 
   return (
     <button className="topbar-user" onClick={onOpenProfile} title="Mon profil">
-      <Avatar user={user} size={40} status={user.status} />
+      <Avatar user={user} size={36} status={user.status} />
       <span className="tu-meta">
         <span className="tu-name">{user.display_name}</span>
         <span className={`tu-status st-${user.status || 'online'}`}>
           <span className="tu-dot" /> {statut}
         </span>
-        <span className={`tu-sub ${visible ? '' : 'fading'}`}>{details[i] || ''}</span>
+        {/* La ligne de détails glisse vers le haut en fondu : l'ancienne
+            s'échappe pendant que la nouvelle monte à sa place. */}
+        <span className="tu-sub-wrap">
+          {prev !== null && <span className="tu-sub leaving" key={`p${prev}`}>{details[prev]}</span>}
+          <span className="tu-sub entering" key={`c${i}`}>{details[i] || ''}</span>
+        </span>
       </span>
     </button>
   );

@@ -4587,3 +4587,43 @@ input[type="range"]::-moz-range-thumb {
   .topbar-user { width: 62px; padding: 6px; justify-content: center; }
   .topbar-user .tu-meta { display: none; }
 }
+
+/* ============================================================
+   CARTE PERSONNELLE : plus compacte, et la ligne de détails
+   glisse en fondu au lieu de clignoter.
+   ============================================================ */
+.topbar-user {
+  width: 234px;
+  padding: 5px 14px 5px 5px;
+  gap: 10px;
+}
+.topbar-user .tu-name { font-size: 14px; line-height: 1.2; }
+.tu-status { font-size: 11px; line-height: 1.2; }
+.topbar-user .tu-sub { font-size: 11px; line-height: 1.2; }
+.tu-meta { gap: 0; }
+
+/* Fenêtre de hauteur fixe : rien ne saute pendant le glissement. */
+.tu-sub-wrap {
+  position: relative; display: block;
+  height: 14px; overflow: hidden; width: 100%;
+}
+.topbar-user .tu-sub {
+  position: absolute; left: 0; top: 0; width: 100%;
+  min-height: 0;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  transition: none;
+}
+.topbar-user .tu-sub.entering { animation: tu-slide-in 0.4s cubic-bezier(0.22, 0.61, 0.36, 1) both; }
+.topbar-user .tu-sub.leaving { animation: tu-slide-out 0.4s cubic-bezier(0.22, 0.61, 0.36, 1) both; }
+@keyframes tu-slide-in {
+  from { opacity: 0; transform: translateY(11px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes tu-slide-out {
+  from { opacity: 1; transform: translateY(0); }
+  to { opacity: 0; transform: translateY(-11px); }
+}
+
+.topbar-user .tu-status { min-height: 0; }
+@media (max-width: 1180px) { .topbar-user { width: 200px; } }
+@media (max-width: 980px) { .topbar-user { width: 58px; } }
