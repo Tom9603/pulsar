@@ -207,7 +207,7 @@ export default function DmChat({ peer, currentUser, onlineIds, onCall, onOpenPro
               ))}
             </div>
           )}
-          <div className="messages dm-thread" ref={scrollRef}>
+          <div className="messages bubbles dm-thread" ref={scrollRef}>
             <div className="spacer-top" />
             <div className="msg-welcome">
               <Avatar user={peer} size={64} onClick={() => onOpenProfile?.(peer.id)} />

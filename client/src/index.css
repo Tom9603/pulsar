@@ -3476,10 +3476,10 @@ input[type="checkbox"]:focus-visible { box-shadow: 0 0 0 3px color-mix(in srgb, 
 .appr-accent { border-radius: 50%; box-shadow: var(--shadow-1); }
 
 /* ---------- 9. Messages privés en bulles ---------- */
-.dm-thread .message { padding: 2px 18px; gap: 10px; align-items: flex-end; }
-.dm-thread .message:hover { background: transparent; }
-.dm-thread .message:not(.grouped) { margin-top: var(--gap-4); }
-.dm-thread .message .msg-body {
+.bubbles .message { padding: 2px 18px; gap: 10px; align-items: flex-end; }
+.bubbles .message:hover { background: transparent; }
+.bubbles .message:not(.grouped) { margin-top: var(--gap-4); }
+.bubbles .message .msg-body {
   flex: 0 1 auto;
   max-width: min(68%, 620px);
   width: fit-content;
@@ -3488,32 +3488,32 @@ input[type="checkbox"]:focus-visible { box-shadow: 0 0 0 3px color-mix(in srgb, 
   padding: 9px 14px;
   box-shadow: var(--shadow-1);
 }
-.dm-thread .message .msg-head { margin-bottom: 2px; }
-.dm-thread .message .msg-author { font-size: 13px; }
-.dm-thread .message .msg-text { font-size: 15px; line-height: 1.38; }
-.dm-thread .message .gutter { width: 34px; }
+.bubbles .message .msg-head { margin-bottom: 2px; }
+.bubbles .message .msg-author { font-size: 13px; }
+.bubbles .message .msg-text { font-size: 15px; line-height: 1.38; }
+.bubbles .message .gutter { width: 34px; }
 
 /* Mes messages : à droite, dans la couleur Pulsar. */
-.dm-thread .message.own { flex-direction: row-reverse; }
-.dm-thread .message.own .msg-body {
+.bubbles .message.own { flex-direction: row-reverse; }
+.bubbles .message.own .msg-body {
   background: var(--grad);
   color: #fff;
 }
-.dm-thread .message.own .msg-text,
-.dm-thread .message.own .msg-author { color: #fff; }
-.dm-thread .message.own .msg-time,
-.dm-thread .message.own .msg-edited { color: rgba(255, 255, 255, 0.75); }
-.dm-thread .message.own .avatar { display: none; }
-.dm-thread .message.own .gutter { display: none; }
-.dm-thread .message.own .msg-head { display: none; }
-.dm-thread .message.own .reply-preview { color: rgba(255, 255, 255, 0.85); }
-.dm-thread .message.own .msg-actions { right: auto; left: 12px; }
-.dm-thread .message .reactions { margin-top: 6px; }
-.dm-thread .message.own .reaction-chip { background: rgba(255, 255, 255, 0.22); color: #fff; border-color: transparent; }
-.dm-thread .message.own .msg-tombstone { color: rgba(255, 255, 255, 0.8); }
-.dm-thread .message.is-deleted .msg-body { background: var(--fill-3); box-shadow: none; }
-.dm-thread .msg-welcome { text-align: center; padding: 24px 16px 8px; }
-.dm-thread .msg-welcome .avatar { margin: 0 auto; }
+.bubbles .message.own .msg-text,
+.bubbles .message.own .msg-author { color: #fff; }
+.bubbles .message.own .msg-time,
+.bubbles .message.own .msg-edited { color: rgba(255, 255, 255, 0.75); }
+.bubbles .message.own .avatar { display: none; }
+.bubbles .message.own .gutter { display: none; }
+.bubbles .message.own .msg-head { display: none; }
+.bubbles .message.own .reply-preview { color: rgba(255, 255, 255, 0.85); }
+.bubbles .message.own .msg-actions { right: auto; left: 12px; }
+.bubbles .message .reactions { margin-top: 6px; }
+.bubbles .message.own .reaction-chip { background: rgba(255, 255, 255, 0.22); color: #fff; border-color: transparent; }
+.bubbles .message.own .msg-tombstone { color: rgba(255, 255, 255, 0.8); }
+.bubbles .message.is-deleted .msg-body { background: var(--fill-3); box-shadow: none; }
+.bubbles .msg-welcome { text-align: center; padding: 24px 16px 8px; }
+.bubbles .msg-welcome .avatar { margin: 0 auto; }
 
 /* ---------- 10. Détails ---------- */
 .reaction-chip { border-radius: var(--r-pill); border: 1px solid var(--sep); background: var(--fill-3); }
@@ -3566,12 +3566,12 @@ label { line-height: 1.35; }
 /* Conversation privée : en tête à tête, le nom de la personne est déjà dans
    l'en-tête. On ne garde que l'heure, discrète, au-dessus de la bulle. */
 .dm-thread .message .msg-author { display: none; }
-.dm-thread .message .msg-head { margin: 0 0 4px 2px; }
-.dm-thread .message .msg-time { font-size: 11.5px; color: var(--text-faint); }
-.dm-thread .message.grouped { padding-top: 1px; padding-bottom: 1px; }
-.dm-thread .message .reply-preview { margin-bottom: 4px; }
+.bubbles .message .msg-head { margin: 0 0 4px 2px; }
+.bubbles .message .msg-time { font-size: 11.5px; color: var(--text-faint); }
+.bubbles .message.grouped { padding-top: 1px; padding-bottom: 1px; }
+.bubbles .message .reply-preview { margin-bottom: 4px; }
 /* La pièce jointe seule n'a pas besoin d'un fond de bulle. */
-.dm-thread .message .msg-body:has(> .msg-image) { background: none; box-shadow: none; padding: 0; }
+.bubbles .message .msg-body:has(> .msg-image) { background: none; box-shadow: none; padding: 0; }
 
 /* Colonnes latérales : noms de salons et de sections bien lisibles,
    en clair comme en sombre. */
@@ -3640,8 +3640,8 @@ input[type="checkbox"]:not(.settings-toggle input) { border-radius: 7px; }
 :root[data-theme="light"] .topbar-voice { background: var(--fill-2); border-color: transparent; }
 :root[data-theme="light"] .topbar-voice button { background: var(--fill-1); }
 :root[data-theme="light"] .msg-actions { background: rgba(255, 255, 255, 0.92); }
-:root[data-theme="light"] .dm-thread .message .msg-body { background: #ffffff; border: 1px solid var(--sep); }
-:root[data-theme="light"] .dm-thread .message.own .msg-body { border-color: transparent; }
+:root[data-theme="light"] .bubbles .message .msg-body { background: #ffffff; border: 1px solid var(--sep); }
+:root[data-theme="light"] .bubbles .message.own .msg-body { border-color: transparent; }
 
 /* ---------- 14. Lisibilité et sélection ---------- */
 
@@ -3681,11 +3681,11 @@ input[type="checkbox"]:not(.settings-toggle input) { border-radius: 7px; }
 
 /* Zone de messages d'un salon : survol neutre dans les deux thèmes. */
 .message:hover { background: var(--bg-hover); }
-.dm-thread .message:hover { background: transparent; }
+.bubbles .message:hover { background: transparent; }
 
 /* Thème clair : mes bulles gardent la couleur Pulsar (la règle générale des
    bulles blanches ne doit pas les repeindre). */
-:root[data-theme="light"] .dm-thread .message.own .msg-body { background: var(--grad); border-color: transparent; }
+:root[data-theme="light"] .bubbles .message.own .msg-body { background: var(--grad); border-color: transparent; }
 
 /* ---------- 16. Derniers ajustements iOS ---------- */
 
@@ -3713,3 +3713,196 @@ select:focus { outline: none; border-color: color-mix(in srgb, var(--accent) 55%
 /* Bandeau et vignettes : arrondis cohérents avec les feuilles. */
 .profile-banner, .edit-banner-preview { border-radius: var(--r-lg) var(--r-lg) 0 0; }
 .msg-image, .fb-shot { border-radius: var(--r-md); }
+
+/* ---------- 17. Bulles dans les salons de serveur ----------
+   Même principe qu'en privé : mes messages à droite, en couleur ; ceux des
+   autres à gauche. À plusieurs, le nom de l'auteur reste affiché au-dessus
+   de sa bulle, sinon on ne sait plus qui parle. */
+.chat-thread .message .msg-author { font-size: 13px; font-weight: 600; }
+.chat-thread .message .msg-head { display: flex; align-items: baseline; gap: 8px; margin: 0 0 4px 2px; }
+.chat-thread .message .msg-time { font-size: 11.5px; color: var(--text-faint); }
+.chat-thread .message.own .msg-head { display: none; }
+.chat-thread .msg-welcome h2 { font-size: 26px; }
+
+/* ============================================================
+   REFONTE iOS · seconde passe
+   Tout ce qui n'avait pas encore hérité de la charte : panneaux
+   pleine page, formulaires, listes, filtres, appels, tableau blanc,
+   administration, accueil, mise en route.
+   ============================================================ */
+
+/* ---------- A. Tous les champs de saisie ---------- */
+input[type="text"], input[type="email"], input[type="password"], input[type="search"],
+input[type="number"], input[type="url"], input[type="tel"], input[type="date"],
+input[type="time"], input[type="datetime-local"], textarea,
+.ad-input, .ad-search, .adm-search, .settings-search input, .help-search input,
+.forward-search input, .contact-scroll input, .add-friend input, .tags-input,
+.invite-box input, .roles-create input, .ss-inline input, .board-text-input,
+.dm-search-bar input, .qs-bar input, .task-detail-text, .sched-textarea {
+  background: var(--fill-3);
+  border: 1px solid transparent;
+  border-radius: var(--r-sm);
+  color: var(--text);
+  font-family: inherit;
+  font-size: 15px;
+  outline: none;
+  transition: background 0.12s ease, border-color 0.12s ease;
+}
+input::placeholder, textarea::placeholder { color: var(--text-faint); }
+input:focus, textarea:focus { border-color: color-mix(in srgb, var(--accent) 55%, transparent); background: var(--fill-2); }
+/* La recherche rapide et la recherche dans une conversation gardent leur fond propre. */
+.qs-bar input, .dm-search-bar input { background: transparent; border-color: transparent; }
+.qs-bar input:focus { background: transparent; border-color: transparent; }
+
+/* ---------- B. Listes groupées façon iOS ----------
+   Un seul bloc arrondi, des lignes séparées par un trait fin. */
+.help-group, .sess-list, .perm-list, .access-list, .sched-list,
+.notif-list, .friends-body, .contact-scroll, .tasks-group, .saved-body,
+.roles-list-items, .blocked-info, .adm-list, .ad-users {
+  border-radius: var(--r-lg);
+  overflow: hidden;
+}
+.help-item, .sess-item, .access-row, .sched-item, .notif-item,
+.friend-row, .contact-row, .task-item, .saved-item, .role-item,
+.blocked-row, .adm-row, .ad-user-row, .server-task-row, .dmt-item {
+  background: var(--bg-elevated);
+  border: none;
+  border-radius: 0;
+  border-bottom: 1px solid var(--sep);
+  transition: background 0.12s ease;
+}
+.help-item:last-child, .sess-item:last-child, .access-row:last-child,
+.sched-item:last-child, .notif-item:last-child, .friend-row:last-child,
+.contact-row:last-child, .task-item:last-child, .saved-item:last-child,
+.role-item:last-child, .blocked-row:last-child, .adm-row:last-child,
+.ad-user-row:last-child, .server-task-row:last-child, .dmt-item:last-child { border-bottom: none; }
+.help-item:hover, .sess-item:hover, .friend-row:hover, .contact-row:hover,
+.task-item:hover, .saved-item:hover, .role-item:hover, .adm-row:hover,
+.ad-user-row:hover, .notif-item:hover { background: var(--bg-elevated-2); }
+/* Le premier et le dernier élément arrondissent le bloc. */
+.help-group, .sess-list, .perm-list, .access-list, .sched-list, .notif-list,
+.tasks-group, .roles-list-items, .adm-list, .ad-users {
+  border: 1px solid var(--sep);
+  background: var(--bg-elevated);
+}
+
+/* ---------- C. Filtres et étiquettes ---------- */
+.seg {
+  display: inline-flex; gap: 2px; padding: 3px;
+  background: var(--fill-3); border: none; border-radius: var(--r-sm);
+}
+.seg button, .seg-pill {
+  border: none; background: transparent; color: var(--text-muted);
+  border-radius: calc(var(--r-sm) - 3px); padding: 7px 14px;
+  font-size: 13.5px; font-weight: 600;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+.seg button:hover { color: var(--text); }
+.seg button.active, .seg-pill.active {
+  background: var(--bg-elevated); color: var(--text); box-shadow: var(--shadow-1);
+}
+.tag-chip, .mbr-tag, .channel-tag, .task-prio, .st-status, .st-badge,
+.ad-badge, .adm-badge, .cv-chip, .pro-skill, .ac-badge, .sess-current {
+  border-radius: var(--r-pill);
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+/* ---------- D. Panneaux pleine page ---------- */
+.tasks-panel, .saved-body, .friends-body, .contact-book, .home-inner, .help-body {
+  padding-top: var(--gap-2);
+}
+.home-section { margin-bottom: var(--gap-6); }
+.home-section-head { margin-bottom: var(--gap-3); }
+.friends-entry { border-radius: var(--r-sm); }
+.add-friend { gap: var(--gap-2); }
+.add-friend input { flex: 1; padding: 11px 14px; }
+.add-friend .btn { width: auto; padding: 11px 20px; }
+
+/* ---------- E. Notifications, recherche rapide, transfert ---------- */
+.notif-panel, .quick-search, .modal-forward { border-radius: var(--r-xl); }
+.notif-head, .qs-bar { border-bottom: 1px solid var(--sep); }
+.notif-item { padding: 12px 14px; display: flex; gap: 12px; }
+.notif-ico { border-radius: var(--r-sm); }
+.qs-item, .forward-row, .search-item { border-radius: var(--r-sm); }
+.qs-item:hover, .forward-row:hover, .search-item:hover { background: var(--fill-3); }
+
+/* ---------- F. Appels et vocal ---------- */
+.call-modal, .voice-stage { border-radius: var(--r-2xl); }
+.call-modal {
+  background: var(--mat-thick);
+  backdrop-filter: blur(40px) saturate(180%);
+  -webkit-backdrop-filter: blur(40px) saturate(180%);
+  border: 1px solid var(--sep);
+  box-shadow: var(--shadow-3);
+}
+.call-video, .call-self-pip, .voice-video, .watch-media-el { border-radius: var(--r-xl); }
+.call-video-tag, .voice-screen-tag, .rec-time, .vm-time {
+  border-radius: var(--r-pill); font-size: 11.5px; font-weight: 600;
+}
+.voice-occupant { border-radius: var(--r-sm); }
+.voice-occupant:hover { background: var(--bg-hover); }
+
+/* ---------- G. Tableau blanc ---------- */
+.board-window { border-radius: var(--r-2xl); overflow: hidden; }
+.board-canvas-wrap { border-radius: var(--r-lg); }
+.board-tool { border-radius: var(--r-sm); }
+.board-tool.active { background: var(--bg-active); color: var(--accent); }
+.board-color { border-radius: 50%; }
+.board-overlay { backdrop-filter: blur(14px) saturate(140%); -webkit-backdrop-filter: blur(14px) saturate(140%); }
+
+/* ---------- H. Mise en route (onboarding) ---------- */
+.onboarding, .onboarding-setup { border-radius: var(--r-2xl); }
+.ob-ico, .obs-avatar { border-radius: var(--r-xl); }
+.ob-tip, .obs-note { border-radius: var(--r-md); background: var(--fill-3); border: 1px solid var(--sep); }
+.ob-dot { border-radius: var(--r-pill); }
+
+/* ---------- I. Administration ---------- */
+.adm-card, .ad-stat, .adm-stat, .ad-report, .ad-fb, .ad-log-row, .adm-log-row {
+  background: var(--bg-elevated);
+  border: 1px solid var(--sep);
+  border-radius: var(--r-lg);
+  box-shadow: none;
+}
+.adm-nav-item, .admin-nav-item { border-radius: var(--r-sm); }
+.adm-nav-item.active, .admin-nav-item.active { background: var(--fill-2); color: var(--text); }
+.ad-quicknums, .adm-stats, .ad-stats { gap: var(--gap-3); }
+.ad-report-quote { border-radius: var(--r-md); border-left-width: 3px; }
+.adm-table { border-radius: var(--r-lg); overflow: hidden; }
+
+/* ---------- J. Paramètres du serveur et rôles ---------- */
+.ss-section { background: var(--bg-elevated); border: 1px solid var(--sep); border-radius: var(--r-lg); padding: 18px; }
+.ss-title { font-size: 13px; font-weight: 700; text-transform: none; letter-spacing: -0.005em; color: var(--text); margin-bottom: var(--gap-3); }
+.roles-editor, .roles-list { border-radius: var(--r-lg); }
+.role-item { padding: 11px 14px; }
+.perm-list { padding: 0; }
+.sm-items { border-radius: var(--r-md); overflow: hidden; }
+
+/* ---------- K. Sondages, transferts, watch ---------- */
+.poll-card { background: var(--bg-elevated); border: 1px solid var(--sep); border-radius: var(--r-lg); }
+.poll-opt { border-radius: var(--r-sm); }
+.poll-bar { border-radius: var(--r-pill); }
+.watch-panel { border-radius: var(--r-xl); }
+.dropzone-card { border-radius: var(--r-xl); }
+
+/* ---------- L. Sélecteurs d'emoji et de GIF ---------- */
+.emoji-panel, .gif-panel, .emoji-picker { border-radius: var(--r-lg); }
+.emoji-grid button, .gif-grid button, .emoji-picker button { border-radius: var(--r-xs); }
+.gif-grid img { border-radius: var(--r-sm); }
+
+/* ---------- M. Fil de discussion et messages enregistrés ---------- */
+.thread-panel, .tp-root { border-left: 1px solid var(--sep); }
+.tp-head { border-bottom: 1px solid var(--sep); }
+.saved-item { padding: 13px 15px; }
+.saved-attach, .msg-file { border-radius: var(--r-md); }
+
+/* ---------- N. Mise à jour ---------- */
+.update-modal { border-radius: var(--r-2xl); }
+.update-takeover { backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); }
+
+/* ---------- O. Zone de saisie « Plus d'actions » ---------- */
+.cm-item { border-radius: var(--r-sm); font-size: 14.5px; }
+.cm-item:hover { background: var(--fill-3); }
+.composer-more-title { text-transform: none; font-size: 12.5px; font-weight: 600; letter-spacing: -0.005em; color: var(--text-muted); }
