@@ -77,19 +77,23 @@ export default function HelpModal({ onClose, onContact }) {
         {groups.map((g, gi) => (
           <div className="help-group" key={g.theme}>
             <div className="help-group-title"><Icon name={g.icon} /> {g.theme}</div>
-            {g.items.map((it, ii) => {
-              const key = `${gi}-${ii}`;
-              const isOpen = open === key || !!q;
-              return (
-                <div className={`help-item ${isOpen ? 'open' : ''}`} key={it.q}>
-                  <button className="help-q" onClick={() => setOpen(isOpen && !q ? null : key)}>
-                    <span>{it.q}</span>
-                    <Icon name="chevron-down" />
-                  </button>
-                  {isOpen && <div className="help-a">{it.a}</div>}
-                </div>
-              );
-            })}
+            {/* Les questions vivent dans leur propre bloc : le titre et son icône
+                restent en dehors de la carte, donc jamais rognés. */}
+            <div className="help-list">
+              {g.items.map((it, ii) => {
+                const key = `${gi}-${ii}`;
+                const isOpen = open === key || !!q;
+                return (
+                  <div className={`help-item ${isOpen ? 'open' : ''}`} key={it.q}>
+                    <button className="help-q" onClick={() => setOpen(isOpen && !q ? null : key)}>
+                      <span>{it.q}</span>
+                      <Icon name="chevron-down" />
+                    </button>
+                    {isOpen && <div className="help-a">{it.a}</div>}
+                  </div>
+                );
+              })}
+            </div>
           </div>
         ))}
 

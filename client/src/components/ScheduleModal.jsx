@@ -108,15 +108,17 @@ export default function ScheduleModal({ scope, draft, onScheduled, onClose }) {
       {pending.length > 0 && (
         <div className="sched-list">
           <div className="sched-list-title">En attente d’envoi</div>
-          {pending.map((i) => (
-            <div className="sched-item" key={i.id}>
-              <div className="sched-item-main">
-                <span className="sched-item-when"><Icon name="clock" /> {fmt(i.send_at)}</span>
-                <span className="sched-item-text">{i.content}</span>
+          <div className="sched-items">
+            {pending.map((i) => (
+              <div className="sched-item" key={i.id}>
+                <div className="sched-item-main">
+                  <span className="sched-item-when"><Icon name="clock" /> {fmt(i.send_at)}</span>
+                  <span className="sched-item-text">{i.content}</span>
+                </div>
+                <button type="button" className="sched-item-cancel" title="Annuler l’envoi" onClick={() => cancel(i.id)}><Icon name="xmark" /></button>
               </div>
-              <button type="button" className="sched-item-cancel" title="Annuler l’envoi" onClick={() => cancel(i.id)}><Icon name="xmark" /></button>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       )}
     </Modal>

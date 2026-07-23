@@ -3755,36 +3755,53 @@ input:focus, textarea:focus { border-color: color-mix(in srgb, var(--accent) 55%
 .qs-bar input:focus { background: transparent; border-color: transparent; }
 
 /* ---------- B. Listes groupées façon iOS ----------
-   Un seul bloc arrondi, des lignes séparées par un trait fin. */
-.help-group, .sess-list, .perm-list, .access-list, .sched-list,
-.notif-list, .friends-body, .contact-scroll, .tasks-group, .saved-body,
-.roles-list-items, .blocked-info, .adm-list, .ad-users {
+   Un seul bloc arrondi, des lignes séparées par un trait fin.
+   ⚠️ Jamais d'`overflow: hidden` ici : ces blocs peuvent défiler, et un
+   titre de section placé juste au-dessus verrait son icône rognée par
+   l'arrondi. Les coins sont donc portés par la première et la dernière
+   ligne, pas par le conteneur. */
+.help-list, .sess-list, .perm-list, .access-list, .sched-items,
+.notif-list, .task-list, .roles-list-items, .adm-list, .ad-users,
+.server-tasks-list, .dmt-list {
+  border: 1px solid var(--sep);
+  background: var(--bg-elevated);
   border-radius: var(--r-lg);
-  overflow: hidden;
 }
 .help-item, .sess-item, .access-row, .sched-item, .notif-item,
-.friend-row, .contact-row, .task-item, .saved-item, .role-item,
-.blocked-row, .adm-row, .ad-user-row, .server-task-row, .dmt-item {
-  background: var(--bg-elevated);
+.task-item, .role-item, .adm-row, .ad-user-row, .server-task-row, .dmt-item {
+  background: transparent;
   border: none;
   border-radius: 0;
   border-bottom: 1px solid var(--sep);
+  margin: 0;
   transition: background 0.12s ease;
 }
-.help-item:last-child, .sess-item:last-child, .access-row:last-child,
-.sched-item:last-child, .notif-item:last-child, .friend-row:last-child,
-.contact-row:last-child, .task-item:last-child, .saved-item:last-child,
-.role-item:last-child, .blocked-row:last-child, .adm-row:last-child,
-.ad-user-row:last-child, .server-task-row:last-child, .dmt-item:last-child { border-bottom: none; }
-.help-item:hover, .sess-item:hover, .friend-row:hover, .contact-row:hover,
-.task-item:hover, .saved-item:hover, .role-item:hover, .adm-row:hover,
-.ad-user-row:hover, .notif-item:hover { background: var(--bg-elevated-2); }
-/* Le premier et le dernier élément arrondissent le bloc. */
-.help-group, .sess-list, .perm-list, .access-list, .sched-list, .notif-list,
-.tasks-group, .roles-list-items, .adm-list, .ad-users {
-  border: 1px solid var(--sep);
-  background: var(--bg-elevated);
+.help-item:first-child, .sess-item:first-child, .access-row:first-child,
+.sched-item:first-child, .notif-item:first-child, .task-item:first-child,
+.role-item:first-child, .adm-row:first-child, .ad-user-row:first-child,
+.server-task-row:first-child, .dmt-item:first-child {
+  border-top-left-radius: var(--r-lg); border-top-right-radius: var(--r-lg);
 }
+.help-item:last-child, .sess-item:last-child, .access-row:last-child,
+.sched-item:last-child, .notif-item:last-child, .task-item:last-child,
+.role-item:last-child, .adm-row:last-child, .ad-user-row:last-child,
+.server-task-row:last-child, .dmt-item:last-child {
+  border-bottom: none;
+  border-bottom-left-radius: var(--r-lg); border-bottom-right-radius: var(--r-lg);
+}
+.help-item:hover, .sess-item:hover, .task-item:hover, .role-item:hover,
+.adm-row:hover, .ad-user-row:hover, .notif-item:hover { background: var(--bg-hover); }
+
+/* Listes qui vivent dans une zone défilante : lignes détachées, chacune
+   arrondie, plutôt qu'un seul bloc (le conteneur doit rester scrollable). */
+.friend-row, .contact-row, .saved-item, .dm-card {
+  background: var(--bg-elevated);
+  border: 1px solid var(--sep);
+  border-radius: var(--r-sm);
+  margin-bottom: 6px;
+  transition: background 0.12s ease;
+}
+.friend-row:hover, .contact-row:hover, .saved-item:hover { background: var(--bg-elevated-2); }
 
 /* ---------- C. Filtres et étiquettes ---------- */
 .seg {
@@ -3846,7 +3863,7 @@ input:focus, textarea:focus { border-color: color-mix(in srgb, var(--accent) 55%
 .voice-occupant:hover { background: var(--bg-hover); }
 
 /* ---------- G. Tableau blanc ---------- */
-.board-window { border-radius: var(--r-2xl); overflow: hidden; }
+.board-window { border-radius: var(--r-2xl); }
 .board-canvas-wrap { border-radius: var(--r-lg); }
 .board-tool { border-radius: var(--r-sm); }
 .board-tool.active { background: var(--bg-active); color: var(--accent); }
@@ -3870,7 +3887,7 @@ input:focus, textarea:focus { border-color: color-mix(in srgb, var(--accent) 55%
 .adm-nav-item.active, .admin-nav-item.active { background: var(--fill-2); color: var(--text); }
 .ad-quicknums, .adm-stats, .ad-stats { gap: var(--gap-3); }
 .ad-report-quote { border-radius: var(--r-md); border-left-width: 3px; }
-.adm-table { border-radius: var(--r-lg); overflow: hidden; }
+.adm-table { border-radius: var(--r-lg); }
 
 /* ---------- J. Paramètres du serveur et rôles ---------- */
 .ss-section { background: var(--bg-elevated); border: 1px solid var(--sep); border-radius: var(--r-lg); padding: 18px; }
@@ -3878,7 +3895,7 @@ input:focus, textarea:focus { border-color: color-mix(in srgb, var(--accent) 55%
 .roles-editor, .roles-list { border-radius: var(--r-lg); }
 .role-item { padding: 11px 14px; }
 .perm-list { padding: 0; }
-.sm-items { border-radius: var(--r-md); overflow: hidden; }
+.sm-items { border-radius: var(--r-md); }
 
 /* ---------- K. Sondages, transferts, watch ---------- */
 .poll-card { background: var(--bg-elevated); border: 1px solid var(--sep); border-radius: var(--r-lg); }
@@ -3906,3 +3923,75 @@ input:focus, textarea:focus { border-color: color-mix(in srgb, var(--accent) 55%
 .cm-item { border-radius: var(--r-sm); font-size: 14.5px; }
 .cm-item:hover { background: var(--fill-3); }
 .composer-more-title { text-transform: none; font-size: 12.5px; font-weight: 600; letter-spacing: -0.005em; color: var(--text-muted); }
+
+/* ---------- P. Mise en route et didacticiel ----------
+   Les deux écrans d'accueil d'un nouveau compte reprennent la charte :
+   pastille d'icône généreuse, encadré de conseil aéré, points de page
+   façon iOS, boutons d'action teintés. */
+.onboarding, .onboarding-setup { padding: 26px 28px 22px; }
+.ob-head { margin-bottom: 22px; }
+.ob-count { font-size: 12.5px; font-weight: 600; color: var(--text-faint); }
+.ob-body { padding: 6px 4px 22px; }
+.ob-ico {
+  width: 66px; height: 66px;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 26px;
+  border-radius: var(--r-xl);
+  background: var(--bg-active);
+  color: var(--accent);
+  margin-bottom: 18px;
+}
+.ob-body h2, .obs-body h2 { font-size: 23px; letter-spacing: -0.024em; margin-bottom: 10px; }
+.ob-text { font-size: 15px; }
+
+/* Encadré de conseil : une vraie note, avec de l'air autour du texte. */
+.ob-tip, .obs-note {
+  display: flex; align-items: flex-start; gap: 10px;
+  padding: 12px 14px;
+  margin-top: 18px;
+  background: var(--fill-3);
+  border: 1px solid var(--sep);
+  border-radius: var(--r-md);
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text-muted);
+  text-align: left;
+}
+.ob-tip i, .ob-tip svg, .obs-note i, .obs-note svg { flex-shrink: 0; margin-top: 1px; }
+
+/* Points de page façon iOS : ronds discrets, l'actif s'allonge. */
+.ob-dots { gap: 6px; margin-bottom: 20px; }
+.ob-dot { width: 7px; height: 7px; background: var(--fill-1); transition: width 0.18s ease, background 0.18s ease; }
+.ob-dot:hover { background: var(--fill-1); }
+.ob-dot.active { width: 22px; border-radius: var(--r-pill); background: var(--accent); }
+
+/* Actions de la photo de profil : boutons teintés, pas du texte nu. */
+.obs-avatar-actions button, .obs-import {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 9px 16px;
+  border-radius: var(--r-pill);
+  background: var(--fill-3);
+  border: 1px solid var(--sep);
+  color: var(--text);
+  font-size: 13.5px; font-weight: 600;
+  width: auto;
+  transition: background 0.12s ease;
+}
+.obs-avatar-actions button:hover, .obs-import:hover { background: var(--fill-2); }
+.obs-head-title { font-size: 15px; letter-spacing: -0.015em; }
+.obs-body .settings-toggle:first-of-type { border-top: 1px solid var(--sep); }
+
+/* La seconde action est un <label> (champ fichier caché) : même habillage. */
+.obs-avatar-actions > label, .obs-avatar-actions .import-btn {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 9px 16px;
+  border-radius: var(--r-pill);
+  background: var(--fill-3);
+  border: 1px solid var(--sep);
+  color: var(--text);
+  font-size: 13.5px; font-weight: 600;
+  width: auto;
+  cursor: pointer;
+  transition: background 0.12s ease;
+}
+.obs-avatar-actions > label:hover, .obs-avatar-actions .import-btn:hover { background: var(--fill-2); opacity: 1; }

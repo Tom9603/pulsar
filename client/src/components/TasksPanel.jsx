@@ -63,6 +63,9 @@ export default function TasksPanel({ tasks, currentUser, filter, onFilter, onTog
         return (
           <section className="tasks-group" key={key}>
             <h3><Icon name={icon} /> {label} <span className="tasks-count">{group.length}</span></h3>
+            {/* Les tâches vivent dans leur propre bloc : le titre du groupe et son
+                icône restent en dehors de la carte, donc jamais rognés. */}
+            <div className="task-list">
             {group.map((t) => {
               const due = dueLabel(t.due_at);
               const prio = PRIO[t.priority] || PRIO.normal;
@@ -124,6 +127,7 @@ export default function TasksPanel({ tasks, currentUser, filter, onFilter, onTog
                 </div>
               );
             })}
+            </div>
           </section>
         );
       })}
