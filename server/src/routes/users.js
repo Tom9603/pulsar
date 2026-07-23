@@ -112,6 +112,43 @@ router.patch('/me/password', (req, res) => {
   res.json({ ok: true });
 });
 
+/** Disposition des widgets de l'accueil (propre à chaque personne).
+ *  Renvoie null tant que rien n'a été personnalisé : le client pose alors
+ *  sa disposition par défaut. */
+router.get('/me/home', (req, res) => {
+  const row = db.prepare('SELECT home_layout FROM users WHERE id = ?').get(req.userId);
+  let layout = null;
+  try { layout = row?.home_layout ? JSON.parse(row.home_layout) : null; } catch { layout = null; }
+  res.json({ layout });
+});
+
+/** Enregistre la disposition. On valide chaque case pour ne jamais stocker
+ *  n'importe quoi, et on borne la taille du document. */
+router.put('/me/home', (req, res) => {
+  const raw = req.body?.layout;
+  if (!Array.isArray(raw)) return res.status(400).json({ error: 'Disposition invalide' });
+  if (raw.length > 40) return res.status(400).json({ error: 'Trop de widgets' });
+
+  const num = (v, min, max, fallback) => {
+    const n = Number(v);
+    return Number.isFinite(n) ? Math.max(min, Math.min(max, Math.round(n))) : fallback;
+  };
+  const layout = raw.slice(0, 40).map((w) => ({
+    id: String(w?.id ?? '').slice(0, 40) || Math.random().toString(36).slice(2, 10),
+    type: String(w?.type ?? '').slice(0, 40),
+    x: num(w?.x, 0, 11, 0),
+    y: num(w?.y, 0, 59, 0),
+    w: num(w?.w, 1, 4, 1),
+    h: num(w?.h, 1, 4, 1),
+    config: w?.config && typeof w.config === 'object' ? w.config : undefined,
+  })).filter((w) => w.type);
+
+  const json = JSON.stringify(layout);
+  if (json.length > 20000) return res.status(400).json({ error: 'Disposition trop lourde' });
+  db.prepare('UPDATE users SET home_layout = ? WHERE id = ?').run(json, req.userId);
+  res.json({ ok: true, layout });
+});
+
 /** Supprimer son compte (nécessite le mot de passe). */
 router.delete('/me', (req, res) => {
   const user = db.prepare('SELECT * FROM users WHERE id = ?').get(req.userId);

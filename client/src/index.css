@@ -4073,3 +4073,282 @@ input[type="range"]::-moz-range-thumb {
 .ss-inline { display: flex; align-items: center; gap: var(--gap-2); }
 .ss-inline input { flex: 1; min-width: 0; padding: 10px 13px; }
 .ss-inline-btn, .ss-inline .btn { width: auto; flex-shrink: 0; padding: 10px 18px; }
+
+/* ============================================================
+   ACCUEIL À WIDGETS
+   Une grille que l'on compose soi-même. Le quadrillage reste
+   invisible et ne s'allume qu'autour du curseur pendant un
+   déplacement, en montrant la place que prendra le bloc.
+   ============================================================ */
+
+.home-hero { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--gap-4); flex-wrap: wrap; }
+.home-hero-text { min-width: 0; }
+.home-hero-tools { display: flex; align-items: center; gap: var(--gap-2); flex-shrink: 0; }
+.home-edit-btn {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 9px 16px; border-radius: var(--r-pill);
+  background: var(--fill-3); border: 1px solid var(--sep);
+  color: var(--text); font-size: 13.5px; font-weight: 600;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+.home-edit-btn:hover { background: var(--fill-2); }
+.home-edit-btn.on { background: var(--bg-active); border-color: color-mix(in srgb, var(--accent) 45%, transparent); color: var(--accent); }
+.home-edit-hint {
+  display: flex; align-items: center; gap: 9px;
+  margin: 0 0 var(--gap-4);
+  padding: 11px 14px; border-radius: var(--r-md);
+  background: var(--fill-3); border: 1px solid var(--sep);
+  color: var(--text-muted); font-size: 13px;
+}
+.home-edit-hint .fa-solid { color: var(--accent); }
+
+/* ---------- La grille ---------- */
+.wg-grid { position: relative; display: grid; margin-bottom: var(--gap-6); }
+.wg-grid.editing { touch-action: none; }
+
+/* Quadrillage révélé autour du curseur (masque radial). */
+.wg-cells {
+  position: absolute; inset: 0;
+  display: grid; pointer-events: none; z-index: 0;
+  opacity: 0; transition: opacity 0.22s ease;
+  -webkit-mask-image: radial-gradient(220px circle at var(--mx, -999px) var(--my, -999px), #000 0%, rgba(0,0,0,0.5) 45%, transparent 74%);
+  mask-image: radial-gradient(220px circle at var(--mx, -999px) var(--my, -999px), #000 0%, rgba(0,0,0,0.5) 45%, transparent 74%);
+}
+.wg-grid.editing .wg-cells { opacity: 0.5; }
+.wg-grid.dragging .wg-cells {
+  opacity: 1;
+  -webkit-mask-image: radial-gradient(340px circle at var(--mx, -999px) var(--my, -999px), #000 0%, rgba(0,0,0,0.6) 50%, transparent 80%);
+  mask-image: radial-gradient(340px circle at var(--mx, -999px) var(--my, -999px), #000 0%, rgba(0,0,0,0.6) 50%, transparent 80%);
+}
+.wg-cell {
+  border-radius: var(--r-lg);
+  border: 1px dashed color-mix(in srgb, var(--accent) 34%, transparent);
+  background: color-mix(in srgb, var(--accent) 5%, transparent);
+}
+
+/* Empreinte du widget déplacé : la place qu'il prendra. */
+.wg-drop {
+  position: relative; z-index: 1; pointer-events: none;
+  border-radius: var(--r-xl);
+  border: 2px solid color-mix(in srgb, var(--accent) 70%, transparent);
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 20%, transparent) inset;
+}
+.wg-drop.invalid {
+  border-color: color-mix(in srgb, var(--danger) 65%, transparent);
+  background: color-mix(in srgb, var(--danger) 14%, transparent);
+}
+
+/* ---------- Les widgets ---------- */
+.wg-item {
+  position: relative; z-index: 2;
+  display: flex; flex-direction: column;
+  min-width: 0; min-height: 0; overflow: hidden;
+  border-radius: var(--r-xl);
+  background: var(--glass);
+  backdrop-filter: blur(26px) saturate(180%);
+  -webkit-backdrop-filter: blur(26px) saturate(180%);
+  border: 1px solid var(--sep);
+  box-shadow: var(--shadow-1);
+}
+.wg-item.editable { cursor: grab; user-select: none; }
+.wg-item.editable .wg-body { pointer-events: none; } /* en édition on déplace, on ne clique pas */
+.wg-item.moving {
+  cursor: grabbing; z-index: 5;
+  box-shadow: var(--shadow-3);
+  border-color: color-mix(in srgb, var(--accent) 45%, transparent);
+  opacity: 0.96;
+}
+.wg-body { flex: 1; min-height: 0; padding: 16px; overflow: hidden; }
+
+/* Barre d'édition d'un widget. */
+.wg-tools {
+  display: flex; align-items: center; gap: 6px;
+  padding: 7px 8px 7px 12px;
+  background: var(--mat-thick);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-top: 1px solid var(--sep);
+  flex-wrap: wrap;
+}
+.wg-tools-name { display: inline-flex; align-items: center; gap: 7px; font-size: 12px; font-weight: 600; color: var(--text-muted); margin-right: auto; white-space: nowrap; }
+.wg-tools-name .fa-solid { color: var(--accent); font-size: 11px; }
+.wg-sizes { display: inline-flex; gap: 2px; padding: 2px; background: var(--fill-3); border-radius: var(--r-xs); }
+.wg-sizes button {
+  border: none; background: transparent; color: var(--text-muted);
+  border-radius: calc(var(--r-xs) - 2px); padding: 4px 9px; font-size: 11.5px; font-weight: 600;
+}
+.wg-sizes button:hover { color: var(--text); }
+.wg-sizes button.active { background: var(--bg-elevated); color: var(--text); box-shadow: var(--shadow-1); }
+.wg-tool {
+  width: 28px; height: 28px; border-radius: var(--r-xs);
+  background: var(--fill-3); color: var(--text-muted); font-size: 12px;
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.wg-tool:hover { background: var(--fill-2); color: var(--text); }
+.wg-tool.danger:hover { background: color-mix(in srgb, var(--danger) 20%, transparent); color: var(--danger); }
+
+/* ---------- Contenus ---------- */
+.wg-empty {
+  height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 7px; text-align: center; color: var(--text-faint); font-size: 13px;
+}
+.wg-empty > .fa-solid, .wg-empty > svg { font-size: 20px; opacity: 0.7; }
+.wg-empty-hint { font-size: 12px; }
+.wg-empty-action {
+  margin-top: 4px; padding: 6px 13px; border-radius: var(--r-pill);
+  background: var(--fill-3); border: 1px solid var(--sep);
+  color: var(--text); font-size: 12.5px; font-weight: 600;
+}
+.wg-empty-action:hover { background: var(--fill-2); }
+
+.wg-clock { height: 100%; display: flex; flex-direction: column; justify-content: center; }
+.wg-clock-day { font-size: 13px; font-weight: 600; color: var(--accent); text-transform: capitalize; }
+.wg-clock-time { font-size: 40px; font-weight: 700; letter-spacing: -0.03em; line-height: 1.05; }
+.wg-clock.tall .wg-clock-time { font-size: 54px; }
+.wg-clock-date { font-size: 13.5px; color: var(--text-muted); text-transform: capitalize; }
+.wg-clock-greet { margin-top: auto; font-size: 14px; color: var(--text-muted); }
+
+.wg-servers { display: flex; flex-wrap: wrap; gap: 10px; align-content: flex-start; height: 100%; overflow: hidden; }
+.wg-server {
+  position: relative; display: flex; flex-direction: column; align-items: center; gap: 6px;
+  width: 68px; padding: 6px 2px; border-radius: var(--r-md); background: transparent;
+  transition: background 0.12s ease;
+}
+.wg-server:hover { background: var(--bg-hover); }
+.wg-server-icon {
+  width: 42px; height: 42px; border-radius: var(--r-md);
+  display: flex; align-items: center; justify-content: center; overflow: hidden;
+  color: #fff; font-weight: 700; font-size: 17px;
+}
+.wg-server-icon img { width: 100%; height: 100%; object-fit: cover; }
+.wg-server-name { font-size: 11.5px; color: var(--text-muted); max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.wg-rows { display: flex; flex-direction: column; gap: 2px; height: 100%; overflow: hidden; }
+.wg-row {
+  display: flex; align-items: center; gap: 10px; width: 100%; text-align: left;
+  padding: 7px 8px; border-radius: var(--r-sm); background: transparent; color: var(--text);
+  transition: background 0.12s ease;
+}
+.wg-row:hover { background: var(--bg-hover); }
+.wg-row-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.wg-row-name { font-size: 13.5px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.wg-row-sub { font-size: 12px; color: var(--text-faint); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.wg-badge {
+  flex-shrink: 0; min-width: 19px; height: 19px; padding: 0 6px; border-radius: var(--r-pill);
+  background: var(--grad); color: #fff; font-size: 11px; font-weight: 700;
+  display: inline-flex; align-items: center; justify-content: center;
+}
+
+.wg-tasks { height: 100%; display: flex; flex-direction: column; gap: 8px; }
+.wg-tasks-count { font-size: 13px; color: var(--text-muted); }
+.wg-tasks-count strong { font-size: 22px; color: var(--text); margin-right: 4px; }
+.wg-task-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); flex-shrink: 0; }
+
+.wg-shortcuts { display: flex; flex-wrap: wrap; gap: 10px; align-content: flex-start; height: 100%; overflow: hidden; }
+.wg-shortcut {
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  width: 66px; padding: 6px 2px; border-radius: var(--r-md); background: transparent;
+  transition: background 0.12s ease;
+}
+.wg-shortcut:hover { background: var(--bg-hover); }
+.wg-shortcut-icon {
+  width: 40px; height: 40px; border-radius: var(--r-md); overflow: hidden;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--fill-2); color: var(--text); font-size: 15px;
+}
+.wg-shortcut-icon img { width: 100%; height: 100%; object-fit: cover; }
+.wg-shortcut-name { font-size: 11.5px; color: var(--text-muted); max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.wg-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; height: 100%; align-content: center; }
+.wg-action {
+  display: flex; align-items: center; gap: 9px; padding: 9px 11px;
+  border-radius: var(--r-sm); background: var(--fill-3); color: var(--text);
+  font-size: 12.5px; font-weight: 600; text-align: left;
+  transition: background 0.12s ease;
+}
+.wg-action:hover { background: var(--fill-2); }
+.wg-action-icon { color: var(--accent); width: 16px; text-align: center; flex-shrink: 0; }
+
+/* ---------- Centre des widgets ---------- */
+.modal-widgets { width: min(620px, 94vw); }
+.wg-gal-tabs { margin-bottom: var(--gap-4); }
+.wg-gal-list { display: flex; flex-direction: column; gap: 10px; max-height: 52vh; overflow-y: auto; padding-right: 4px; }
+.wg-gal-item {
+  display: flex; align-items: center; gap: 14px;
+  padding: 14px; border-radius: var(--r-lg);
+  background: var(--bg-elevated); border: 1px solid var(--sep);
+}
+.wg-gal-icon {
+  width: 42px; height: 42px; border-radius: var(--r-md); flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--bg-active); color: var(--accent); font-size: 17px;
+}
+.wg-gal-main { flex: 1; min-width: 0; }
+.wg-gal-name { font-size: 14.5px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+.wg-gal-tag {
+  font-size: 11px; font-weight: 600; color: var(--text-faint);
+  background: var(--fill-3); border-radius: var(--r-pill); padding: 2px 8px;
+}
+.wg-gal-desc { font-size: 12.5px; color: var(--text-muted); margin-top: 2px; }
+.wg-gal-sizes { margin-top: 9px; }
+.wg-gal-add, .wg-gal-remove { width: auto; flex-shrink: 0; padding: 9px 16px; font-size: 13px; }
+.wg-gal-empty { color: var(--text-faint); font-size: 14px; padding: 16px 2px; margin: 0; }
+.wg-gal-actions { justify-content: space-between; }
+
+/* ---------- Choix des raccourcis ---------- */
+.modal-shortcuts { width: min(560px, 94vw); }
+.wg-pick-search {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 14px; border-radius: var(--r-sm);
+  background: var(--fill-3); color: var(--text-faint); margin-bottom: var(--gap-4);
+}
+.wg-pick-search input { flex: 1; background: none; border: none; color: var(--text); font-size: 14.5px; outline: none; padding: 0; }
+.wg-pick-scroll { max-height: 46vh; overflow-y: auto; padding-right: 4px; }
+.wg-pick-title { font-size: 11.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-faint); margin: var(--gap-4) 0 var(--gap-2); }
+.wg-pick-title:first-child { margin-top: 0; }
+.wg-pick-list { border: 1px solid var(--sep); background: var(--bg-elevated); border-radius: var(--r-lg); }
+.wg-pick-row {
+  display: flex; align-items: center; gap: 11px; width: 100%; text-align: left;
+  padding: 10px 13px; background: transparent; color: var(--text);
+  border-bottom: 1px solid var(--sep); transition: background 0.12s ease;
+}
+.wg-pick-row:first-child { border-top-left-radius: var(--r-lg); border-top-right-radius: var(--r-lg); }
+.wg-pick-row:last-child { border-bottom: none; border-bottom-left-radius: var(--r-lg); border-bottom-right-radius: var(--r-lg); }
+.wg-pick-row:hover { background: var(--bg-hover); }
+.wg-pick-row.on { background: var(--bg-active); }
+.wg-pick-icon {
+  width: 28px; height: 28px; border-radius: var(--r-xs); flex-shrink: 0; overflow: hidden;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--fill-2); color: var(--text); font-size: 12px; font-weight: 700;
+}
+.wg-pick-icon img { width: 100%; height: 100%; object-fit: cover; }
+.wg-pick-name { flex: 1; min-width: 0; font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.wg-pick-check { flex-shrink: 0; color: var(--text-faint); font-size: 13px; }
+.wg-pick-row.on .wg-pick-check { color: var(--accent); }
+
+.home-putaway { margin-top: var(--gap-5); }
+
+/* Barre d edition d un widget : elle ne doit jamais passer sur deux lignes,
+   sinon elle mange le contenu des petits blocs. Le nom s efface en premier. */
+.wg-item { container-type: inline-size; }
+.wg-tools { flex-wrap: nowrap; overflow: hidden; }
+.wg-tools-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+@container (max-width: 360px) {
+  .wg-tools-name { display: none; }
+  .wg-tools { padding-left: 8px; justify-content: flex-end; }
+  .wg-sizes { margin-right: auto; }
+}
+@container (max-width: 250px) {
+  .wg-sizes button { padding: 4px 6px; font-size: 11px; }
+}
+
+/* Le quadrillage doit rester lisible sur fond clair comme sur fond sombre. */
+.wg-cell {
+  border-color: color-mix(in srgb, var(--accent) 45%, transparent);
+  background: color-mix(in srgb, var(--accent) 9%, transparent);
+}
+:root[data-theme="light"] .wg-cell {
+  border-color: color-mix(in srgb, var(--accent) 55%, transparent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+}

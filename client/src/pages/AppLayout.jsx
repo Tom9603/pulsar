@@ -561,8 +561,9 @@ export default function AppLayout() {
 
         <div className="pulsar-main">
           {section === 'home' && (
-            <HomeView user={user} servers={visibleServers} dmConversations={dmConversations} onlineIds={onlineIds}
+            <HomeView user={user} servers={visibleServers} dmConversations={dmConversations} onlineIds={onlineIds} tasks={tasks}
               onOpenServer={openServer} onOpenDm={openDm} onOpenFriends={openFriends} onOpenSaved={openSaved} onAddServer={() => setModal('create')}
+              onQuickSearch={() => setQuickOpen(true)} onOpenSection={onSection}
               serverMenu={serverMenu} dmMenu={dmMenu}
               archivedServers={archivedServers} hiddenServers={hiddenServers}
               onRestoreServer={(sv) => setServerFlag(sv, { archived: 0, hidden: 0 })} />

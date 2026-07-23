@@ -1,115 +1,147 @@
-import { useEffect, useState } from 'react';
-import Avatar from './Avatar.jsx';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Icon from './Icon.jsx';
 import { api, mediaUrl } from '../api.js';
 import ContactLibraryModal from './ContactLibraryModal.jsx';
+import WidgetCanvas, { firstFreeSpot, normalize } from './widgets/WidgetCanvas.jsx';
+import WidgetGallery from './widgets/WidgetGallery.jsx';
+import ShortcutPicker from './widgets/ShortcutPicker.jsx';
+import { DEFAULT_LAYOUT } from './widgets/registry.jsx';
 
-/** Écran d'accueil : tableau de bord (serveurs, messages récents, contacts). */
-export default function HomeView({ user, servers, dmConversations, onlineIds, onOpenServer, onOpenDm, onOpenFriends, onOpenSaved, onAddServer, serverMenu, dmMenu, archivedServers = [], hiddenServers = [], onRestoreServer }) {
+/** Identifiant court et unique pour un widget qu'on vient de poser. */
+const newId = () => 'w-' + Math.random().toString(36).slice(2, 9);
+
+/** Écran d'accueil : un tableau de widgets que chacun compose à sa main. */
+export default function HomeView({
+  user, servers, dmConversations, onlineIds, tasks = [],
+  onOpenServer, onOpenDm, onOpenFriends, onOpenSaved, onAddServer, onQuickSearch, onOpenSection,
+  serverMenu, archivedServers = [], hiddenServers = [], onRestoreServer,
+}) {
   const putAway = [
     ...archivedServers.map((s) => ({ s, tag: 'Archivé' })),
     ...hiddenServers.map((s) => ({ s, tag: 'Caché' })),
   ];
   const [contacts, setContacts] = useState([]);
   const [library, setLibrary] = useState(false);
-  const [showAllServers, setShowAllServers] = useState(false);
-  const online = new Set(onlineIds);
+  const [layout, setLayout] = useState(null); // null = pas encore chargé
+  const [editing, setEditing] = useState(false);
+  const [gallery, setGallery] = useState(false);
+  const [configuring, setConfiguring] = useState(null);
+  const [cols, setCols] = useState(4);
+  const wrapRef = useRef(null);
+  const online = useMemo(() => new Set(onlineIds), [onlineIds]);
+
   const now = new Date();
   const hour = now.getHours();
-  const greet = hour < 6 ? 'Bonne nuit' : hour < 12 ? 'Bonjour' : hour < 18 ? 'Bon après-midi' : 'Bonsoir';
-  const dayStr = now.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
-  const min = now.getMinutes();
-  const timeStr = `${hour}h${min > 0 ? String(min).padStart(2, '0') : ''}`;
-  const sortedContacts = [...contacts].sort((a, b) => (a.display_name || a.username).localeCompare(b.display_name || b.username, 'fr', { sensitivity: 'base' }));
-  const shownServers = showAllServers ? servers : servers.slice(0, 10);
+  const greeting = hour < 6 ? 'Bonne nuit' : hour < 12 ? 'Bonjour' : hour < 18 ? 'Bon après-midi' : 'Bonsoir';
 
   useEffect(() => { api('/friends').then(({ friends }) => setContacts(friends || [])).catch(() => {}); }, []);
 
+  // Nombre de colonnes selon la largeur : 4 au large, 2 à l'étroit.
+  useEffect(() => {
+    const el = wrapRef.current;
+    if (!el) return;
+    const measure = () => setCols(el.clientWidth < 720 ? 2 : 4);
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  // Disposition enregistrée, sinon celle d'origine.
+  useEffect(() => {
+    let cancelled = false;
+    api('/users/me/home')
+      .then(({ layout: saved }) => { if (!cancelled) setLayout(Array.isArray(saved) && saved.length ? saved : DEFAULT_LAYOUT); })
+      .catch(() => { if (!cancelled) setLayout(DEFAULT_LAYOUT); });
+    return () => { cancelled = true; };
+  }, []);
+
+  // Enregistrement différé : on ne harcèle pas le serveur pendant les réglages.
+  const saveTimer = useRef(null);
+  const persist = useCallback((next) => {
+    clearTimeout(saveTimer.current);
+    saveTimer.current = setTimeout(() => {
+      api('/users/me/home', { method: 'PUT', body: { layout: next } }).catch(() => {});
+    }, 600);
+  }, []);
+
+  const apply = useCallback((next) => {
+    const clean = normalize(next, cols);
+    setLayout(clean);
+    persist(clean);
+  }, [cols, persist]);
+
+  // Affichage : la disposition est ramenée au nombre de colonnes courant
+  // (fenêtre étroite = 2 colonnes) sans réécrire tout de suite l'original.
+  const shownLayout = useMemo(() => (layout ? normalize(layout, cols) : null), [layout, cols]);
+
+  const addWidget = (type, w, h) => {
+    const base = layout || [];
+    const spot = firstFreeSpot(base, Math.min(w, cols), h, cols);
+    apply([...base, { id: newId(), type, x: spot.x, y: spot.y, w: Math.min(w, cols), h }]);
+  };
+
+  const openShortcut = (it) => {
+    if (it.kind === 'server') onOpenServer(it.id);
+    else if (it.kind === 'dm') {
+      const conv = dmConversations.find((c) => c.id === it.id) || contacts.find((c) => c.id === it.id);
+      if (conv) onOpenDm(conv);
+    } else if (it.kind === 'section') {
+      if (it.id === 'friends') onOpenFriends();
+      else if (it.id === 'saved') onOpenSaved();
+      else onOpenSection?.(it.id);
+    }
+  };
+
+  const ctx = {
+    user, servers, dmConversations, contacts, tasks, online, now, greeting,
+    onOpenServer, onOpenDm, onOpenFriends, onOpenSaved, onAddServer,
+    onQuickSearch: onQuickSearch || (() => {}),
+    onShortcut: openShortcut,
+  };
+
   return (
-    <div className="home-view">
+    <div className="home-view" ref={wrapRef}>
       <div className="home-inner">
         <div className="home-hero">
-          <h1>{greet}, {user.display_name}</h1>
-          <p className="home-today">Nous sommes le {dayStr}, il est {timeStr}</p>
-        </div>
-
-        <div className="home-quick">
-          <button className="quick-tile" onClick={onOpenFriends}><span><Icon name="user-group" /></span> Contacts</button>
-          <button className="quick-tile" onClick={onOpenSaved}><span><Icon name="circle-check" /></span> Tâches</button>
-          <button className="quick-tile add" onClick={onAddServer}><span><Icon name="plus" /></span> Nouveau serveur</button>
-        </div>
-
-        <section className="home-section">
-          <h2>Vos serveurs</h2>
-          {servers.length === 0 ? (
-            <p className="home-empty">Aucun serveur pour l’instant, créez-en un via « Nouveau serveur ».</p>
-          ) : (
-            <>
-              <div className="home-grid">
-                {shownServers.map((s) => (
-                  <button key={s.id} className="server-card" onClick={() => onOpenServer(s.id)} onContextMenu={serverMenu?.(s)}>
-                    <span className="sc-icon" style={{ background: s.icon_url ? undefined : s.icon_color }}>
-                      {s.icon_url ? <img src={mediaUrl(s.icon_url)} alt="" /> : s.name.charAt(0).toUpperCase()}
-                    </span>
-                    <span className="sc-name">{s.name}</span>
-                  </button>
-                ))}
-              </div>
-              {servers.length > 10 && (
-                <button className="home-showmore" onClick={() => setShowAllServers((v) => !v)}>
-                  <Icon name={showAllServers ? 'chevron-up' : 'chevron-down'} />
-                  {showAllServers ? 'Voir moins' : `Voir les ${servers.length - 10} autres`}
-                </button>
-              )}
-            </>
-          )}
-        </section>
-
-        <section className="home-section">
-          <h2>Messages récents</h2>
-          {dmConversations.length === 0 ? (
-            <p className="home-empty">Aucune conversation. Ajoutez un contact pour démarrer un échange.</p>
-          ) : (
-            <div className="home-dms">
-              {dmConversations.slice(0, 20).map((c) => (
-                <button key={c.id} className="dm-card" onClick={() => onOpenDm(c)} onContextMenu={dmMenu?.(c)}>
-                  <Avatar user={c} size={40} status={online.has(c.id) ? c.status : 'offline'} />
-                  <div className="dm-card-info">
-                    <div className="dm-card-name">{c.display_name}</div>
-                    <div className="dm-card-last">{c.last_content || '@' + c.username}</div>
-                  </div>
-                </button>
-              ))}
-            </div>
-          )}
-        </section>
-
-        <section className="home-section">
-          <div className="home-section-head">
-            <h2>Vos contacts{contacts.length ? ` · ${contacts.length}` : ''}</h2>
-            {contacts.length > 0 && (
-              <button className="home-more" onClick={() => setLibrary(true)}><Icon name="address-book" /> Voir tous mes contacts</button>
-            )}
+          <div className="home-hero-text">
+            <h1>{greeting}, {user.display_name}</h1>
+            <p className="home-today">
+              Nous sommes le {now.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}
+            </p>
           </div>
-          {contacts.length === 0 ? (
-            <p className="home-empty">Aucun contact. <button className="link-btn" onClick={onOpenFriends}>Ajoutez votre premier contact</button>.</p>
-          ) : (
-            <div className="home-dms">
-              {sortedContacts.slice(0, 20).map((c) => (
-                <button key={c.id} className="dm-card" onClick={() => onOpenDm(c)} onContextMenu={dmMenu?.(c)}>
-                  <Avatar user={c} size={40} status={online.has(c.id) ? c.status : 'offline'} />
-                  <div className="dm-card-info">
-                    <div className="dm-card-name">{c.display_name}</div>
-                    <div className="dm-card-last">@{c.username}</div>
-                  </div>
-                </button>
-              ))}
-            </div>
-          )}
-        </section>
+          <div className="home-hero-tools">
+            {editing && (
+              <button className="home-edit-btn" onClick={() => setGallery(true)}>
+                <Icon name="plus" /> Ajouter un widget
+              </button>
+            )}
+            <button className={`home-edit-btn ${editing ? 'on' : ''}`} onClick={() => setEditing((v) => !v)}>
+              <Icon name={editing ? 'check' : 'table-cells-large'} />
+              {editing ? 'Terminer' : 'Personnaliser'}
+            </button>
+          </div>
+        </div>
 
-        {putAway.length > 0 && (
-          <section className="home-section">
+        {editing && (
+          <p className="home-edit-hint">
+            <Icon name="hand-pointer" /> Glissez un widget pour le déplacer : la grille s’allume sous votre souris et montre la place qu’il prendra.
+          </p>
+        )}
+
+        {shownLayout && (
+          <WidgetCanvas
+            layout={shownLayout}
+            editing={editing}
+            cols={cols}
+            ctx={ctx}
+            onChange={apply}
+            onConfigure={(item) => setConfiguring(item)}
+          />
+        )}
+
+        {putAway.length > 0 && !editing && (
+          <section className="home-section home-putaway">
             <h2>Serveurs rangés</h2>
             <div className="home-archived">
               {putAway.map(({ s, tag }) => (
@@ -128,6 +160,27 @@ export default function HomeView({ user, servers, dmConversations, onlineIds, on
           </section>
         )}
       </div>
+
+      {gallery && (
+        <WidgetGallery
+          layout={shownLayout || []}
+          cols={cols}
+          onAdd={addWidget}
+          onRemove={(id) => apply((layout || []).filter((w) => w.id !== id))}
+          onReset={() => apply(DEFAULT_LAYOUT.map((w) => ({ ...w })))}
+          onClose={() => setGallery(false)}
+        />
+      )}
+
+      {configuring && (
+        <ShortcutPicker
+          item={configuring}
+          servers={servers}
+          conversations={dmConversations.length ? dmConversations : contacts}
+          onSave={(next) => { apply((layout || []).map((w) => (w.id === next.id ? next : w))); setConfiguring(null); }}
+          onClose={() => setConfiguring(null)}
+        />
+      )}
 
       {library && (
         <ContactLibraryModal contacts={contacts} onlineIds={onlineIds} onOpenDm={(c) => { setLibrary(false); onOpenDm(c); }} onClose={() => setLibrary(false)} />
